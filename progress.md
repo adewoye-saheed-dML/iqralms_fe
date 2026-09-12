@@ -8,11 +8,11 @@ Status: NOT STARTED
 
 ## Checklist
 
-- [ ] Repository bootstrap
-- [ ] Tooling scripts
-- [ ] TypeScript/lint
-- [ ] Test infrastructure
-- [ ] Design tokens
+- [x] Repository bootstrap
+- [x] Tooling scripts
+- [x] TypeScript/lint
+- [x] Test infrastructure
+- [x] Design tokens
 - [ ] Typography
 - [ ] Responsive rules
 - [ ] RTL foundation

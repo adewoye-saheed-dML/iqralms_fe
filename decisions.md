@@ -23,7 +23,7 @@ Frontend logic consumes the backend contract and does not become a second domain
 
 ## D-003 — Recommended frontend stack
 
-Status: Proposed; validate during bootstrap
+Status: Accepted
 
 - Next.js
 - React
