@@ -1,3 +1,4 @@
+# Frontend Master Specification (SSoT)
 # Quran Academy SaaS — Frontend Product, UX & Design Specification
 
 Status: Foundation specification

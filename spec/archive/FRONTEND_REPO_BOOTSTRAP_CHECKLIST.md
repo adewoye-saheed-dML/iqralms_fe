@@ -1,3 +1,4 @@
+ARCHIVED — NOT AUTHORITATIVE\n\n
 # Frontend Repository Bootstrap Checklist
 
 Use this after creating the separate GitHub frontend repository.

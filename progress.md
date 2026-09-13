@@ -1,53 +1,37 @@
-# Frontend Progress Tracker
+# Progress Tracker
 
-## Current phase
+## Phase 13.0 — Frontend Foundation
+Status: COMPLETE
 
-Phase 1 — Product, UX & Frontend Foundation
+- [x] Next.js scaffold
+- [x] TypeScript/lint setup
+- [x] OpenAPI schema present
+- [x] API client boundary (`src/lib/api`)
+- [x] Shared UI primitives (`src/components/ui`)
+- [x] App route boundary (`src/app/app`, `src/app/(auth)`)
+- [x] Authentication contract corrected
+- [x] Academy selection corrected
+- [x] Role model verified against backend
+- [x] Repository structure canonicalized
+- [x] Foundation verification gate passed
 
+## Phase 13.1 — Design System
 Status: NOT STARTED
 
-## Checklist
+- [ ] Tailwind configuration finalized
+- [ ] Typography and spacing alignment
+- [ ] Component variations matching design spec
 
-- [x] Repository bootstrap
-- [x] Tooling scripts
-- [x] TypeScript/lint
-- [x] Test infrastructure
-- [x] Design tokens
-- [ ] Typography
-- [ ] Responsive rules
-- [ ] RTL foundation
-- [ ] Shared UI primitives
-- [ ] Application shell prototype
-- [ ] Route/information architecture
-- [ ] Role UX matrix
-- [ ] API client architecture
-- [ ] Auth architecture
-- [ ] Academy-context architecture
-- [ ] Error/loading/empty states
-- [ ] Accessibility baseline
-- [ ] CI workflow
-- [ ] Production build verification
-- [ ] Documentation updates
+## Phase 13.2 — Authentication
+Status: NOT STARTED
 
-## Verification log
+- [ ] Login screen implementation
+- [ ] Registration workflow
+- [ ] Protected route enforcement
 
-Record:
+## Phase 13.3 — Academy Context
+Status: NOT STARTED
 
-```text
-Date:
-Command:
-Result:
-Findings:
-```
-
-## Phase gate
-
-Phase 1 is complete only when `PHASE_01_FOUNDATION.md` acceptance criteria are satisfied.
-
-## Next phase
-
-Phase 2 — Application Shell, Authentication & Academy Context
-\n## Foundation Verification Phase 13.0 Complete
-- Architecture: Route boundaries, shared UI, shell, navigation config, central API client, auth & academy context boundaries, server-state configured.
-- UX: Tokens, responsive rules, RTL support (dir=ltr logic adaptable), basic a11y, loading/empty/error states.
-- Engineering: TypeScript/lint/build passes, CI setup created.
+- [ ] Academy selection UI
+- [ ] Role-based tenant routing
+- [ ] Context invalidation on switch

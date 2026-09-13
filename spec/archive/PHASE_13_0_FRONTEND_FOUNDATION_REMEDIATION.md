@@ -1,3 +1,4 @@
+ARCHIVED — NOT AUTHORITATIVE\n\n
 # SaaS Phase 13.0 — Frontend Foundation Remediation
 
 Status: Ready for implementation

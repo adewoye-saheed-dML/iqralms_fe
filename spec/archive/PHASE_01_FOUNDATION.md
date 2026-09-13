@@ -1,3 +1,4 @@
+ARCHIVED — NOT AUTHORITATIVE\n\n
 # Frontend Phase 1 — Product, UX & Foundation
 
 Status: Planned
