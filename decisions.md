@@ -54,3 +54,8 @@ Feature/domain modules own domain behavior while shared UI remains small and reu
 ## Change policy
 
 Do not silently replace important decisions. Add a new decision entry with the reason and impact.
+\n## [2026-09-13] Phase 13.0 - Frontend Foundation
+- Used `apiClient` wrapper for fetch to centralize configuration, authentication headers, error handling.
+- Chose not to introduce global state for server data (relied on TanStack React Query).
+- Stored academy context in a dedicated provider decoupled from auth to reflect 1 user -> many academies model.
+- Configured navigation using `navigationConfig` object with allowed roles, instead of messy conditional JSX.
