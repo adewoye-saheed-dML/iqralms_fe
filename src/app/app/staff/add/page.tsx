@@ -22,7 +22,7 @@ export default function AddStaffPage() {
         </Button>
         <PageHeader
           title="Add Staff Member"
-          description="Enter an existing user&apos;s ID to invite them to this academy."
+          description="Enter an existing user's ID to invite them to this academy."
         />
       </div>
 

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { PageHeader } from '@/components/ui/page-header';
-import { StudentsPlaceholder } from '@/features/students/components/students-placeholder';
+import { StudentDirectory } from '@/features/students/components/student-directory';
 
 export const metadata = {
   title: 'Students | Quran Academy',
@@ -13,7 +13,7 @@ export default function StudentsPage() {
         title="Student Management"
         description="Manage students, enrollments, and parent links."
       />
-      <StudentsPlaceholder />
+      <StudentDirectory />
     </div>
   );
 }

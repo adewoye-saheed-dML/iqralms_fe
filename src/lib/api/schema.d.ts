@@ -1410,6 +1410,60 @@ export interface paths {
     patch: operations['organizations_memberships_partial_update'];
     trace?: never;
   };
+  '/api/organizations/{organization_pk}/students/': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * @description /api/organizations/<organization_pk>/students/ — the tenant's students.
+     *
+     *     GET lists the organization's students; POST attaches an existing student.
+     */
+    get: operations['organizations_students_list'];
+    put?: never;
+    /**
+     * @description /api/organizations/<organization_pk>/students/ — the tenant's students.
+     *
+     *     GET lists the organization's students; POST attaches an existing student.
+     */
+    post: operations['organizations_students_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/organizations/{organization_pk}/students/{id}/': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * @description /api/organizations/<organization_pk>/students/<id>/ — one student enrollment.
+     *
+     *     GET retrieves the student's enrollment record.
+     *     PATCH updates the enrollment status.
+     */
+    get: operations['organizations_students_retrieve'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * @description /api/organizations/<organization_pk>/students/<id>/ — one student enrollment.
+     *
+     *     GET retrieves the student's enrollment record.
+     *     PATCH updates the enrollment status.
+     */
+    patch: operations['organizations_students_partial_update'];
+    trace?: never;
+  };
   '/api/organizations/{id}/': {
     parameters: {
       query?: never;
@@ -3089,6 +3143,10 @@ export interface components {
       hourly_payout_rate?: string | null;
       approved?: boolean;
     };
+    /** @description Updating a student's enrollment status. */
+    PatchedStudentEnrollmentUpdate: {
+      status?: components['schemas']['StudentEnrollmentUpdateStatusEnum'];
+    };
     /**
      * @description Withdrawing or restoring a teacher's eligibility for a track.
      *
@@ -3551,6 +3609,16 @@ export interface components {
      * @enum {string}
      */
     StatementStatusEnum: 'empty' | 'generated' | 'partly_finalized' | 'finalized';
+    /** @description Enrolling an existing student user into an academy. */
+    StudentEnrollmentCreate: {
+      user: number;
+    };
+    /**
+     * @description * `active` - Active
+     *     * `inactive` - Inactive
+     * @enum {string}
+     */
+    StudentEnrollmentUpdateStatusEnum: 'active' | 'inactive';
     /**
      * @description Progress in one track, for the student or their linked parent.
      *
@@ -6161,6 +6229,184 @@ export interface operations {
         content?: never;
       };
       /** @description No such membership in this organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  organizations_students_list: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        organization_pk: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List of students */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not authenticated. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not an owner or administrator here. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  organizations_students_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        organization_pk: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['StudentEnrollmentCreate'];
+        'application/x-www-form-urlencoded': components['schemas']['StudentEnrollmentCreate'];
+        'multipart/form-data': components['schemas']['StudentEnrollmentCreate'];
+      };
+    };
+    responses: {
+      /** @description Student attached successfully */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Unknown user, not a student, or already enrolled */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not authenticated. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not an owner or administrator here. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  organizations_students_retrieve: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+        organization_pk: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Student enrollment details */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not authenticated. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not an owner or administrator here. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No such student in this organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  organizations_students_partial_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+        organization_pk: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['PatchedStudentEnrollmentUpdate'];
+        'application/x-www-form-urlencoded': components['schemas']['PatchedStudentEnrollmentUpdate'];
+        'multipart/form-data': components['schemas']['PatchedStudentEnrollmentUpdate'];
+      };
+    };
+    responses: {
+      /** @description Student enrollment updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Nothing to change or invalid status */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not authenticated. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not an owner or administrator here. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No such student in this organization. */
       404: {
         headers: {
           [name: string]: unknown;
