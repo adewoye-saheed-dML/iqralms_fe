@@ -9,6 +9,7 @@ import {
   CheckSquare,
   TrendingUp,
   CreditCard,
+  Banknote,
 } from 'lucide-react';
 
 // Based on the spec and schema
@@ -79,6 +80,12 @@ export const navigationConfig: NavItem[] = [
     label: 'Pricing',
     href: '/app/pricing',
     icon: CreditCard,
+  },
+  {
+    label: 'Payouts',
+    href: '/app/payouts',
+    icon: Banknote,
+    allowedOrgRoles: ['owner', 'admin', 'staff', 'teacher'],
   },
   {
     label: 'Settings',
