@@ -41,6 +41,8 @@
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-arabic: 'Noto Kufi Arabic', 'Noto Sans Arabic', sans-serif;
+  --font-quran: 'Amiri', 'Scheherazade New', serif;
 }
 
 @layer base {
