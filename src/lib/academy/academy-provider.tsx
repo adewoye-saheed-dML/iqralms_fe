@@ -1,20 +1,24 @@
 'use client';
 
 import * as React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api/client';
 import { components } from '@/lib/api/schema';
 import { useAuth } from '@/lib/auth/auth-provider';
 
 type MyOrganizationMembership = components['schemas']['MyOrganizationMembership'];
+type Organization = components['schemas']['Organization'];
+type OrganizationRoleEnum = components['schemas']['OrganizationRoleEnum'];
 
 interface AcademyContextValue {
-  memberships: MyOrganizationMembership[];
-  selectedAcademyId: number | null;
-  selectedAcademy: MyOrganizationMembership | null;
-  setSelectedAcademyId: (id: number) => void;
+  academies: Organization[];
+  activeAcademy: Organization | null;
+  activeMembership: MyOrganizationMembership | null;
+  activeRole: OrganizationRoleEnum | null;
   isLoading: boolean;
   error: Error | null;
+  setActiveAcademy: (id: number) => void;
+  refreshAcademies: () => Promise<void>;
 }
 
 const AcademyContext = React.createContext<AcademyContextValue | undefined>(undefined);
@@ -23,67 +27,85 @@ const ACADEMY_STORAGE_KEY = 'quran_fe_selected_academy_id';
 
 export function AcademyProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const [storedAcademyId, setStoredAcademyId] = React.useState<number | null>(null);
-
-  React.useEffect(() => {
+  const queryClient = useQueryClient();
+  const [storedAcademyId, setStoredAcademyId] = React.useState<number | null>(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem(ACADEMY_STORAGE_KEY);
       if (stored) {
-        // eslint-disable-next-line
-        setStoredAcademyId(Number(stored));
+        return Number(stored);
       }
     }
-  }, []);
+    return null;
+  });
 
   const {
     data: memberships = [],
     isLoading,
     error,
+    refetch,
   } = useQuery<MyOrganizationMembership[], Error>({
     queryKey: ['organizations', 'mine'],
     queryFn: () => apiClient.get<MyOrganizationMembership[]>('/api/organizations/mine/'),
     enabled: !!user,
   });
 
-  // Deterministic rule: Use stored ID if it matches a valid membership, else use the first membership, else null.
   const activeAcademyId = React.useMemo(() => {
     if (memberships.length === 0) return null;
-    if (storedAcademyId !== null && memberships.some(m => m.organization.id === storedAcademyId)) {
+    if (
+      storedAcademyId !== null &&
+      memberships.some((m) => m.organization.id === storedAcademyId)
+    ) {
       return storedAcademyId;
     }
-    // If no valid stored preference, fall back to the first membership deterministically
+    // Auto-select single academy or default to the first one
     return memberships[0].organization.id;
   }, [memberships, storedAcademyId]);
 
-  const setSelectedAcademyId = React.useCallback((id: number) => {
-    setStoredAcademyId(id);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(ACADEMY_STORAGE_KEY, String(id));
-    }
-  }, []);
+  const setActiveAcademy = React.useCallback(
+    (id: number) => {
+      setStoredAcademyId(id);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(ACADEMY_STORAGE_KEY, String(id));
+      }
 
-  const selectedAcademy = React.useMemo(() => {
+      // Safety measure: invalidate queries for the previous academy to avoid stale data
+      // though the explicit query-key design should naturally prevent cross-academy leakage.
+      // A clean reset ensures no leftover background refetches for the old tenant.
+      queryClient.resetQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          // Assume tenant queries start with 'academy' and have the ID as the second element.
+          return Array.isArray(key) && key[0] === 'academy' && key[1] !== id;
+        },
+      });
+    },
+    [queryClient]
+  );
+
+  const refreshAcademies = React.useCallback(async () => {
+    await refetch();
+  }, [refetch]);
+
+  const activeMembership = React.useMemo(() => {
     if (!activeAcademyId) return null;
     return memberships.find((m) => m.organization.id === activeAcademyId) || null;
   }, [memberships, activeAcademyId]);
 
-  const value = React.useMemo(
+  const value = React.useMemo<AcademyContextValue>(
     () => ({
-      memberships,
-      selectedAcademyId: activeAcademyId,
-      selectedAcademy,
-      setSelectedAcademyId,
+      academies: memberships.map((m) => m.organization),
+      activeAcademy: activeMembership?.organization || null,
+      activeMembership,
+      activeRole: activeMembership?.role || null,
       isLoading,
       error,
+      setActiveAcademy,
+      refreshAcademies,
     }),
-    [memberships, activeAcademyId, selectedAcademy, setSelectedAcademyId, isLoading, error]
+    [memberships, activeMembership, isLoading, error, setActiveAcademy, refreshAcademies]
   );
 
-  return (
-    <AcademyContext.Provider value={value}>
-      {children}
-    </AcademyContext.Provider>
-  );
+  return <AcademyContext.Provider value={value}>{children}</AcademyContext.Provider>;
 }
 
 export function useAcademy() {

@@ -15,7 +15,7 @@ describe('Authentication Flow', () => {
         return {
           ok: true,
           status: 200,
-          json: async () => ({ key: 'test-token-123' })
+          json: async () => ({ key: 'test-token-123' }),
         };
       }
       if (url.includes('/api/accounts/me/')) {
@@ -25,13 +25,13 @@ describe('Authentication Flow', () => {
           return {
             ok: true,
             status: 200,
-            json: async () => ({ id: 1, username: 'testuser' })
+            json: async () => ({ id: 1, username: 'testuser' }),
           };
         }
         return {
           ok: false,
           status: 401,
-          json: async () => ({ detail: 'Unauthorized' })
+          json: async () => ({ detail: 'Unauthorized' }),
         };
       }
       return { ok: false, status: 404, json: async () => ({}) };
@@ -40,30 +40,32 @@ describe('Authentication Flow', () => {
 
     // 2. Perform Login POST
     const loginResponse = await apiClient.post<{ key: string }>('/api/auth/login/', {
-      body: { username: 'testuser', password: 'password' }
+      body: { username: 'testuser', password: 'password' },
     });
 
     expect(loginResponse.key).toBe('test-token-123');
-    
+
     // 3. Establish credential/session
     setToken(loginResponse.key);
     expect(getToken()).toBe('test-token-123');
 
     // 4. Perform GET /api/accounts/me/
     const meResponse = await apiClient.get<{ id: number; username: string }>('/api/accounts/me/');
-    
+
     // 5. Authenticated user returned
     expect(meResponse.username).toBe('testuser');
-    
+
     // 6. Verify fetch was called with the correct headers
-    const meCallConfig = fetchMock.mock.calls.find(call => call[0].includes('/api/accounts/me/'))[1];
+    const meCallConfig = fetchMock.mock.calls.find((call) =>
+      call[0].includes('/api/accounts/me/')
+    )[1];
     expect(meCallConfig.headers['Authorization']).toBe('Token test-token-123');
   });
 
   it('clears auth state on logout', () => {
     setToken('test-token-123');
     expect(getToken()).toBe('test-token-123');
-    
+
     removeToken();
     expect(getToken()).toBeNull();
   });

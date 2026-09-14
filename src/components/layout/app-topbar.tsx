@@ -8,7 +8,7 @@ import { useAcademy } from '@/lib/academy/academy-provider';
 
 export function AppTopbar({ onMenuClick }: { onMenuClick: () => void }) {
   const { user, logout } = useAuth();
-  const { memberships, selectedAcademyId, setSelectedAcademyId } = useAcademy();
+  const { academies, activeAcademy, setActiveAcademy } = useAcademy();
 
   return (
     <header className="bg-background flex h-14 items-center gap-4 border-b px-4 lg:h-[60px] lg:px-6">
@@ -18,16 +18,16 @@ export function AppTopbar({ onMenuClick }: { onMenuClick: () => void }) {
       </Button>
 
       <div className="w-full flex-1">
-        {memberships.length > 0 && (
+        {academies.length > 0 && (
           <select
             className="border-input focus-visible:ring-ring h-9 w-[200px] rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:ring-1 focus-visible:outline-none"
-            value={selectedAcademyId || ''}
-            onChange={(e) => setSelectedAcademyId(Number(e.target.value))}
+            value={activeAcademy?.id || ''}
+            onChange={(e) => setActiveAcademy(Number(e.target.value))}
             aria-label="Select Academy"
           >
-            {memberships.map((m) => (
-              <option key={m.organization.id} value={m.organization.id}>
-                {m.organization.name}
+            {academies.map((academy) => (
+              <option key={academy.id} value={academy.id}>
+                {academy.name}
               </option>
             ))}
           </select>

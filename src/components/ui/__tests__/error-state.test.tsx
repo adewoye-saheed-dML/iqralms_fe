@@ -9,12 +9,7 @@ describe('ErrorState', () => {
   });
 
   it('renders custom title and message', () => {
-    render(
-      <ErrorState
-        title="Custom Error"
-        message="This is a specific error"
-      />
-    );
+    render(<ErrorState title="Custom Error" message="This is a specific error" />);
     expect(screen.getByText('Custom Error')).toBeInTheDocument();
     expect(screen.getByText('This is a specific error')).toBeInTheDocument();
   });

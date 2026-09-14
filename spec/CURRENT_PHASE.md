@@ -1,9 +1,9 @@
-Current phase: SaaS Phase 13.3
-Phase name: Academy Context
+Current phase: SaaS Phase 14
+Phase name: (Pending specification)
 Status: NOT STARTED
 
 ## Objective
-Build authenticated academy/tenant selection and context behavior on top of the verified session.
+Define next features for Phase 14.
 
 ## Verification Commands
 ```bash
@@ -14,9 +14,5 @@ pnpm build
 ```
 
 ## Exit criteria
-- Academy selection UI implemented.
-- Role-based tenant routing implemented.
-- Context invalidation on switch works.
-- Lint passes.
+- Features implemented.
 - Tests pass.
-- Production build passes.

@@ -30,8 +30,11 @@ Status: COMPLETE
 - [x] Protected route enforcement
 
 ## Phase 13.3 — Academy Context
-Status: NOT STARTED
+Status: COMPLETE
 
-- [ ] Academy selection UI
-- [ ] Role-based tenant routing
-- [ ] Context invalidation on switch
+- [x] Academy selection UI
+- [x] Role-based tenant routing
+- [x] Context invalidation on switch
+
+## Phase 14 — (Next logical feature phase, perhaps Curriculum or Teacher Hub)
+Status: NOT STARTED

@@ -2,26 +2,56 @@
 
 import * as React from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { Building2 } from 'lucide-react';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { AppTopbar } from '@/components/layout/app-topbar';
 import { useAuth } from '@/lib/auth/auth-provider';
+import { useAcademy } from '@/lib/academy/academy-provider';
 import { LoadingState } from '@/components/ui/loading';
+import { ErrorState } from '@/components/ui/error-state';
+import { EmptyState } from '@/components/ui/empty-state';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
+  const {
+    academies,
+    activeAcademy,
+    isLoading: isAcademyLoading,
+    error: academyError,
+  } = useAcademy();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
   React.useEffect(() => {
-    if (!isLoading && !user) {
+    if (!isAuthLoading && !user) {
       const returnUrl = encodeURIComponent(pathname);
       router.push(`/login?returnUrl=${returnUrl}`);
     }
-  }, [user, isLoading, router, pathname]);
+  }, [user, isAuthLoading, router, pathname]);
 
-  if (isLoading || !user) {
+  if (isAuthLoading || !user || isAcademyLoading) {
     return <LoadingState />;
+  }
+
+  if (academyError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <ErrorState title="Failed to load academies" message={academyError.message} />
+      </div>
+    );
+  }
+
+  if (academies.length === 0 || !activeAcademy) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <EmptyState
+          icon={<Building2 className="text-muted-foreground h-10 w-10" />}
+          title="No Academy Access"
+          description="You do not have access to any academies. Please contact an administrator to be added to an academy."
+        />
+      </div>
+    );
   }
 
   return (

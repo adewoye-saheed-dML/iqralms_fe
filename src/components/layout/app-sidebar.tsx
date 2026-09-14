@@ -11,7 +11,7 @@ import { useAcademy } from '@/lib/academy/academy-provider';
 export function AppSidebar({ className }: { className?: string }) {
   const pathname = usePathname();
   const { user } = useAuth();
-  const { selectedAcademy } = useAcademy();
+  const { activeRole } = useAcademy();
 
   if (!user) return null;
 
@@ -20,8 +20,8 @@ export function AppSidebar({ className }: { className?: string }) {
     if (item.allowedUserRoles && !item.allowedUserRoles.includes(user.role as UserRole)) {
       return false;
     }
-    if (item.allowedOrgRoles && selectedAcademy) {
-      if (!item.allowedOrgRoles.includes(selectedAcademy.role as OrgRole)) {
+    if (item.allowedOrgRoles && activeRole) {
+      if (!item.allowedOrgRoles.includes(activeRole as OrgRole)) {
         return false;
       }
     }

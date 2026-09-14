@@ -10,7 +10,7 @@ describe('Alert', () => {
         <AlertDescription>This is a notice</AlertDescription>
       </Alert>
     );
-    
+
     expect(screen.getByText('Notice')).toBeInTheDocument();
     expect(screen.getByText('This is a notice')).toBeInTheDocument();
   });

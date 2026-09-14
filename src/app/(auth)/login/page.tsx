@@ -16,7 +16,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, isLoading, refreshAuth } = useAuth();
-  
+
   const [username, setUsername] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -70,7 +70,10 @@ function LoginForm() {
       <CardContent>
         <form className="space-y-4" onSubmit={handleSubmit}>
           {searchParams.get('registered') && !error && (
-            <Alert variant="default" className="border-green-500 text-green-700 bg-green-50 dark:bg-green-950 dark:text-green-300">
+            <Alert
+              variant="default"
+              className="border-green-500 bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
+            >
               <AlertTitle>Registration successful</AlertTitle>
               <AlertDescription>Your account has been created. Please log in.</AlertDescription>
             </Alert>
@@ -109,7 +112,7 @@ function LoginForm() {
           <Button type="submit" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? 'Signing In...' : 'Sign In'}
           </Button>
-          
+
           <div className="text-center text-sm">
             <span className="text-muted-foreground">Don&apos;t have an account? </span>
             <a href="/register" className="text-primary hover:underline">

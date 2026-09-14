@@ -8,7 +8,7 @@ import { useAcademy } from '@/lib/academy/academy-provider';
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { selectedAcademy } = useAcademy();
+  const { activeAcademy, activeRole } = useAcademy();
 
   return (
     <div className="space-y-6">
@@ -23,12 +23,8 @@ export default function DashboardPage() {
             <CardTitle className="text-sm font-medium">Current Academy</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {selectedAcademy?.organization.name || 'None Selected'}
-            </div>
-            <p className="text-muted-foreground mt-1 text-xs">
-              Role: {selectedAcademy?.role || 'N/A'}
-            </p>
+            <div className="text-2xl font-bold">{activeAcademy?.name || 'None Selected'}</div>
+            <p className="text-muted-foreground mt-1 text-xs">Role: {activeRole || 'N/A'}</p>
           </CardContent>
         </Card>
       </div>

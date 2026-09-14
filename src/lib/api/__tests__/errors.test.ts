@@ -12,7 +12,7 @@ describe('API Errors', () => {
   it('should correctly identify ApiError instances', () => {
     const apiErr = new ApiError(500, 'Server Error');
     const normalErr = new Error('Normal Error');
-    
+
     expect(isApiError(apiErr)).toBe(true);
     expect(isApiError(normalErr)).toBe(false);
   });
