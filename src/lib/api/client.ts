@@ -1,4 +1,5 @@
 import { ApiError } from './errors';
+import { getToken } from '@/lib/auth/token';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -11,7 +12,9 @@ async function fetchClient<T>(
   endpoint: string,
   { body, params, headers, ...customConfig }: RequestConfig = {}
 ): Promise<T> {
-  const url = new URL(`${API_BASE_URL}${endpoint}`);
+  // Use window.location.origin in browser, or http://localhost in test/SSR
+  const base = typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
+  const url = new URL(`${API_BASE_URL}${endpoint}`, base);
 
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
@@ -21,11 +24,14 @@ async function fetchClient<T>(
     });
   }
 
+  const token = getToken();
+
   const config: RequestInit = {
     ...customConfig,
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json',
+      ...(token ? { Authorization: `Token ${token}` } : {}),
       ...headers,
     },
   };

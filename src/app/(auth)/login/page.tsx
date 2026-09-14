@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { setToken } from '@/lib/auth/token';
 
 function LoginForm() {
   const router = useRouter();
@@ -41,9 +42,12 @@ function LoginForm() {
     setIsSubmitting(true);
 
     try {
-      await apiClient.post('/api/auth/login/', {
+      const { key } = await apiClient.post<{ key: string }>('/api/auth/login/', {
         body: { username, password },
       });
+      if (key) {
+        setToken(key);
+      }
       await refreshAuth();
     } catch (err) {
       if (err instanceof ApiError) {

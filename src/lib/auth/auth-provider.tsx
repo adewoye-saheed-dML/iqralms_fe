@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api/client';
 import { components } from '@/lib/api/schema';
+import { removeToken } from '@/lib/auth/token';
 
 type User = components['schemas']['User'];
 
@@ -47,6 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // Ignore errors on logout
     }
+    removeToken();
     queryClient.setQueryData(['auth', 'user'], null);
     queryClient.invalidateQueries();
   }, [queryClient]);
