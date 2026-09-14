@@ -21,6 +21,12 @@ export const navigationConfig: NavItem[] = [
     icon: LayoutDashboard,
   },
   {
+    label: 'Staff',
+    href: '/app/staff',
+    icon: Users,
+    allowedOrgRoles: ['owner', 'admin', 'staff', 'teacher'],
+  },
+  {
     label: 'Academy',
     href: '/app/academy',
     icon: GraduationCap,

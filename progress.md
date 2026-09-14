@@ -36,5 +36,11 @@ Status: COMPLETE
 - [x] Role-based tenant routing
 - [x] Context invalidation on switch
 
-## Phase 14 — (Next logical feature phase, perhaps Curriculum or Teacher Hub)
+## Phase 14 — Academy Onboarding & Initial Setup
+Status: COMPLETE
+
+## Phase 15 — Teacher & Staff Management
+Status: COMPLETE
+
+## Phase 16 — (Pending Specification)
 Status: NOT STARTED

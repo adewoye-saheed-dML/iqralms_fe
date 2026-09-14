@@ -1,18 +1,4 @@
-Current phase: SaaS Phase 14
-Phase name: (Pending specification)
-Status: NOT STARTED
+# Current Phase: Phase 16
 
-## Objective
-Define next features for Phase 14.
-
-## Verification Commands
-```bash
-pnpm install --frozen-lockfile
-pnpm lint
-pnpm test
-pnpm build
-```
-
-## Exit criteria
-- Features implemented.
-- Tests pass.
+The active development phase is **Phase 16**.
+All work must align with the current product specifications.
