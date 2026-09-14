@@ -38,6 +38,19 @@ async function fetchClient<T>(
     config.body = JSON.stringify(body);
   }
 
+  // Extract CSRF token from cookies for mutating requests
+  if (config.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(config.method.toUpperCase())) {
+    if (typeof document !== 'undefined') {
+      const csrfCookie = document.cookie
+        .split('; ')
+        .find((row) => row.startsWith('csrftoken='));
+      if (csrfCookie) {
+        const csrfToken = csrfCookie.split('=')[1];
+        (config.headers as Record<string, string>)['X-CSRFToken'] = csrfToken;
+      }
+    }
+  }
+
   let response: Response;
   try {
     response = await fetch(url.toString(), config);

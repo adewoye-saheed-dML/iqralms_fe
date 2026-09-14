@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { redirect } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { AppTopbar } from '@/components/layout/app-topbar';
 import { useAuth } from '@/lib/auth/auth-provider';
@@ -10,12 +10,15 @@ import { LoadingState } from '@/components/ui/loading';
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
 
   React.useEffect(() => {
     if (!isLoading && !user) {
-      redirect('/login');
+      const returnUrl = encodeURIComponent(pathname);
+      router.push(`/login?returnUrl=${returnUrl}`);
     }
-  }, [user, isLoading]);
+  }, [user, isLoading, router, pathname]);
 
   if (isLoading || !user) {
     return <LoadingState />;

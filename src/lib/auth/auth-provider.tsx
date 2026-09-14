@@ -12,6 +12,7 @@ interface AuthContextValue {
   isLoading: boolean;
   error: Error | null;
   logout: () => Promise<void>;
+  refreshAuth: () => Promise<void>;
 }
 
 const AuthContext = React.createContext<AuthContextValue | undefined>(undefined);
@@ -42,12 +43,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = React.useCallback(async () => {
     // Assuming backend clears cookie on this endpoint
     try {
-      await apiClient.post('/api/accounts/logout/');
+      await apiClient.post('/api/auth/logout/');
     } catch {
       // Ignore errors on logout
     }
     queryClient.setQueryData(['auth', 'user'], null);
     queryClient.invalidateQueries();
+  }, [queryClient]);
+
+  const refreshAuth = React.useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: ['auth', 'user'] });
   }, [queryClient]);
 
   const value = React.useMemo(
@@ -56,8 +61,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isLoading,
       error,
       logout,
+      refreshAuth,
     }),
-    [user, isLoading, error, logout]
+    [user, isLoading, error, logout, refreshAuth]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

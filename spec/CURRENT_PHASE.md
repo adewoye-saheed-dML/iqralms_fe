@@ -1,9 +1,9 @@
-Current phase: SaaS Phase 13.2
-Phase name: Authentication
+Current phase: SaaS Phase 13.3
+Phase name: Academy Context
 Status: NOT STARTED
 
 ## Objective
-Implement authentication screens, registration workflow, and protected route enforcement aligned with the backend OpenAPI contract.
+Build authenticated academy/tenant selection and context behavior on top of the verified session.
 
 ## Verification Commands
 ```bash
@@ -14,12 +14,9 @@ pnpm build
 ```
 
 ## Exit criteria
-- Login screen implementation completed.
-- Registration workflow completed.
-- Protected route enforcement correctly delegates unauthenticated users.
-- API client handles token authentication and storage accurately.
-- Forms use the design system components correctly.
-- Authentication context manages session state correctly.
+- Academy selection UI implemented.
+- Role-based tenant routing implemented.
+- Context invalidation on switch works.
 - Lint passes.
 - Tests pass.
 - Production build passes.
