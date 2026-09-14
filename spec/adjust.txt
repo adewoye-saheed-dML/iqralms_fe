@@ -1,193 +1,211 @@
-You are working in the Quran Academy frontend repository:
+We have confirmed the backend is working.
 
-`https://github.com/adewoye-saheed-dML/quran_fe`
+Direct backend test:
 
-Work directly against the existing codebase. Do not invent new authentication behavior.
+```text
+POST http://127.0.0.1:8000/api/auth/register/
+```
 
-## Problem
+returns:
 
-After registering a new user locally, the application redirects to `/app`, which produces a Next.js 404 because the repository does not have an `/app/page.tsx` route.
+```text
+HTTP/1.1 201 Created
+```
 
-The existing authenticated application routes include:
+and returns the created user successfully.
 
-* `/app/dashboard`
-* `/app/students`
-* `/app/curriculum`
-* `/app/staff`
-* `/app/academy`
-* `/app/onboarding`
+The browser error is now confirmed as:
 
-The correct default authenticated destination is `/app/dashboard`.
+```text
+Access to fetch at 'http://127.0.0.1:8000/api/auth/register/'
+from origin 'http://localhost:3000' has been blocked by CORS policy:
+
+The value of the 'Access-Control-Allow-Credentials' header
+in the response is '' which must be 'true'
+when the request's credentials mode is 'include'.
+```
+
+The same happens for:
+
+```text
+/api/accounts/me/
+```
+
+## Root cause
+
+The frontend API client currently forces:
+
+```ts
+config.credentials = 'include';
+```
+
+for every request.
+
+The backend is using DRF Token authentication and does not currently return:
+
+```http
+Access-Control-Allow-Credentials: true
+```
+
+Therefore the browser rejects the cross-origin request.
 
 ## Required fix
 
-Inspect the current authentication and routing implementation first.
-
-### 1. Registration redirect
-
-Inspect:
-
-`src/app/(auth)/register/page.tsx`
-
-There is currently logic equivalent to:
-
-```ts
-if (user && !isLoading) {
-  router.push('/app');
-}
-```
-
-Change it to:
-
-```ts
-if (user && !isLoading) {
-  router.push('/app/dashboard');
-}
-```
-
-Do not change the registration API contract.
-
-The successful registration flow should continue to:
-
-```ts
-router.push('/login?registered=true');
-```
-
-because the backend does not automatically authenticate the newly registered account.
-
-### 2. Login redirect
-
-Inspect:
-
-`src/app/(auth)/login/page.tsx`
-
-Any authenticated-user redirect that currently sends the user to:
-
-```ts
-router.push('/app');
-```
-
-must instead send the user to:
-
-```ts
-router.push('/app/dashboard');
-```
-
-Preserve the existing `returnUrl` behavior.
-
-The intended logic is:
-
-```ts
-const returnUrl = searchParams.get('returnUrl');
-
-if (returnUrl && returnUrl.startsWith('/')) {
-  router.push(returnUrl);
-} else {
-  router.push('/app/dashboard');
-}
-```
-
-Do not remove the open-redirect protection.
-
-### 3. Search the repository
-
-Search the whole frontend repo for:
+Work in:
 
 ```text
-router.push('/app')
-router.replace('/app')
-href="/app"
-'/app'
-"/app"
+src/lib/api/client.ts
 ```
 
-Identify any other authentication/navigation code that incorrectly assumes `/app` is a concrete page route.
+Remove the unconditional:
 
-Do NOT blindly replace every `/app` occurrence.
-
-Only change references that are intended to navigate to the default authenticated landing page.
-
-Do not modify valid nested `/app/...` paths.
-
-### 4. Verify the route structure
-
-Confirm that the repository has a real:
-
-```text
-src/app/app/dashboard/page.tsx
+```ts
+config.credentials = 'include';
 ```
 
-and that `/app/dashboard` is the intended authenticated landing route.
+Do NOT replace it with a backend CORS wildcard.
 
-Do not create an `/app/page.tsx` merely to hide the bug unless there is a documented architectural reason to do so. Prefer fixing the incorrect redirects.
+The frontend authentication architecture is token-based and already sends:
 
-### 5. Authentication behavior
+```http
+Authorization: Token <token>
+```
 
-Inspect:
+when a token exists.
 
-`src/lib/auth/auth-provider.tsx`
+Keep this behavior unchanged.
 
-Confirm that:
+## Important
 
-* authentication state still comes from `/api/accounts/me/`
-* logout behavior is unchanged
-* token handling is unchanged
-* `refreshAuth()` behavior is unchanged
+Do not remove:
 
-Do not introduce a new auth mechanism.
+```ts
+Authorization: `Token ${token}`
+```
 
-### 6. Tests
+Do not change the API base URL behavior:
 
-Add or update tests for the redirect behavior.
+```ts
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+```
 
-At minimum verify:
+Do not change registration, login, logout, or `/api/accounts/me/` endpoints.
 
-1. Register page with an already authenticated user redirects to `/app/dashboard`.
-2. Login with no `returnUrl` redirects to `/app/dashboard`.
-3. Login with a valid internal `returnUrl` still redirects to that route.
-4. An external URL is not accepted as a return URL.
+Do not disable authentication.
 
-Use the repository's existing test framework and conventions.
+Do not set:
 
-Do not introduce a new testing framework.
+```python
+CORS_ALLOW_ALL_ORIGINS = True
+```
 
-### 7. Validation
+Do not add unnecessary credentialed CORS support just to accommodate the previous frontend behavior.
 
-Run the appropriate existing checks, including:
+## Cookie/CSRF handling
+
+Inspect the current API client carefully.
+
+The code currently also attempts to add:
+
+```http
+X-CSRFToken
+```
+
+from the `csrftoken` cookie for mutating requests.
+
+Determine whether that is actually required for the application's token-authenticated API.
+
+Because the application is using DRF Token authentication, do not introduce a new cookie/session authentication architecture.
+
+Only retain cookie credentials/CSRF behavior if the existing backend contract proves a specific endpoint requires it.
+
+Do not make speculative authentication changes.
+
+## Expected result
+
+After the change:
 
 ```text
+Frontend
+http://localhost:3000
+
+        ↓
+
+Backend
+http://127.0.0.1:8000
+```
+
+The browser should be able to perform:
+
+```text
+POST /api/auth/register/
+GET  /api/accounts/me/
+POST /api/auth/login/
+```
+
+without the browser rejecting them because of credentialed CORS.
+
+## Verify locally
+
+Run:
+
+```bash
 pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
 ```
 
-Use the exact scripts available in `package.json`. If one of these commands does not exist, use the repository's equivalent script and report what was actually run.
+using only the scripts that actually exist in package.json.
 
-### 8. Scope discipline
+Then run the frontend and test:
 
-This is a small routing/authentication remediation.
+```text
+http://localhost:3000/register
+```
 
-Do NOT:
+Register a new user.
 
-* redesign the authentication UI
-* change the backend API
-* change token persistence
-* change academy context
-* change student management
-* change Phase 17 curriculum implementation
-* add a new `/app` dashboard route
-* change unrelated navigation
-* invent authentication behavior
+Expected flow:
 
-### 9. Final report
+```text
+/register
+    ↓
+POST /api/auth/register/
+    ↓
+201 Created
+    ↓
+/login?registered=true
+    ↓
+login
+    ↓
+GET /api/accounts/me/
+    ↓
+authenticated
+    ↓
+/app/dashboard
+```
 
-At the end, report:
+## Verification requirement
 
-* files changed
-* exact redirect behavior before/after
-* whether `/app` references were found elsewhere
+Use the browser Network tab and confirm the actual requests:
+
+```text
+OPTIONS /api/auth/register/
+POST    /api/auth/register/
+
+POST    /api/auth/login/
+GET     /api/accounts/me/
+```
+
+The important point is that the POST/GET requests themselves must succeed, not merely their OPTIONS preflights.
+
+Report:
+
+* exact files changed
+* whether `credentials: 'include'` was removed
+* whether CSRF handling was changed or retained and why
 * tests/checks run
-* whether the local registration → login → dashboard flow is now expected to work
+* final registration → login → dashboard behavior
 
-Keep the implementation minimal and aligned with the existing architecture.
+Keep the change minimal. Do not redesign authentication.
