@@ -6,6 +6,8 @@ import {
   Settings,
   Wallet,
   BookOpen,
+  CheckSquare,
+  TrendingUp,
 } from 'lucide-react';
 
 // Based on the spec and schema
@@ -49,6 +51,16 @@ export const navigationConfig: NavItem[] = [
     label: 'Scheduling',
     href: '/app/scheduling',
     icon: Calendar,
+  },
+  {
+    label: 'Assessments',
+    href: '/app/assessments',
+    icon: CheckSquare,
+  },
+  {
+    label: 'Progress',
+    href: '/app/progress',
+    icon: TrendingUp,
   },
   {
     label: 'Students',
