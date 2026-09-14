@@ -10,6 +10,7 @@ import {
   TrendingUp,
   CreditCard,
   Banknote,
+  Bell,
 } from 'lucide-react';
 
 // Based on the spec and schema
@@ -86,6 +87,11 @@ export const navigationConfig: NavItem[] = [
     href: '/app/payouts',
     icon: Banknote,
     allowedOrgRoles: ['owner', 'admin', 'staff', 'teacher'],
+  },
+  {
+    label: 'Notifications',
+    href: '/app/notifications',
+    icon: Bell,
   },
   {
     label: 'Settings',
