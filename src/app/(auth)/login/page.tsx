@@ -29,7 +29,7 @@ function LoginForm() {
       if (returnUrl && returnUrl.startsWith('/')) {
         router.push(returnUrl);
       } else {
-        router.push('/app');
+        router.push('/app/dashboard');
       }
     }
   }, [user, isLoading, router, searchParams]);

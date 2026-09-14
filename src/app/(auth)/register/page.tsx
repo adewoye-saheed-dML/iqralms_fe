@@ -36,7 +36,7 @@ export default function RegisterPage() {
 
   React.useEffect(() => {
     if (user && !isLoading) {
-      router.push('/app');
+      router.push('/app/dashboard');
     }
   }, [user, isLoading, router]);
 
