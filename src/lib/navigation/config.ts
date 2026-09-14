@@ -1,4 +1,12 @@
-import { LayoutDashboard, Users, Calendar, GraduationCap, Settings, Wallet } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Users,
+  Calendar,
+  GraduationCap,
+  Settings,
+  Wallet,
+  BookOpen,
+} from 'lucide-react';
 
 // Based on the spec and schema
 export type UserRole = 'lead' | 'sub' | 'student' | 'parent';
@@ -31,6 +39,11 @@ export const navigationConfig: NavItem[] = [
     href: '/app/academy',
     icon: GraduationCap,
     allowedOrgRoles: ['owner', 'admin'],
+  },
+  {
+    label: 'Curriculum',
+    href: '/app/curriculum',
+    icon: BookOpen,
   },
   {
     label: 'Scheduling',
