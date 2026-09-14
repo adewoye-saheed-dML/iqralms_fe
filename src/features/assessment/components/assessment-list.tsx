@@ -68,7 +68,7 @@ export function AssessmentList({ type }: AssessmentListProps) {
               Score: {assessment.overall_score}
             </div>
             {assessment.teacher_summary && (
-              <p className="italic">"{assessment.teacher_summary}"</p>
+              <p className="italic">"{assessment.teacher_summary}"quot;{assessment.teacher_summary}"{assessment.teacher_summary}"quot;</p>
             )}
           </CardContent>
         </Card>

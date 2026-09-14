@@ -73,7 +73,7 @@ export function ReviewQueue() {
             <div className="text-muted-foreground">
               Score: {assessment.overall_score}
             </div>
-            <p className="italic">"{assessment.teacher_summary}"</p>
+            <p className="italic">"{assessment.teacher_summary}"quot;{assessment.teacher_summary}"{assessment.teacher_summary}"quot;</p>
             <div className="pt-2">
               <Button 
                 size="sm" 

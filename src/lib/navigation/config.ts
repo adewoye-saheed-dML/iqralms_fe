@@ -8,6 +8,7 @@ import {
   BookOpen,
   CheckSquare,
   TrendingUp,
+  CreditCard,
 } from 'lucide-react';
 
 // Based on the spec and schema
@@ -73,6 +74,11 @@ export const navigationConfig: NavItem[] = [
     href: '/app/finance',
     icon: Wallet,
     allowedOrgRoles: ['owner', 'admin'],
+  },
+  {
+    label: 'Pricing',
+    href: '/app/pricing',
+    icon: CreditCard,
   },
   {
     label: 'Settings',
