@@ -11,6 +11,7 @@ import {
   CreditCard,
   Banknote,
   Bell,
+  FileUp,
 } from 'lucide-react';
 
 // Based on the spec and schema
@@ -92,6 +93,12 @@ export const navigationConfig: NavItem[] = [
     label: 'Notifications',
     href: '/app/notifications',
     icon: Bell,
+  },
+  {
+    label: 'Imports',
+    href: '/app/imports',
+    icon: FileUp,
+    allowedOrgRoles: ['owner', 'admin', 'lead'],
   },
   {
     label: 'Settings',

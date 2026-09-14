@@ -26,10 +26,12 @@ async function fetchClient<T>(
 
   const token = getToken();
 
+  const isFormData = body instanceof FormData;
+
   const config: RequestInit = {
     ...customConfig,
     headers: {
-      'Content-Type': 'application/json',
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       Accept: 'application/json',
       ...(token ? { Authorization: `Token ${token}` } : {}),
       ...headers,
@@ -37,7 +39,7 @@ async function fetchClient<T>(
   };
 
   if (body) {
-    config.body = JSON.stringify(body);
+    config.body = isFormData ? (body as FormData) : JSON.stringify(body);
   }
 
   let response: Response;
