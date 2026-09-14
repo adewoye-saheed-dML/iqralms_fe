@@ -19,7 +19,6 @@ interface StaffDetailProps {
 }
 
 export function StaffDetail({ memberId }: StaffDetailProps) {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const { activeAcademy, activeRole } = useAcademy();
 

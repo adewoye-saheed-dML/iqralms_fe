@@ -42,5 +42,8 @@ Status: COMPLETE
 ## Phase 15 — Teacher & Staff Management
 Status: COMPLETE
 
-## Phase 16 — (Pending Specification)
+## Phase 16 — Student Management & Enrollment
+Status: COMPLETE (DEFERRED - BACKEND CONTRACT REQUIRED)
+
+## Phase 17 — (Pending Specification)
 Status: NOT STARTED

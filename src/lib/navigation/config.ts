@@ -38,10 +38,10 @@ export const navigationConfig: NavItem[] = [
     icon: Calendar,
   },
   {
-    label: 'Users',
-    href: '/app/users',
+    label: 'Students',
+    href: '/app/students',
     icon: Users,
-    allowedOrgRoles: ['owner', 'admin', 'staff'],
+    allowedOrgRoles: ['owner', 'admin', 'staff', 'teacher'],
   },
   {
     label: 'Finance',

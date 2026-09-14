@@ -21,8 +21,8 @@ export default function AddStaffPage() {
           </Link>
         </Button>
         <PageHeader
-          title="Add Member"
-          description="Add an existing user to your academy's staff or teaching team."
+          title="Add Staff Member"
+          description="Enter an existing user&apos;s ID to invite them to this academy."
         />
       </div>
 
@@ -30,7 +30,7 @@ export default function AddStaffPage() {
         <CardHeader>
           <CardTitle>Member Details</CardTitle>
           <CardDescription>
-            You must know the user's ID to add them. (Invitations are not yet supported in this
+            You must know the user&apos;s ID to add them. (Invitations are not yet supported in this
             phase).
           </CardDescription>
         </CardHeader>
