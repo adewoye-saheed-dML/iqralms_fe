@@ -1,7 +1,7 @@
 import { apiClient } from '@/lib/api/client';
 import type { components } from '@/lib/api/schema';
 
-export type AvailabilityBlock = components['schemas']['AvailabilityBlock'];
+export type AvailabilityBlock = components['schemas']['Availability'];
 export type BookingCreate = components['schemas']['BookingCreate'];
 export type Booking = components['schemas']['Booking'];
 export type CohortCreate = components['schemas']['CohortCreate'];
@@ -10,59 +10,95 @@ export type RouteRequest = components['schemas']['RouteRequest'];
 export type Routed = components['schemas']['Routed'];
 export type WaitlistEntry = components['schemas']['WaitlistEntry'];
 export type WaitlistPromote = components['schemas']['WaitlistPromote'];
-export type BookingCancel = components['schemas']['BookingCancel'];
 
 export const schedulingApi = {
-  getAvailability: (organizationId: number, teacherId: number) =>
-    apiClient.get<AvailabilityBlock[]>(
-      `/api/scheduling/organizations/${organizationId}/availability/`,
-      { params: { teacher_id: teacherId } }
-    ),
+  getAvailability: async (organizationId: number, teacherId: number) => {
+    const { data } = await apiClient.GET('/api/scheduling/organizations/{organization_pk}/availability/', {
+      params: { 
+        path: { organization_pk: organizationId },
+        query: { teacher_id: teacherId } 
+      },
+    });
+    return data as AvailabilityBlock[];
+  },
 
-  createBooking: (organizationId: number, data: BookingCreate) =>
-    apiClient.post<Booking>(`/api/scheduling/organizations/${organizationId}/bookings/`, {
-      body: data,
-    }),
+  createBooking: async (organizationId: number, body: BookingCreate) => {
+    const { data } = await apiClient.POST('/api/scheduling/organizations/{organization_pk}/bookings/', {
+      params: { path: { organization_pk: organizationId } },
+      body,
+    });
+    return data as Booking;
+  },
 
-  cancelBooking: (organizationId: number, bookingId: number, data: BookingCancel) =>
-    apiClient.post<Booking>(
-      `/api/scheduling/organizations/${organizationId}/bookings/${bookingId}/cancel/`,
-      { body: data }
-    ),
+  cancelBooking: async (organizationId: number, bookingId: number) => {
+    const { data } = await apiClient.POST('/api/scheduling/organizations/{organization_pk}/bookings/{id}/cancel/', {
+      params: { path: { organization_pk: organizationId, id: bookingId } },
+    });
+    return data as Booking;
+  },
 
-  getMyBookings: (organizationId: number) =>
-    apiClient.get<Booking[]>(`/api/scheduling/organizations/${organizationId}/bookings/mine/`),
+  getMyBookings: async (organizationId: number) => {
+    const { data } = await apiClient.GET('/api/scheduling/organizations/{organization_pk}/bookings/mine/', {
+      params: { path: { organization_pk: organizationId } },
+    });
+    return data as Booking[];
+  },
 
-  getTeachingBookings: (organizationId: number) =>
-    apiClient.get<Booking[]>(`/api/scheduling/organizations/${organizationId}/bookings/teaching/`),
+  getTeachingBookings: async (organizationId: number) => {
+    const { data } = await apiClient.GET('/api/scheduling/organizations/{organization_pk}/bookings/teaching/', {
+      params: { path: { organization_pk: organizationId } },
+    });
+    return data as Booking[];
+  },
 
-  createCohort: (organizationId: number, data: CohortCreate) =>
-    apiClient.post<Cohort>(`/api/scheduling/organizations/${organizationId}/cohorts/`, {
-      body: data,
-    }),
+  createCohort: async (organizationId: number, body: CohortCreate) => {
+    const { data } = await apiClient.POST('/api/scheduling/organizations/{organization_pk}/cohorts/', {
+      params: { path: { organization_pk: organizationId } },
+      body,
+    });
+    return data as Cohort;
+  },
 
-  getOpenCohorts: (organizationId: number, levelId: number) =>
-    apiClient.get<Cohort[]>(`/api/scheduling/organizations/${organizationId}/cohorts/open/`, {
-      params: { level_id: levelId },
-    }),
+  getOpenCohorts: async (organizationId: number, levelId: number) => {
+    const { data } = await apiClient.GET('/api/scheduling/organizations/{organization_pk}/cohorts/open/', {
+      params: { 
+        path: { organization_pk: organizationId },
+        query: { level_id: levelId }
+      },
+    });
+    return data as Cohort[];
+  },
 
-  routeBooking: (organizationId: number, data: RouteRequest) =>
-    apiClient.post<Routed>(`/api/scheduling/organizations/${organizationId}/route/`, {
-      body: data,
-    }),
+  routeBooking: async (organizationId: number, body: RouteRequest) => {
+    const { data } = await apiClient.POST('/api/scheduling/organizations/{organization_pk}/route/', {
+      params: { path: { organization_pk: organizationId } },
+      body,
+    });
+    return data as Routed;
+  },
 
-  getMyWaitlist: (organizationId: number) =>
-    apiClient.get<WaitlistEntry[]>(`/api/scheduling/organizations/${organizationId}/waitlist/mine/`),
+  getMyWaitlist: async (organizationId: number) => {
+    const { data } = await apiClient.GET('/api/scheduling/organizations/{organization_pk}/waitlist/mine/', {
+      params: { path: { organization_pk: organizationId } },
+    });
+    return data as WaitlistEntry[];
+  },
 
-  getTeacherWaitlist: (organizationId: number, teacherId: number) =>
-    apiClient.get<WaitlistEntry[]>(
-      `/api/scheduling/organizations/${organizationId}/waitlist/for-teacher/`,
-      { params: { teacher_id: teacherId } }
-    ),
+  getTeacherWaitlist: async (organizationId: number, teacherId: number) => {
+    const { data } = await apiClient.GET('/api/scheduling/organizations/{organization_pk}/waitlist/for-teacher/', {
+      params: { 
+        path: { organization_pk: organizationId },
+        query: { teacher_id: teacherId }
+      },
+    });
+    return data as WaitlistEntry[];
+  },
 
-  promoteWaitlist: (organizationId: number, waitlistId: number, data: WaitlistPromote) =>
-    apiClient.post<Booking>(
-      `/api/scheduling/organizations/${organizationId}/waitlist/${waitlistId}/promote/`,
-      { body: data }
-    ),
+  promoteWaitlist: async (organizationId: number, waitlistId: number, body: WaitlistPromote) => {
+    const { data } = await apiClient.POST('/api/scheduling/organizations/{organization_pk}/waitlist/{id}/promote/', {
+      params: { path: { organization_pk: organizationId, id: waitlistId } },
+      body,
+    });
+    return data as Booking;
+  },
 };

@@ -1,3 +1,4 @@
+import { pricingKeys } from '@/lib/api/query-keys';
 'use client';
 
 import * as React from 'react';
@@ -29,7 +30,7 @@ export function AgreementForm({ onSuccess }: AgreementFormProps) {
       return pricingApi.createAgreement(activeAcademy.id, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['academy', activeAcademy?.id, 'pricing'] });
+      queryClient.invalidateQueries({ queryKey: pricingKeys.all(activeAcademy?.id) });
       onSuccess();
     },
     onError: (err) => {

@@ -16,7 +16,7 @@ export default function AddStaffPage() {
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex items-center space-x-4">
         <Button variant="outline" size="icon" asChild>
-          <Link href="/app/staff">
+          <Link href="/app/teachers">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>

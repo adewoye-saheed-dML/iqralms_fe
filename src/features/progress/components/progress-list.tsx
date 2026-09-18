@@ -1,4 +1,5 @@
 'use client';
+import { progressKeys } from '@/lib/api/query-keys';
 
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -18,7 +19,7 @@ interface ProgressListProps {
 export function ProgressList({ type }: ProgressListProps) {
   const { activeAcademy } = useAcademy();
 
-  const queryKey = ['academy', activeAcademy?.id, 'progress', type];
+  const queryKey = progressKeys.list(activeAcademy?.id, type);
 
   const { data: records, isLoading, error, refetch } = useQuery({
     queryKey,

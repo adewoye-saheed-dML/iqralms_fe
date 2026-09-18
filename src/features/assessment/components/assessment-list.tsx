@@ -1,3 +1,4 @@
+import { assessmentKeys } from '@/lib/api/query-keys';
 'use client';
 
 import * as React from 'react';
@@ -19,7 +20,7 @@ interface AssessmentListProps {
 export function AssessmentList({ type }: AssessmentListProps) {
   const { activeAcademy } = useAcademy();
 
-  const queryKey = ['academy', activeAcademy?.id, 'assessment', type];
+  const queryKey = assessmentKeys.list(activeAcademy?.id, type);
 
   const { data: assessments, isLoading, error, refetch } = useQuery({
     queryKey,
@@ -27,7 +28,7 @@ export function AssessmentList({ type }: AssessmentListProps) {
       if (!activeAcademy?.id) throw new Error('No active academy');
       return type === 'family'
         ? assessmentApi.getMyAssessments(activeAcademy.id)
-        : assessmentApi.getTeacherAssessments(activeAcademy.id);
+        : assessmentApi.getMyAssessments(activeAcademy.id);
     },
     enabled: !!activeAcademy?.id,
   });

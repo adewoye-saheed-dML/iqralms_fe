@@ -8,19 +8,25 @@ export type Level = components['schemas']['Level'];
 export type ReasonEnum = components['schemas']['ReasonEnum'];
 
 export const pricingApi = {
-  getAgreements: (organizationId: number) =>
-    apiClient.get<PricingAgreement[]>(
-      `/api/pricing/organizations/${organizationId}/agreements/`
-    ),
+  getAgreements: async (organizationId: number) => {
+    const { data } = await apiClient.GET('/api/pricing/organizations/{organization_pk}/agreements/', {
+      params: { path: { organization_pk: organizationId } }
+    });
+    return data as PricingAgreement[];
+  },
 
-  createAgreement: (organizationId: number, data: PricingAgreementCreate) =>
-    apiClient.post<PricingAgreement>(
-      `/api/pricing/organizations/${organizationId}/agreements/`,
-      { body: data }
-    ),
+  createAgreement: async (organizationId: number, body: PricingAgreementCreate) => {
+    const { data } = await apiClient.POST('/api/pricing/organizations/{organization_pk}/agreements/', {
+      params: { path: { organization_pk: organizationId } },
+      body
+    });
+    return data as PricingAgreement;
+  },
 
-  getMyAgreements: (organizationId: number) =>
-    apiClient.get<MyPricingAgreement[]>(
-      `/api/pricing/organizations/${organizationId}/agreements/mine/`
-    ),
+  getMyAgreements: async (organizationId: number) => {
+    const { data } = await apiClient.GET('/api/pricing/organizations/{organization_pk}/agreements/mine/', {
+      params: { path: { organization_pk: organizationId } }
+    });
+    return data as MyPricingAgreement[];
+  },
 };

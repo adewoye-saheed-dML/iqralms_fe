@@ -1,3 +1,5 @@
+import { curriculumKeys } from '@/lib/api/query-keys';
+import { can } from '@/lib/permissions/capabilities';
 'use client';
 
 import * as React from 'react';
@@ -28,7 +30,7 @@ export function TrackDetail({ trackId }: TrackDetailProps) {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['academy', activeAcademy?.id, 'curriculum', 'track', trackId],
+    queryKey: curriculumKeys.trackDetail(activeAcademy?.id, trackId),
     queryFn: () => curriculumApi.getTrack(activeAcademy!.id, trackId),
     enabled: !!activeAcademy,
   });
@@ -67,7 +69,7 @@ export function TrackDetail({ trackId }: TrackDetailProps) {
 
   if (!track) return null;
 
-  const canManageCurriculum = activeRole === 'owner' || activeRole === 'admin';
+  const canManageCurriculum = can('manage_curriculum', { activeRole });
 
   return (
     <div className="space-y-6">

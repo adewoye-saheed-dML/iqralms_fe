@@ -1,3 +1,4 @@
+import { schedulingKeys } from '@/lib/api/query-keys';
 'use client';
 
 import * as React from 'react';
@@ -23,7 +24,7 @@ export function BookingList({ type }: BookingListProps) {
   const queryClient = useQueryClient();
   const [cancelError, setCancelError] = React.useState<string | null>(null);
 
-  const queryKey = ['academy', activeAcademy?.id, 'scheduling', 'bookings', type];
+  const queryKey = schedulingKeys.bookingsByType(activeAcademy?.id, type);
 
   const { data: bookings, isLoading, error, refetch } = useQuery({
     queryKey,
@@ -39,7 +40,7 @@ export function BookingList({ type }: BookingListProps) {
   const cancelMutation = useMutation({
     mutationFn: (bookingId: number) => {
       if (!activeAcademy?.id) throw new Error('No active academy');
-      return schedulingApi.cancelBooking(activeAcademy.id, bookingId, { reason: 'User cancelled' });
+      return schedulingApi.cancelBooking(activeAcademy.id, bookingId);
     },
     onSuccess: () => {
       setCancelError(null);
@@ -54,7 +55,7 @@ export function BookingList({ type }: BookingListProps) {
     }
   });
 
-  if (isLoading) return <LoadingState text="Loading bookings..." />;
+  if (isLoading) return <LoadingState />;
   if (error) {
     if (error instanceof ApiError && error.status === 403) {
       return (
@@ -97,7 +98,7 @@ export function BookingList({ type }: BookingListProps) {
           <Card key={booking.id}>
             <CardHeader className="pb-2">
               <div className="flex justify-between items-start">
-                <CardTitle className="text-lg">{booking.level_details?.name || 'Session'}</CardTitle>
+                <CardTitle className="text-lg">{booking.level?.name || 'Session'}</CardTitle>
                 <Badge variant={booking.status === 'cancelled' ? 'destructive' : booking.status === 'completed' ? 'secondary' : 'default'}>
                   {booking.status}
                 </Badge>
@@ -121,14 +122,14 @@ export function BookingList({ type }: BookingListProps) {
                 <User className="mr-2 h-4 w-4" />
                 <span>
                   {type === 'mine' 
-                    ? `Teacher: ${booking.teacher_details?.user.first_name || booking.teacher_details?.user.username || 'Unassigned'}`
-                    : `Student: ${booking.student_details?.user.first_name || booking.student_details?.user.username || 'Unknown'}`}
+                    ? `Teacher: ${booking.teacher?.first_name || booking.teacher?.username || 'Unassigned'}`
+                    : `Student: ${booking.student?.first_name || booking.student?.username || 'Unknown'}`}
                 </span>
               </div>
 
-              {booking.join_url && booking.status !== 'cancelled' && (
+              {booking.video_join_url && booking.status !== 'cancelled' && (
                 <div className="pt-2">
-                  <a href={booking.join_url} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                  <a href={booking.video_join_url} target="_blank" rel="noreferrer" className="text-primary hover:underline">
                     Join Session
                   </a>
                 </div>

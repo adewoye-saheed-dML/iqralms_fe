@@ -1,63 +1,72 @@
 import { apiClient } from '@/lib/api/client';
 import type { components } from '@/lib/api/schema';
 
-export type Track = components['schemas']['Track'];
+export type Track = components['schemas']['TrackBrief'];
 export type TrackWrite = components['schemas']['TrackWrite'];
-export type PatchedTrackWrite = components['schemas']['PatchedTrackWrite'];
+export type PatchedTrackUpdate = components['schemas']['PatchedTrackUpdate'];
 
 export type Level = components['schemas']['Level'];
 export type LevelCreate = components['schemas']['LevelCreate'];
 export type PatchedLevelUpdate = components['schemas']['PatchedLevelUpdate'];
 
 export const curriculumApi = {
-  // --- Tracks ---
-
-  getTracks: (organizationId: number) => {
-    return apiClient.get<Track[]>(`/api/curriculum/organizations/${organizationId}/tracks/`);
-  },
-
-  getTrack: (organizationId: number, trackId: number) => {
-    return apiClient.get<Track>(
-      `/api/curriculum/organizations/${organizationId}/tracks/${trackId}/`
-    );
-  },
-
-  createTrack: (organizationId: number, data: TrackWrite) => {
-    return apiClient.post<Track>(`/api/curriculum/organizations/${organizationId}/tracks/`, {
-      body: data,
+  getTracks: async (organizationId: number) => {
+    const { data } = await apiClient.GET('/api/curriculum/organizations/{organization_pk}/tracks/', {
+      params: { path: { organization_pk: organizationId } },
     });
+    return data as Track[];
   },
 
-  updateTrack: (organizationId: number, trackId: number, data: PatchedTrackWrite) => {
-    return apiClient.patch<Track>(
-      `/api/curriculum/organizations/${organizationId}/tracks/${trackId}/`,
-      {
-        body: data,
-      }
-    );
-  },
-
-  // --- Levels ---
-  // The backend uses a flat level list but accepts `?track=<id>` to narrow it.
-
-  getLevels: (organizationId: number, trackId?: number) => {
-    return apiClient.get<Level[]>(`/api/curriculum/organizations/${organizationId}/levels/`, {
-      params: trackId ? { track: trackId } : undefined,
+  getTrack: async (organizationId: number, trackId: number) => {
+    const { data } = await apiClient.GET('/api/curriculum/organizations/{organization_pk}/tracks/{id}/', {
+      params: { path: { organization_pk: organizationId, id: trackId } },
     });
+    return data as Track;
   },
 
-  createLevel: (organizationId: number, data: LevelCreate) => {
-    return apiClient.post<Level>(`/api/curriculum/organizations/${organizationId}/levels/`, {
-      body: data,
+  createTrack: async (organizationId: number, body: TrackWrite) => {
+    const { data } = await apiClient.POST('/api/curriculum/organizations/{organization_pk}/tracks/', {
+      params: { path: { organization_pk: organizationId } },
+      body,
     });
+    return data as Track;
   },
 
-  updateLevel: (organizationId: number, levelId: number, data: PatchedLevelUpdate) => {
-    return apiClient.patch<Level>(
-      `/api/curriculum/organizations/${organizationId}/levels/${levelId}/`,
-      {
-        body: data,
-      }
-    );
+  updateTrack: async (organizationId: number, trackId: number, body: PatchedTrackUpdate) => {
+    const { data } = await apiClient.PATCH('/api/curriculum/organizations/{organization_pk}/tracks/{id}/', {
+      params: { path: { organization_pk: organizationId, id: trackId } },
+      body,
+    });
+    return data as Track;
+  },
+
+  getLevels: async (organizationId: number, trackId: number) => {
+    const { data } = await apiClient.GET('/api/curriculum/organizations/{organization_pk}/levels/', {
+      params: { path: { organization_pk: organizationId }, query: { track: trackId } },
+    });
+    return data as Level[];
+  },
+
+  getLevel: async (organizationId: number, levelId: number) => {
+    const { data } = await apiClient.GET('/api/curriculum/organizations/{organization_pk}/levels/{id}/', {
+      params: { path: { organization_pk: organizationId, id: levelId } },
+    });
+    return data as Level;
+  },
+
+  createLevel: async (organizationId: number, body: LevelCreate) => {
+    const { data } = await apiClient.POST('/api/curriculum/organizations/{organization_pk}/levels/', {
+      params: { path: { organization_pk: organizationId } },
+      body,
+    });
+    return data as Level;
+  },
+
+  updateLevel: async (organizationId: number, levelId: number, body: PatchedLevelUpdate) => {
+    const { data } = await apiClient.PATCH('/api/curriculum/organizations/{organization_pk}/levels/{id}/', {
+      params: { path: { organization_pk: organizationId, id: levelId } },
+      body,
+    });
+    return data as Level;
   },
 };

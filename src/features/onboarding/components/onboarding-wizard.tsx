@@ -5,26 +5,66 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useAcademy } from '@/lib/academy/academy-provider';
 import { onboardingApi } from '../api/onboarding';
+import { staffApi } from '@/features/staff/api/staff';
+import { studentsApi } from '@/features/students/api/students';
+import { curriculumKeys, staffKeys, studentKeys } from '@/lib/api/query-keys';
+import { can } from '@/lib/permissions/capabilities';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { CheckCircle2, Circle, Clock } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/loading';
+import { ErrorState } from '@/components/ui/error-state';
 
 export function OnboardingWizard() {
   const { activeAcademy, activeRole } = useAcademy();
   const router = useRouter();
 
-  const { data: tracks = [] } = useQuery({
-    queryKey: ['academy', activeAcademy?.id, 'tracks'],
+  const { data: tracks = [], isLoading: isLoadingTracks, error: tracksError } = useQuery({
+    queryKey: curriculumKeys.tracks(activeAcademy?.id),
     queryFn: () => onboardingApi.getTracks(activeAcademy!.id),
     enabled: !!activeAcademy,
   });
 
-  // If no academy, this shouldn't be rendered, but safe check
+  const { data: staff = [], isLoading: isLoadingStaff, error: staffError } = useQuery({
+    queryKey: staffKeys.all(activeAcademy?.id),
+    queryFn: () => staffApi.getMemberships(activeAcademy!.id),
+    enabled: !!activeAcademy,
+  });
+
+  const { data: students = [], isLoading: isLoadingStudents, error: studentsError } = useQuery({
+    queryKey: studentKeys.all(activeAcademy?.id),
+    queryFn: () => studentsApi.getStudents(activeAcademy!.id),
+    enabled: !!activeAcademy,
+  });
+
   if (!activeAcademy) return null;
 
+  if (isLoadingTracks || isLoadingStaff || isLoadingStudents) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center p-8">
+        <Spinner className="h-8 w-8" />
+      </div>
+    );
+  }
+
+  if (tracksError || staffError || studentsError) {
+    return (
+      <div className="mx-auto max-w-4xl p-8">
+        <ErrorState title="Failed to load onboarding status" message="An error occurred while fetching your setup progress." />
+      </div>
+    );
+  }
+
+  // Local progress model based on supported data
   const isCurriculumSetup = tracks.length > 0;
-  const isAcademyReady = isCurriculumSetup; // Foundation ready for Phase 14
+  // A new academy has at least 1 staff (the creator). So we check for > 1 or specific roles if needed.
+  // We'll just assume > 1 means they invited someone.
+  const isStaffSetup = staff.length > 1;
+  const isStudentsSetup = students.length > 0;
+
+  // We define readiness as having setup the foundation features (curriculum, staff, students)
+  const isAcademyReady = isCurriculumSetup && isStaffSetup && isStudentsSetup;
 
   const steps = [
     {
@@ -32,26 +72,43 @@ export function OnboardingWizard() {
       title: 'Academy Details',
       description: 'Name, URL slug, and timezone configured.',
       status: 'complete' as const,
+      action: null,
     },
     {
       id: 'curriculum',
       title: 'Curriculum',
       description: 'Define tracks and subjects taught at your academy.',
       status: isCurriculumSetup ? ('complete' as const) : ('current' as const),
+      action: {
+        label: 'Add First Track',
+        onClick: () => router.push('/app/onboarding/curriculum'),
+        disabled: !can('manage_curriculum', { activeRole }),
+        disabledReason: 'Owner or admin permissions required.',
+      },
     },
     {
       id: 'teachers',
       title: 'Teachers & Staff',
       description: 'Invite teachers and staff members.',
-      status: 'pending' as const,
-      isFuturePhase: true,
+      status: !isCurriculumSetup ? ('pending' as const) : isStaffSetup ? ('complete' as const) : ('current' as const),
+      action: {
+        label: 'Invite Staff',
+        onClick: () => router.push('/app/teachers/add'),
+        disabled: !can('manage_staff', { activeRole }),
+        disabledReason: 'Owner or admin permissions required.',
+      },
     },
     {
       id: 'students',
       title: 'Students',
       description: 'Import or invite students.',
-      status: 'pending' as const,
-      isFuturePhase: true,
+      status: !isCurriculumSetup || !isStaffSetup ? ('pending' as const) : isStudentsSetup ? ('complete' as const) : ('current' as const),
+      action: {
+        label: 'Add Students',
+        onClick: () => router.push('/app/students/add'),
+        disabled: !can('manage_students', { activeRole }),
+        disabledReason: 'Owner, admin, or staff permissions required.',
+      },
     },
     {
       id: 'class_config',
@@ -59,6 +116,7 @@ export function OnboardingWizard() {
       description: 'Set up class durations and schedules.',
       status: 'pending' as const,
       isFuturePhase: true,
+      action: null,
     },
     {
       id: 'notifications',
@@ -66,8 +124,11 @@ export function OnboardingWizard() {
       description: 'Configure automated emails and alerts.',
       status: 'pending' as const,
       isFuturePhase: true,
+      action: null,
     },
   ];
+
+  const currentStep = steps.find(s => s.status === 'current');
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -82,7 +143,7 @@ export function OnboardingWizard() {
             <CardHeader>
               <CardTitle className="text-lg">Setup Progress</CardTitle>
               <CardDescription>
-                {isAcademyReady ? 'Foundation complete' : '1 / 2 foundation steps'}
+                {isAcademyReady ? 'Foundation complete' : 'Complete setup to launch'}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -116,7 +177,7 @@ export function OnboardingWizard() {
                           {step.isFuturePhase && (
                             <span className="ml-2 inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-800 dark:text-gray-300">
                               <Clock className="mr-1 h-3 w-3" />
-                              Coming soon
+                              Open
                             </span>
                           )}
                         </span>
@@ -131,26 +192,27 @@ export function OnboardingWizard() {
         </div>
 
         <div className="space-y-6 md:col-span-2">
-          {!isCurriculumSetup ? (
+          {!isAcademyReady && currentStep ? (
             <Card>
               <CardHeader>
-                <CardTitle>Curriculum Setup</CardTitle>
-                <CardDescription>Start by adding your first subject or track.</CardDescription>
+                <CardTitle>{currentStep.title}</CardTitle>
+                <CardDescription>{currentStep.description}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-col items-center justify-center space-y-4 py-8 text-center">
-                  <div className="text-muted-foreground max-w-sm">
-                    A track is a subject area your academy teaches, like Quran Reading,
-                    Memorization, or Arabic.
-                  </div>
-                  {activeRole === 'owner' || activeRole === 'admin' ? (
-                    <Button onClick={() => router.push('/app/onboarding/curriculum')}>
-                      Add First Track
-                    </Button>
-                  ) : (
-                    <div className="text-sm font-medium text-amber-600">
-                      You need owner or admin permissions to set up the curriculum.
-                    </div>
+                  {currentStep.action && (
+                    <>
+                      {currentStep.action.disabled ? (
+                        <div className="text-sm font-medium text-amber-600">
+                          {currentStep.action.disabledReason}
+                        </div>
+                      ) : (
+                        <Button onClick={currentStep.action.onClick} className="gap-2">
+                          {currentStep.action.label}
+                          <ArrowRight className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </>
                   )}
                 </div>
               </CardContent>
@@ -164,9 +226,8 @@ export function OnboardingWizard() {
               <CardContent>
                 <div className="space-y-4">
                   <p className="text-muted-foreground text-sm">
-                    You have successfully created the academy and defined its curriculum tracks.
-                    Additional setup features like teacher invitations and class scheduling will be
-                    available soon.
+                    You have successfully defined the curriculum, invited staff, and added students.
+                    The academy is now operational!
                   </p>
                   <Button onClick={() => router.push('/app/dashboard')}>
                     Continue to Dashboard

@@ -1,3 +1,4 @@
+import { payoutsKeys } from '@/lib/api/query-keys';
 'use client';
 import type { SkippedBooking } from "../api/payouts";
 
@@ -33,7 +34,7 @@ export function GeneratePayoutsForm() {
       });
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['academy', activeAcademy?.id, 'payouts'] });
+      queryClient.invalidateQueries({ queryKey: payoutsKeys.all(activeAcademy?.id) });
       setResult(data);
     },
     onError: (err) => {

@@ -1,4 +1,6 @@
 'use client';
+import { studentKeys } from '@/lib/api/query-keys';
+'use client';
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
@@ -32,7 +34,7 @@ export function AddStudentForm() {
       return studentsApi.addStudent(activeAcademy.id, { user: id });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['academy', activeAcademy?.id, 'students'] });
+      queryClient.invalidateQueries({ queryKey: studentKeys.all(activeAcademy?.id) });
       router.push('/app/students');
     },
   });

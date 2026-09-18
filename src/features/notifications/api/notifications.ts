@@ -7,29 +7,37 @@ export type EventTypeEnum = components['schemas']['EventTypeEnum'];
 export type ChannelEnum = components['schemas']['ChannelEnum'];
 
 export const notificationsApi = {
-  getMyNotifications: (organizationId: number, unread?: boolean) =>
-    apiClient.get<Notification[]>(
-      `/api/notifications/organizations/${organizationId}/mine/`,
-      { params: unread !== undefined ? { unread: unread.toString() } : undefined }
-    ),
+  getMyNotifications: async (organizationId: number) => {
+    const { data } = await apiClient.GET('/api/notifications/organizations/{organization_pk}/mine/', {
+      params: { path: { organization_pk: organizationId } },
+    });
+    return data as Notification[];
+  },
 
-  getNotificationDetail: (organizationId: number, id: number) =>
-    apiClient.get<Notification>(
-      `/api/notifications/organizations/${organizationId}/${id}/`
-    ),
+  markAsRead: async (organizationId: number, notificationId: number) => {
+    const { data } = await apiClient.POST('/api/notifications/organizations/{organization_pk}/{id}/read/', {
+      params: { path: { organization_pk: organizationId, id: notificationId } },
+    });
+    return data as Notification;
+  },
 
-  markAsRead: (organizationId: number, id: number) =>
-    apiClient.post<Notification>(
-      `/api/notifications/organizations/${organizationId}/${id}/read/`
-    ),
+  getAdminNotifications: async (organizationId: number) => {
+    const { data } = await apiClient.GET('/api/notifications/organizations/{organization_pk}/admin/', {
+      params: { path: { organization_pk: organizationId } },
+    });
+    return data as Notification[];
+  },
 
-  getAdminNotifications: (organizationId: number) =>
-    apiClient.get<Notification[]>(
-      `/api/notifications/organizations/${organizationId}/admin/`
-    ),
-
-  getDeliveries: (organizationId: number) =>
-    apiClient.get<NotificationDelivery[]>(
-      `/api/notifications/organizations/${organizationId}/deliveries/`
-    ),
+  getDeliveries: async (organizationId: number, eventType?: EventTypeEnum, channel?: ChannelEnum) => {
+    const { data } = await apiClient.GET('/api/notifications/organizations/{organization_pk}/deliveries/', {
+      params: { 
+        path: { organization_pk: organizationId },
+        query: { 
+          ...(eventType ? { event_type: eventType } : {}),
+          ...(channel ? { channel } : {})
+        }
+      },
+    });
+    return data as NotificationDelivery[];
+  },
 };

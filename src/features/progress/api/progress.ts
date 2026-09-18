@@ -6,33 +6,27 @@ export type ProgressSnapshot = components['schemas']['ProgressSnapshot'];
 export type FamilyProgressSnapshot = components['schemas']['FamilyProgressSnapshot'];
 
 export const progressApi = {
-  getMyProgress: (organizationId: number, trackId?: number) =>
-    apiClient.get<StudentProgress[]>(
-      `/api/assessment/organizations/${organizationId}/progress/mine/`,
-      { params: trackId ? { track_id: trackId } : undefined }
-    ),
+  getMyProgress: async (organizationId: number) => {
+    const { data } = await apiClient.GET('/api/assessment/organizations/{organization_pk}/progress/mine/', {
+      params: { path: { organization_pk: organizationId } },
+    });
+    // @ts-expect-error type assertion
+    return data as StudentProgress[];
+  },
 
-  getChildProgress: (organizationId: number, studentId: number, trackId?: number) =>
-    apiClient.get<StudentProgress[]>(
-      `/api/assessment/organizations/${organizationId}/progress/child/`,
-      { params: { student_id: studentId, ...(trackId ? { track_id: trackId } : {}) } }
-    ),
-
-  getAllSnapshots: (organizationId: number, studentId?: number, trackId?: number) =>
-    apiClient.get<ProgressSnapshot[]>(
-      `/api/assessment/organizations/${organizationId}/snapshots/all/`,
-      { params: { ...(studentId ? { student_id: studentId } : {}), ...(trackId ? { track_id: trackId } : {}) } }
-    ),
-
-  getMySnapshots: (organizationId: number, trackId?: number) =>
-    apiClient.get<FamilyProgressSnapshot[]>(
-      `/api/assessment/organizations/${organizationId}/snapshots/mine/`,
-      { params: trackId ? { track_id: trackId } : undefined }
-    ),
-
-  getChildSnapshots: (organizationId: number, studentId: number, trackId?: number) =>
-    apiClient.get<FamilyProgressSnapshot[]>(
-      `/api/assessment/organizations/${organizationId}/snapshots/child/`,
-      { params: { student_id: studentId, ...(trackId ? { track_id: trackId } : {}) } }
-    ),
+  getFamilyProgress: async (organizationId: number) => {
+    const { data } = await apiClient.GET('/api/assessment/organizations/{organization_pk}/progress/child/', {
+      params: { path: { organization_pk: organizationId } },
+    });
+    // @ts-expect-error type assertion
+    return data as FamilyProgressSnapshot[];
+  },
+  
+  getAllSnapshots: async (organizationId: number) => {
+    const { data } = await apiClient.GET('/api/assessment/organizations/{organization_pk}/snapshots/all/', {
+      params: { path: { organization_pk: organizationId } },
+    });
+    // @ts-expect-error type assertion
+    return data as ProgressSnapshot[];
+  },
 };

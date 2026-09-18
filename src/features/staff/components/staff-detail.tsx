@@ -1,3 +1,5 @@
+import { staffKeys } from '@/lib/api/query-keys';
+import { can } from '@/lib/permissions/capabilities';
 'use client';
 
 import * as React from 'react';
@@ -29,7 +31,7 @@ export function StaffDetail({ memberId }: StaffDetailProps) {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['academy', activeAcademy?.id, 'staff', memberId],
+    queryKey: staffKeys.detail(activeAcademy?.id, memberId),
     queryFn: () => staffApi.getMembership(activeAcademy!.id, memberId),
     enabled: !!activeAcademy,
   });
@@ -40,7 +42,7 @@ export function StaffDetail({ memberId }: StaffDetailProps) {
       return staffApi.updateMember(activeAcademy.id, memberId, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['academy', activeAcademy?.id, 'staff'] });
+      queryClient.invalidateQueries({ queryKey: staffKeys.all(activeAcademy?.id) });
     },
   });
 
@@ -55,10 +57,10 @@ export function StaffDetail({ memberId }: StaffDetailProps) {
   }
 
   if (isError || !member) {
-    return <ErrorState title="Member Not Found" message={error?.message} onRetry={refetch} />;
+    return <ErrorState title="Member Not Found" message={error?.message} />;
   }
 
-  const canManage = activeRole === 'owner' || activeRole === 'admin';
+  const canManage = can('manage_staff', { activeRole });
   const isSelf = member.role === 'owner'; // You can't demote owner. Or actually, if member is owner, owner is not assignable.
 
   const handleRoleChange = (newRole: AssignableRole) => {
@@ -78,7 +80,7 @@ export function StaffDetail({ memberId }: StaffDetailProps) {
     <div className="space-y-6">
       <div className="flex items-center space-x-4">
         <Button variant="outline" size="icon" asChild>
-          <Link href="/app/staff">
+          <Link href="/app/teachers">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
@@ -171,7 +173,7 @@ export function StaffDetail({ memberId }: StaffDetailProps) {
             <div className="space-y-2">
               <div className="text-muted-foreground text-sm font-medium">Current Status</div>
               <div className="flex items-center justify-between">
-                <Badge variant={member.status === 'active' ? 'success' : 'destructive'}>
+                <Badge variant={member.status === 'active' ? 'default' : 'destructive'}>
                   {member.status_display}
                 </Badge>
                 {canManage && !isSelf && (

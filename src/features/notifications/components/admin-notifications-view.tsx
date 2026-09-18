@@ -1,3 +1,4 @@
+import { notificationKeys } from '@/lib/api/query-keys';
 'use client';
 
 import * as React from 'react';
@@ -15,7 +16,7 @@ import { ApiError } from '@/lib/api/errors';
 export function AdminNotificationsView() {
   const { activeAcademy } = useAcademy();
 
-  const queryKey = ['academy', activeAcademy?.id, 'notifications', 'admin'];
+  const queryKey = notificationKeys.admin(activeAcademy?.id);
 
   const { data: notifications, isLoading, error, refetch } = useQuery({
     queryKey,

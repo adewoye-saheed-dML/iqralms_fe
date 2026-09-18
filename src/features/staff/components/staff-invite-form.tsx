@@ -1,4 +1,6 @@
 'use client';
+import { staffKeys } from '@/lib/api/query-keys';
+'use client';
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -27,8 +29,8 @@ export function StaffInviteForm() {
       return staffApi.addMember(activeAcademy.id, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['academy', activeAcademy?.id, 'staff'] });
-      router.push('/app/staff');
+      queryClient.invalidateQueries({ queryKey: staffKeys.all(activeAcademy?.id) });
+      router.push('/app/teachers');
     },
   });
 

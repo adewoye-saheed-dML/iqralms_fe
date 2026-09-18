@@ -1,4 +1,5 @@
 'use client';
+import { studentKeys } from '@/lib/api/query-keys';
 
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -16,7 +17,7 @@ export function StudentDirectory() {
   const { activeAcademy } = useAcademy();
 
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['academy', activeAcademy?.id, 'students'],
+    queryKey: studentKeys.all(activeAcademy?.id),
     queryFn: () => studentsApi.getStudents(activeAcademy!.id),
     enabled: !!activeAcademy,
   });
@@ -38,7 +39,7 @@ export function StudentDirectory() {
       <ErrorState
         title="Failed to load students"
         message={error instanceof Error ? error.message : 'An unknown error occurred.'}
-        onRetry={refetch}
+       
       />
     );
   }
@@ -78,7 +79,7 @@ export function StudentDirectory() {
         <table className="w-full text-sm">
           <thead className="bg-muted/50 border-b">
             <tr>
-              <th className="p-4 text-left font-medium">User ID</th>
+              
               <th className="p-4 text-left font-medium">Username</th>
               <th className="p-4 text-left font-medium">Status</th>
               <th className="p-4 text-right font-medium">Actions</th>
@@ -90,7 +91,7 @@ export function StudentDirectory() {
                 key={student.id}
                 className="hover:bg-muted/50 border-b transition-colors last:border-0"
               >
-                <td className="p-4">{student.user}</td>
+                
                 <td className="p-4">{student.username || 'Unknown'}</td>
                 <td className="p-4">
                   <Badge variant={student.status === 'active' ? 'default' : 'secondary'}>

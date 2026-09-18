@@ -3,7 +3,6 @@
 import * as React from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth/auth-provider';
-import { apiClient } from '@/lib/api/client';
 import { ApiError } from '@/lib/api/errors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +14,7 @@ import { setToken } from '@/lib/auth/token';
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, isLoading, refreshAuth } = useAuth();
+  const { user, isLoading, login } = useAuth();
 
   const [username, setUsername] = React.useState('');
   const [password, setPassword] = React.useState('');
@@ -42,19 +41,14 @@ function LoginForm() {
     setIsSubmitting(true);
 
     try {
-      const { key } = await apiClient.post<{ key: string }>('/api/auth/login/', {
-        body: { username, password },
-      });
-      if (key) {
-        setToken(key);
-      }
-      await refreshAuth();
-    } catch (err) {
+      await login({ username, password });
+    } catch (err: unknown) {
       if (err instanceof ApiError) {
-        setError(err.message || 'Invalid credentials.');
+        setError(err.message || 'Invalid credentials');
       } else {
-        setError('A network error occurred. Please try again.');
+        setError('An unexpected error occurred. Please try again.');
       }
+    } finally {
       setIsSubmitting(false);
     }
   };

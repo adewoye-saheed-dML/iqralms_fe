@@ -1,0 +1,27 @@
+--- src/features/curriculum/api/curriculum.ts
++++ src/features/curriculum/api/curriculum.ts
+@@ -39,12 +39,6 @@
+     return data as Track;
+   },
+ 
+-  deleteTrack: async (organizationId: number, trackId: number) => {
+-    await apiClient.DELETE('/api/curriculum/organizations/{organization_pk}/tracks/{id}/', {
+-      params: { path: { organization_pk: organizationId, id: trackId } },
+-    });
+-  },
+-
+   getLevels: async (organizationId: number, trackId: number) => {
+     const { data } = await apiClient.GET('/api/curriculum/organizations/{organization_pk}/levels/', {
+       params: { path: { organization_pk: organizationId }, query: { track: trackId } },
+@@ -70,11 +64,5 @@
+       body,
+     });
+     return data as Level;
+-  },
+-
+-  deleteLevel: async (organizationId: number, levelId: number) => {
+-    await apiClient.DELETE('/api/curriculum/organizations/{organization_pk}/levels/{id}/', {
+-      params: { path: { organization_pk: organizationId, id: levelId } },
+-    });
+   },
+ };

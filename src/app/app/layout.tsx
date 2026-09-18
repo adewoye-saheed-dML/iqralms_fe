@@ -1,4 +1,6 @@
 'use client';
+import { navigationConfig } from '@/lib/navigation/config';
+import { can } from '@/lib/permissions/capabilities';
 
 import * as React from 'react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -17,6 +19,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const {
     academies,
     activeAcademy,
+    activeRole,
     isLoading: isAcademyLoading,
     error: academyError,
   } = useAcademy();
@@ -57,6 +60,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <Button onClick={() => router.push('/app/academy/create')}>Create Academy</Button>
           }
         />
+      </div>
+    );
+  }
+
+  // Check if current route is forbidden
+  const currentNavItem = navigationConfig.find(item => pathname === item.href || pathname.startsWith(`${item.href}/`));
+  const isForbidden = currentNavItem?.requiredCapability && !can(currentNavItem.requiredCapability, { userRole: user?.role, activeRole });
+
+  if (isForbidden && !isAcademyCreateRoute) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <ErrorState title="Access Denied" message="You do not have permission to view this page." />
       </div>
     );
   }

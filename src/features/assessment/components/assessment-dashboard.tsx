@@ -6,12 +6,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AssessmentList } from './assessment-list';
 import { ReviewQueue } from './review-queue';
 
+import { useAuth } from '@/lib/auth/auth-provider';
+
+import { can } from '@/lib/permissions/capabilities';
+
 export function AssessmentDashboard() {
   const { activeRole } = useAcademy();
+  const { user } = useAuth();
 
-  const isStudentOrParent = activeRole && ['student', 'parent'].includes(activeRole);
-  const isTeacher = activeRole && ['teacher', 'sub', 'lead'].includes(activeRole);
-  const isLeadOrAdmin = activeRole && ['lead', 'admin', 'owner'].includes(activeRole);
+  const isStudentOrParent = can('view_own_assessments', { userRole: user?.role });
+  const isTeacher = can('manage_assessments', { userRole: user?.role, activeRole });
+  const isLeadOrAdmin = can('manage_academy', { activeRole });
 
   const defaultTab = isStudentOrParent ? 'my-assessments' : (isLeadOrAdmin ? 'review-queue' : 'my-submissions');
 

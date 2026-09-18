@@ -1,3 +1,5 @@
+import { staffKeys } from '@/lib/api/query-keys';
+import { can } from '@/lib/permissions/capabilities';
 'use client';
 
 import * as React from 'react';
@@ -14,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Search, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 
-export function StaffDirectory() {
+export function StaffDirectory({ showOnlyAdmin }: { showOnlyAdmin?: boolean }) {
   const { activeAcademy, activeRole } = useAcademy();
   const [search, setSearch] = React.useState('');
 
@@ -25,7 +27,7 @@ export function StaffDirectory() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['academy', activeAcademy?.id, 'staff'],
+    queryKey: staffKeys.all(activeAcademy?.id),
     queryFn: () => staffApi.getMemberships(activeAcademy!.id),
     enabled: !!activeAcademy,
   });
@@ -44,13 +46,13 @@ export function StaffDirectory() {
 
   if (isError) {
     return (
-      <ErrorState title="Failed to load directory" message={error?.message} onRetry={refetch} />
+      <ErrorState title="Failed to load directory" message={error?.message} />
     );
   }
 
-  const canManage = activeRole === 'owner' || activeRole === 'admin';
+  const canManage = can('manage_staff', { activeRole });
 
-  const filtered = (memberships || []).filter((m) =>
+  const filtered = (memberships || []).filter((m) => (!showOnlyAdmin || m.role !== "teacher") && 
     m.username.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -68,7 +70,7 @@ export function StaffDirectory() {
         </div>
         {canManage && (
           <Button asChild>
-            <Link href="/app/staff/add">
+            <Link href="/app/teachers/add">
               <UserPlus className="mr-2 h-4 w-4" />
               Add Member
             </Link>
@@ -91,7 +93,7 @@ export function StaffDirectory() {
           {filtered.map((member) => (
             <Link
               key={member.id}
-              href={`/app/staff/${member.id}`}
+              href={`/app/teachers/${member.id}`}
               className="hover:bg-muted/50 block p-4 transition-colors"
             >
               <div className="grid gap-4 sm:grid-cols-4 sm:items-center">
@@ -107,7 +109,7 @@ export function StaffDirectory() {
                   </Badge>
                 </div>
                 <div>
-                  <Badge variant={member.status === 'active' ? 'success' : 'destructive'}>
+                  <Badge variant={member.status === 'active' ? 'default' : 'destructive'}>
                     {member.status_display}
                   </Badge>
                 </div>

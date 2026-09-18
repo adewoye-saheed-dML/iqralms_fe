@@ -6,12 +6,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MyNotificationsView } from './my-notifications-view';
 import { AdminNotificationsView } from './admin-notifications-view';
 import { AdminDeliveriesView } from './admin-deliveries-view';
+import { can } from '@/lib/permissions/capabilities';
 
 export function NotificationsDashboard() {
   const { activeRole } = useAcademy();
 
-  // Any authenticated member should see their own notifications
-  const canManageAcademyNotifications = activeRole && ['lead', 'admin', 'owner'].includes(activeRole);
+  const canManageAcademyNotifications = can('manage_notifications', { activeRole });
   const defaultTab = canManageAcademyNotifications ? 'admin-history' : 'my-notifications';
 
   return (

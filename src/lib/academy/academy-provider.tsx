@@ -45,7 +45,10 @@ export function AcademyProvider({ children }: { children: React.ReactNode }) {
     refetch,
   } = useQuery<MyOrganizationMembership[], Error>({
     queryKey: ['organizations', 'mine'],
-    queryFn: () => apiClient.get<MyOrganizationMembership[]>('/api/organizations/mine/'),
+    queryFn: async () => {
+      const { data } = await apiClient.GET('/api/organizations/mine/');
+      return data as MyOrganizationMembership[];
+    },
     enabled: !!user,
   });
 
@@ -57,7 +60,6 @@ export function AcademyProvider({ children }: { children: React.ReactNode }) {
     ) {
       return storedAcademyId;
     }
-    // Auto-select single academy or default to the first one
     return memberships[0].organization.id;
   }, [memberships, storedAcademyId]);
 
@@ -67,14 +69,9 @@ export function AcademyProvider({ children }: { children: React.ReactNode }) {
       if (typeof window !== 'undefined') {
         localStorage.setItem(ACADEMY_STORAGE_KEY, String(id));
       }
-
-      // Safety measure: invalidate queries for the previous academy to avoid stale data
-      // though the explicit query-key design should naturally prevent cross-academy leakage.
-      // A clean reset ensures no leftover background refetches for the old tenant.
-      queryClient.resetQueries({
+      queryClient.removeQueries({
         predicate: (query) => {
           const key = query.queryKey;
-          // Assume tenant queries start with 'academy' and have the ID as the second element.
           return Array.isArray(key) && key[0] === 'academy' && key[1] !== id;
         },
       });

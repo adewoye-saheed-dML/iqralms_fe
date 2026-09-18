@@ -1,3 +1,4 @@
+'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as React from 'react';
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
@@ -73,7 +74,7 @@ describe('StaffInviteForm', () => {
       expect(mockApi.addMember).toHaveBeenCalledWith(1, { user: 123, role: 'admin' });
     });
 
-    expect(pushMock).toHaveBeenCalledWith('/app/staff');
+    expect(pushMock).toHaveBeenCalledWith('/app/teachers');
   });
 
   it('shows error on failure', async () => {

@@ -1,0 +1,14 @@
+--- src/features/assessment/components/assessment-list.tsx
++++ src/features/assessment/components/assessment-list.tsx
+@@ -28,9 +28,9 @@
+     queryKey,
+     queryFn: async () => {
+       if (type === 'mine') {
+-        return await assessmentApi.getTeacherAssessments(activeAcademy!.id);
++        return await assessmentApi.getMyAssessments(activeAcademy!.id);
+       } else if (type === 'child' && studentId) {
+-        return await assessmentApi.getFamilyAssessments(activeAcademy!.id, studentId);
++        return await assessmentApi.getFamilyAssessments(activeAcademy!.id, studentId);
+       }
+       return [];
+     },

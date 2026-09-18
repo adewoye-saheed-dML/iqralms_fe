@@ -1,4 +1,6 @@
 'use client';
+import { curriculumKeys } from '@/lib/api/query-keys';
+'use client';
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
@@ -36,7 +38,7 @@ export function LevelForm({ trackId, initialData }: LevelFormProps) {
     isLoading: trackLoading,
     isError: trackError,
   } = useQuery({
-    queryKey: ['academy', activeAcademy?.id, 'curriculum', 'track', trackId],
+    queryKey: curriculumKeys.trackDetail(activeAcademy?.id, trackId),
     queryFn: () => curriculumApi.getTrack(activeAcademy!.id, trackId),
     enabled: !!activeAcademy && !initialData,
   });
@@ -51,10 +53,10 @@ export function LevelForm({ trackId, initialData }: LevelFormProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['academy', activeAcademy?.id, 'curriculum', 'tracks'],
+        queryKey: curriculumKeys.tracks(activeAcademy?.id),
       });
       queryClient.invalidateQueries({
-        queryKey: ['academy', activeAcademy?.id, 'curriculum', 'track', trackId],
+        queryKey: curriculumKeys.trackDetail(activeAcademy?.id, trackId),
       });
       router.push(`/app/curriculum/tracks/${trackId}`);
     },

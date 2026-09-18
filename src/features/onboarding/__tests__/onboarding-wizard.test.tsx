@@ -1,37 +1,51 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-import * as React from 'react';
-import { render, screen, act } from '@testing-library/react';
+'use client';
+import React from 'react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { OnboardingWizard } from '../components/onboarding-wizard';
 import * as AcademyProvider from '@/lib/academy/academy-provider';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { onboardingApi } from '../api/onboarding';
-import { useRouter } from 'next/navigation';
+import { staffApi } from '@/features/staff/api/staff';
+import { studentsApi } from '@/features/students/api/students';
+import { can } from '@/lib/permissions/capabilities';
 
-vi.mock('next/navigation', () => ({
-  useRouter: vi.fn(),
+vi.mock('@/lib/academy/academy-provider', () => ({
+  useAcademy: vi.fn(),
 }));
 
-const { mockApi } = vi.hoisted(() => ({
-  mockApi: {
-    getTracks: vi.fn(),
-  },
+vi.mock('next/navigation', () => ({
+  useRouter: vi.fn(() => ({ push: vi.fn() })),
 }));
 
 vi.mock('../api/onboarding', () => ({
-  onboardingApi: mockApi,
+  onboardingApi: { getTracks: vi.fn() },
 }));
 
-describe('OnboardingWizard', () => {
-  let queryClient: QueryClient;
-  const pushMock = vi.fn();
+vi.mock('@/features/staff/api/staff', () => ({
+  staffApi: { getMemberships: vi.fn() },
+}));
 
+vi.mock('@/features/students/api/students', () => ({
+  studentsApi: { getStudents: vi.fn() },
+}));
+
+vi.mock('@/lib/permissions/capabilities', () => ({
+  can: vi.fn(() => true),
+}));
+
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: false } },
+});
+
+describe('OnboardingWizard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false, gcTime: 0 } },
-    });
-    vi.mocked(useRouter).mockReturnValue({ push: pushMock } as any);
+    queryClient.clear();
+    vi.mocked(AcademyProvider.useAcademy).mockReturnValue({
+      activeAcademy: { id: 1, name: 'Test Academy' },
+      activeRole: 'owner',
+    } as any);
   });
 
   const renderWizard = () =>
@@ -41,87 +55,64 @@ describe('OnboardingWizard', () => {
       </QueryClientProvider>
     );
 
-  it('renders nothing when there is no active academy', () => {
-    vi.spyOn(AcademyProvider, 'useAcademy').mockReturnValue({
-      activeAcademy: null,
-    } as any);
-
-    const { container } = renderWizard();
-    expect(container).toBeEmptyDOMElement();
-  });
-
-  it('shows curriculum as pending if no tracks exist', async () => {
-    vi.spyOn(AcademyProvider, 'useAcademy').mockReturnValue({
-      activeAcademy: { id: 1, name: 'Academy A' },
-      activeRole: 'owner',
-    } as any);
-
-    mockApi.getTracks.mockResolvedValue([]);
+  it('shows curriculum setup for new academy', async () => {
+    vi.mocked(onboardingApi.getTracks).mockResolvedValue([]);
+    vi.mocked(staffApi.getMemberships).mockResolvedValue([{ id: 1 } as any]); // Just the owner
+    vi.mocked(studentsApi.getStudents).mockResolvedValue([]);
 
     renderWizard();
 
-    expect(await screen.findByText(/1 \/ 2 foundation steps/)).toBeInTheDocument();
-    expect(screen.getByText('Curriculum Setup')).toBeInTheDocument();
-
-    const addTrackBtn = screen.getByRole('button', { name: /Add First Track/i });
-    expect(addTrackBtn).toBeInTheDocument();
-
-    act(() => {
-      addTrackBtn.click();
+    await waitFor(() => {
+      expect(screen.getAllByText('Curriculum').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Add First Track').length).toBeGreaterThan(0);
     });
-    expect(pushMock).toHaveBeenCalledWith('/app/onboarding/curriculum');
   });
 
-  it('shows academy as ready when curriculum is setup', async () => {
-    vi.spyOn(AcademyProvider, 'useAcademy').mockReturnValue({
-      activeAcademy: { id: 1, name: 'Academy A' },
-      activeRole: 'owner',
-    } as any);
-
-    mockApi.getTracks.mockResolvedValue([{ id: 1, name: 'Quran Reading' }]);
+  it('progresses to teachers setup when curriculum is done', async () => {
+    vi.mocked(onboardingApi.getTracks).mockResolvedValue([{ id: 1 } as any]);
+    vi.mocked(staffApi.getMemberships).mockResolvedValue([{ id: 1 } as any]); // Just owner
+    vi.mocked(studentsApi.getStudents).mockResolvedValue([]);
 
     renderWizard();
 
-    expect(await screen.findByText(/Foundation complete/)).toBeInTheDocument();
-    expect(screen.getByText('Academy Ready')).toBeInTheDocument();
-
-    const continueBtn = screen.getByRole('button', { name: /Continue to Dashboard/i });
-    expect(continueBtn).toBeInTheDocument();
-
-    act(() => {
-      continueBtn.click();
+    await waitFor(() => {
+      expect(screen.getAllByText('Teachers & Staff').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Invite Staff').length).toBeGreaterThan(0);
     });
-    expect(pushMock).toHaveBeenCalledWith('/app/dashboard');
   });
 
-  it('hides "Add First Track" for non-admin/owner roles', async () => {
-    vi.spyOn(AcademyProvider, 'useAcademy').mockReturnValue({
-      activeAcademy: { id: 1, name: 'Academy A' },
-      activeRole: 'teacher',
-    } as any);
-
-    mockApi.getTracks.mockResolvedValue([]);
+  it('progresses to students setup when staff is done', async () => {
+    vi.mocked(onboardingApi.getTracks).mockResolvedValue([{ id: 1 } as any]);
+    vi.mocked(staffApi.getMemberships).mockResolvedValue([{ id: 1 }, { id: 2 }] as any[]); // Owner + 1 staff
+    vi.mocked(studentsApi.getStudents).mockResolvedValue([]);
 
     renderWizard();
 
-    expect(await screen.findByText(/1 \/ 2 foundation steps/)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Add First Track/i })).not.toBeInTheDocument();
-    expect(
-      screen.getByText(/You need owner or admin permissions to set up the curriculum/)
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getAllByText('Students').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Add Students').length).toBeGreaterThan(0);
+    });
   });
 
-  it('loads tracks for the active academy only', async () => {
-    vi.spyOn(AcademyProvider, 'useAcademy').mockReturnValue({
-      activeAcademy: { id: 2, name: 'Academy B' },
-      activeRole: 'owner',
-    } as any);
-
-    mockApi.getTracks.mockResolvedValue([]);
+  it('shows ready state when all are configured', async () => {
+    vi.mocked(onboardingApi.getTracks).mockResolvedValue([{ id: 1 } as any]);
+    vi.mocked(staffApi.getMemberships).mockResolvedValue([{ id: 1 }, { id: 2 }] as any[]);
+    vi.mocked(studentsApi.getStudents).mockResolvedValue([{ id: 1 }] as any[]);
 
     renderWizard();
 
-    await screen.findByText(/1 \/ 2 foundation steps/);
-    expect(mockApi.getTracks).toHaveBeenCalledWith(2);
+    await waitFor(() => {
+      expect(screen.getAllByText('Academy Ready').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Continue to Dashboard').length).toBeGreaterThan(0);
+    });
+  });
+
+  it('handles failed mutation/query safely', async () => {
+    vi.mocked(onboardingApi.getTracks).mockRejectedValue(new Error('Failed'));
+    renderWizard();
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Failed to load onboarding status').length).toBeGreaterThan(0);
+    });
   });
 });

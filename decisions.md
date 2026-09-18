@@ -59,3 +59,9 @@ Do not silently replace important decisions. Add a new decision entry with the r
 - Chose not to introduce global state for server data (relied on TanStack React Query).
 - Stored academy context in a dedicated provider decoupled from auth to reflect 1 user -> many academies model.
 - Configured navigation using `navigationConfig` object with allowed roles, instead of messy conditional JSX.
+
+## D-006 — Token Storage
+
+Status: Accepted
+
+Auth token is stored in `localStorage`. The backend uses DRF TokenAuthentication (returning a token key in the response payload instead of an HTTP-only cookie). Therefore, the token must be stored client-side to be appended to the `Authorization` header of subsequent API requests. Since Next.js is primarily acting as a static SPA for the dashboard rendering, `localStorage` is the optimal approach without complicating SSR passing.

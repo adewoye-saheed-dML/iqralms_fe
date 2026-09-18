@@ -15,4 +15,15 @@ describe('Navigation Configuration', () => {
     expect(academyNav).toBeDefined();
     expect(academyNav?.allowedOrgRoles).toEqual(['owner', 'admin']);
   });
+
+  it('should not contain global roles in org roles (no role leakage)', () => {
+    const globalRoles = ['lead', 'sub', 'student', 'parent'];
+    navigationConfig.forEach(item => {
+      if (item.allowedOrgRoles) {
+        globalRoles.forEach(globalRole => {
+          expect(item.allowedOrgRoles).not.toContain(globalRole);
+        });
+      }
+    });
+  });
 });

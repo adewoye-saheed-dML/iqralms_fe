@@ -1,4 +1,6 @@
 'use client';
+import { curriculumKeys } from '@/lib/api/query-keys';
+'use client';
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
@@ -34,11 +36,11 @@ export function TrackForm({ initialData }: TrackFormProps) {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({
-        queryKey: ['academy', activeAcademy?.id, 'curriculum', 'tracks'],
+        queryKey: curriculumKeys.tracks(activeAcademy?.id),
       });
       if (initialData) {
         queryClient.invalidateQueries({
-          queryKey: ['academy', activeAcademy?.id, 'curriculum', 'track', initialData.id],
+          queryKey: curriculumKeys.trackDetail(activeAcademy?.id, initialData.id),
         });
       }
       router.push(`/app/curriculum/tracks/${data.id}`);

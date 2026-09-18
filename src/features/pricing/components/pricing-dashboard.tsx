@@ -7,12 +7,17 @@ import { AgreementForm } from './agreement-form';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 
+import { useAuth } from '@/lib/auth/auth-provider';
+
+import { can } from '@/lib/permissions/capabilities';
+
 export function PricingDashboard() {
   const { activeRole } = useAcademy();
+  const { user } = useAuth();
   const [showForm, setShowForm] = React.useState(false);
 
-  const isLeadOrAdmin = activeRole && ['lead', 'admin', 'owner'].includes(activeRole);
-  const isStudent = activeRole === 'student';
+  const isLeadOrAdmin = can('manage_pricing', { activeRole });
+  const isStudent = can('view_own_pricing', { userRole: user?.role });
 
   if (!isLeadOrAdmin && !isStudent) {
     // Other roles shouldn't see this unless specified

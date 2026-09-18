@@ -8,55 +8,58 @@ export type LeadAssessment = components['schemas']['LeadAssessment'];
 export type AssessmentRubric = components['schemas']['AssessmentRubric'];
 export type AssessmentRubricCreate = components['schemas']['AssessmentRubricCreate'];
 export type PatchedAssessmentRubricUpdate = components['schemas']['PatchedAssessmentRubricUpdate'];
-
 export type LeadReview = components['schemas']['LeadReview'];
 
 export const assessmentApi = {
-  createAssessment: (organizationId: number, bookingId: number, data: SessionAssessmentCreate) =>
-    apiClient.post<TeacherAssessment>(
-      `/api/assessment/organizations/${organizationId}/bookings/${bookingId}/`,
-      { body: data }
-    ),
+  getQueue: async (organizationId: number) => {
+    const { data } = await apiClient.GET('/api/assessment/organizations/{organization_pk}/review/queue/', {
+      params: { path: { organization_pk: organizationId } },
+    });
+    return data as LeadAssessment[];
+  },
 
-  getTeacherAssessments: (organizationId: number) =>
-    apiClient.get<TeacherAssessment[]>(
-      `/api/assessment/organizations/${organizationId}/teacher/mine/`
-    ),
+  reviewAssessment: async (organizationId: number, assessmentId: number, body: LeadReview) => {
+    const { data } = await apiClient.POST('/api/assessment/organizations/{organization_pk}/{id}/review/', {
+      params: { path: { organization_pk: organizationId, id: assessmentId } },
+      body,
+    });
+    return data as LeadAssessment;
+  },
 
-  getMyAssessments: (organizationId: number) =>
-    apiClient.get<FamilyAssessment[]>(
-      `/api/assessment/organizations/${organizationId}/mine/`
-    ),
+  getFamilyAssessments: async (organizationId: number, studentId: number) => {
+    const { data } = await apiClient.GET('/api/assessment/organizations/{organization_pk}/child/', {
+      params: { path: { organization_pk: organizationId }, query: { student_id: studentId } },
+    });
+    return data as FamilyAssessment[];
+  },
 
-  getChildAssessments: (organizationId: number, studentId: number) =>
-    apiClient.get<FamilyAssessment[]>(
-      `/api/assessment/organizations/${organizationId}/child/`,
-      { params: { student_id: studentId } }
-    ),
+  getMyAssessments: async (organizationId: number) => {
+    const { data } = await apiClient.GET('/api/assessment/organizations/{organization_pk}/teacher/mine/', {
+      params: { path: { organization_pk: organizationId } },
+    });
+    return data as TeacherAssessment[];
+  },
 
-  getReviewQueue: (organizationId: number) =>
-    apiClient.get<LeadAssessment[]>(
-      `/api/assessment/organizations/${organizationId}/review/queue/`
-    ),
+  getRubrics: async (organizationId: number) => {
+    const { data } = await apiClient.GET('/api/assessment/organizations/{organization_pk}/rubrics/', {
+      params: { path: { organization_pk: organizationId } },
+    });
+    return data as AssessmentRubric[];
+  },
 
-  getAssessment: (organizationId: number, assessmentId: number) =>
-    apiClient.get<LeadAssessment>(
-      `/api/assessment/organizations/${organizationId}/${assessmentId}/`
-    ),
+  createRubric: async (organizationId: number, body: AssessmentRubricCreate) => {
+    const { data } = await apiClient.POST('/api/assessment/organizations/{organization_pk}/rubrics/', {
+      params: { path: { organization_pk: organizationId } },
+      body,
+    });
+    return data as AssessmentRubric;
+  },
 
-  reviewAssessment: (organizationId: number, assessmentId: number, data: LeadReview) =>
-    apiClient.post<LeadAssessment>(
-      `/api/assessment/organizations/${organizationId}/${assessmentId}/review/`,
-      { body: data }
-    ),
-
-  getRubrics: (organizationId: number) =>
-    apiClient.get<AssessmentRubric[]>(
-      `/api/assessment/organizations/${organizationId}/rubrics/`
-    ),
-
-  getRubric: (organizationId: number, rubricId: number) =>
-    apiClient.get<AssessmentRubric>(
-      `/api/assessment/organizations/${organizationId}/rubrics/${rubricId}/`
-    ),
+  updateRubric: async (organizationId: number, rubricId: number, body: PatchedAssessmentRubricUpdate) => {
+    const { data } = await apiClient.PATCH('/api/assessment/organizations/{organization_pk}/rubrics/{id}/', {
+      params: { path: { organization_pk: organizationId, id: rubricId } },
+      body,
+    });
+    return data as AssessmentRubric;
+  },
 };

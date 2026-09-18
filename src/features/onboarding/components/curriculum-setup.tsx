@@ -1,4 +1,6 @@
 'use client';
+import { curriculumKeys } from '@/lib/api/query-keys';
+'use client';
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -28,7 +30,7 @@ export function CurriculumSetupForm() {
     },
     onSuccess: () => {
       // Invalidate the tracks query to reflect the new track
-      queryClient.invalidateQueries({ queryKey: ['academy', activeAcademy?.id, 'tracks'] });
+      queryClient.invalidateQueries({ queryKey: curriculumKeys.tracks(activeAcademy?.id) });
       // Go back to onboarding dashboard
       router.push('/app/onboarding');
     },

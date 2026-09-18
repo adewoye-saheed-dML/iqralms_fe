@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { useAcademy } from '@/lib/academy/academy-provider';
+import { useAuth } from '@/lib/auth/auth-provider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -10,12 +11,15 @@ import { BookingList } from './booking-list';
 import { Waitlist } from './waitlist';
 import { CohortList } from './cohort-list';
 
+import { can } from '@/lib/permissions/capabilities';
+
 export function SchedulingDashboard() {
   const { activeRole } = useAcademy();
+  const { user } = useAuth();
   const router = useRouter();
 
-  const isTeacherOrAdmin = activeRole && ['teacher', 'lead', 'admin', 'owner', 'sub'].includes(activeRole);
-  const isStudentOrParent = activeRole && ['student', 'parent'].includes(activeRole);
+  const isTeacherOrAdmin = can('manage_scheduling', { userRole: user?.role, activeRole });
+  const isStudentOrParent = can('view_own_schedule', { userRole: user?.role, activeRole });
 
   return (
     <div className="space-y-4">

@@ -1,0 +1,11 @@
+--- src/features/assessment/components/review-queue.tsx
++++ src/features/assessment/components/review-queue.tsx
+@@ -24,7 +24,7 @@
+   const queryKey = assessmentKeys.reviewQueue(activeAcademy?.id);
+   const { data: assessments, isLoading, error, refetch } = useQuery({
+     queryKey,
+-    queryFn: () => assessmentApi.getReviewQueue(activeAcademy!.id),
++    queryFn: () => assessmentApi.getQueue(activeAcademy!.id),
+     enabled: !!activeAcademy,
+   });
+ 

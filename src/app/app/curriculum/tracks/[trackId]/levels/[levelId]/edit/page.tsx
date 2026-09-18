@@ -1,3 +1,4 @@
+import { curriculumKeys } from '@/lib/api/query-keys';
 'use client';
 
 import * as React from 'react';
@@ -29,7 +30,7 @@ export default function EditLevelPage({ params }: EditLevelPageProps) {
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ['academy', activeAcademy?.id, 'curriculum', 'track', trackId],
+    queryKey: curriculumKeys.trackDetail(activeAcademy?.id, trackId),
     queryFn: () => curriculumApi.getTrack(activeAcademy!.id, trackId),
     enabled: !!activeAcademy,
   });

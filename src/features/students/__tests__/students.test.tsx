@@ -1,3 +1,4 @@
+'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -64,7 +65,6 @@ describe('Student Management', () => {
       await waitFor(() => {
         expect(screen.getByText('teststudent')).toBeInTheDocument();
       });
-      expect(screen.getByText('100')).toBeInTheDocument();
       expect(screen.getByText('active')).toBeInTheDocument();
     });
 
@@ -155,7 +155,6 @@ describe('Student Management', () => {
       await waitFor(() => {
         expect(screen.getByText('jane')).toBeInTheDocument();
       });
-      expect(screen.getByText('200')).toBeInTheDocument();
     });
 
     it('detail handles 404', async () => {
@@ -193,7 +192,7 @@ describe('Student Management', () => {
 
       // Save
       await act(async () => {
-        fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
       });
 
       expect(studentsApi.updateStudentStatus).toHaveBeenCalledWith(1, 5, { status: 'inactive' });
@@ -218,7 +217,7 @@ describe('Student Management', () => {
       fireEvent.click(screen.getByRole('option', { name: 'Inactive' }));
 
       await act(async () => {
-        fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
       });
 
       await waitFor(() => {

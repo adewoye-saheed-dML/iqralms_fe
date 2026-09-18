@@ -1,9 +1,11 @@
+import { schedulingKeys } from '@/lib/api/query-keys';
 'use client';
 
 import * as React from 'react';
 import { useQuery } from "@tanstack/react-query";
 import { schedulingApi } from '../api/scheduling';
 import { useAcademy } from '@/lib/academy/academy-provider';
+import { useAuth } from '@/lib/auth/auth-provider';
 import { LoadingState } from '@/components/ui/loading';
 import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -13,10 +15,13 @@ import {  } from '@/components/ui/button';
 import { User } from "lucide-react";
 import { ApiError } from '@/lib/api/errors';
 
-export function Waitlist() {
-  const { activeAcademy, activeRole } = useAcademy();
+import { can } from '@/lib/permissions/capabilities';
 
-  const isStudentOrParent = activeRole && ['student', 'parent'].includes(activeRole);
+export function Waitlist() {
+  const { activeAcademy } = useAcademy();
+  const { user } = useAuth();
+
+  const isStudentOrParent = can('manage_own_waitlist', { userRole: user?.role });
   // Note: we assume a lead teacher is viewing their own waitlist, or we just pass the user ID. 
   // Wait, `for-teacher/` requires `teacher_id` query param. We might need the user ID.
   // Actually, lead teacher fetches for a specific teacher. If we don't have the teacher ID handy, 
@@ -24,10 +29,10 @@ export function Waitlist() {
   // Let's check `activeAcademy.userId` or something. 
   // The spec says: GET /api/scheduling/organizations/{id}/waitlist/mine/
   
-  const queryKeyMine = ['academy', activeAcademy?.id, 'scheduling', 'waitlist', 'mine'];
+  
 
   const { data: mineWaitlist, isLoading, error, refetch } = useQuery({
-    queryKey: queryKeyMine,
+    queryKey: schedulingKeys.waitlistMine(activeAcademy?.id),
     queryFn: () => {
       if (!activeAcademy?.id) throw new Error('No active academy');
       return schedulingApi.getMyWaitlist(activeAcademy.id);
@@ -37,7 +42,7 @@ export function Waitlist() {
 
   // Promote mutation placeholder
 
-  if (isLoading) return <LoadingState text="Loading waitlist..." />;
+  if (isLoading) return <LoadingState />;
   
   if (error) {
     if (error instanceof ApiError && error.status === 403) {
@@ -84,7 +89,7 @@ export function Waitlist() {
               <div className="flex items-center text-muted-foreground">
                 <User className="mr-2 h-4 w-4" />
                 <span>
-                  Requested Teacher: {entry.requested_teacher?.user.first_name || entry.requested_teacher?.user.username || 'Any'}
+                  Requested Teacher: {entry.requested_teacher?.first_name || entry.requested_teacher?.username || 'Any'}
                 </span>
               </div>
             </CardContent>

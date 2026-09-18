@@ -1,3 +1,4 @@
+import { studentKeys } from '@/lib/api/query-keys';
 'use client';
 
 import * as React from 'react';
@@ -27,6 +28,7 @@ import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { LoadingState } from '@/components/ui/loading';
 import { ErrorState } from '@/components/ui/error-state';
 import { Label } from '@/components/ui/label';
+import { can } from '@/lib/permissions/capabilities';
 
 interface StudentDetailProps {
   enrollmentId: number;
@@ -34,7 +36,7 @@ interface StudentDetailProps {
 
 export function StudentDetail({ enrollmentId }: StudentDetailProps) {
   const queryClient = useQueryClient();
-  const { activeAcademy } = useAcademy();
+  const { activeAcademy, activeRole } = useAcademy();
   const [status, setStatus] = React.useState<'active' | 'inactive' | ''>('');
   const [successMessage, setSuccessMessage] = React.useState('');
 
@@ -45,7 +47,7 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['academy', activeAcademy?.id, 'student', enrollmentId],
+    queryKey: studentKeys.detail(activeAcademy?.id, enrollmentId),
     queryFn: () => studentsApi.getStudent(activeAcademy!.id, enrollmentId),
     enabled: !!activeAcademy,
   });
@@ -60,9 +62,9 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
     onSuccess: () => {
       setSuccessMessage('Enrollment status updated successfully.');
       queryClient.invalidateQueries({
-        queryKey: ['academy', activeAcademy?.id, 'student', enrollmentId],
+        queryKey: studentKeys.detail(activeAcademy?.id, enrollmentId),
       });
-      queryClient.invalidateQueries({ queryKey: ['academy', activeAcademy?.id, 'students'] });
+      queryClient.invalidateQueries({ queryKey: studentKeys.all(activeAcademy?.id) });
       // clear success message after a few seconds
       setTimeout(() => setSuccessMessage(''), 3000);
     },
@@ -104,7 +106,7 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
       <ErrorState
         title="Failed to load student details"
         message={error instanceof Error ? error.message : 'An unknown error occurred.'}
-        onRetry={refetch}
+       
       />
     );
   }
@@ -112,6 +114,7 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
   if (!student) return null;
 
   const hasChanges = status && status !== student.status;
+  const canManage = can('manage_students', { activeRole });
 
   let errorMessage = '';
   if (updateMutation.isError) {
@@ -126,14 +129,18 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
     }
   }
 
+  const studentName = student.first_name || student.last_name 
+    ? `${student.first_name || ''} ${student.last_name || ''}`.trim()
+    : student.username || 'Unknown Student';
+
   return (
     <Card className="max-w-2xl">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Enrollment Profile</CardTitle>
+            <CardTitle>{studentName}</CardTitle>
             <CardDescription>
-              View and manage the student&apos;s status in this academy.
+              Academy Enrollment Profile
             </CardDescription>
           </div>
           <Badge variant={student.status === 'active' ? 'default' : 'secondary'}>
@@ -156,24 +163,13 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
           </Alert>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label className="text-muted-foreground">User ID</Label>
-            <div className="mt-1 font-medium">{student.user}</div>
-          </div>
-          <div>
-            <Label className="text-muted-foreground">Username</Label>
-            <div className="mt-1 font-medium">{student.username || 'Unknown'}</div>
-          </div>
-        </div>
-
         <div className="space-y-2 border-t pt-4">
           <Label htmlFor="statusSelect">Enrollment Status</Label>
           <div className="flex items-center gap-4">
             <Select
-              value={status}
+              value={currentStatus}
               onValueChange={handleStatusChange}
-              disabled={updateMutation.isPending}
+              disabled={updateMutation.isPending || !canManage}
             >
               <SelectTrigger id="statusSelect" className="w-[200px]">
                 <SelectValue placeholder="Select status" />
@@ -183,10 +179,16 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
                 <SelectItem value="inactive">Inactive</SelectItem>
               </SelectContent>
             </Select>
-            <Button onClick={handleSave} disabled={!hasChanges || updateMutation.isPending}>
-              {updateMutation.isPending ? 'Saving...' : 'Save'}
-            </Button>
+            {canManage && (
+              <Button onClick={handleSave} disabled={!hasChanges || updateMutation.isPending}>
+                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
+              </Button>
+            )}
           </div>
+        </div>
+        
+        <div className="pt-4 border-t text-sm text-muted-foreground">
+          <p>Curriculum assignments and placement test features are not yet available for this academy.</p>
         </div>
       </CardContent>
     </Card>

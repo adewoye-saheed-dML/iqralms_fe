@@ -4,14 +4,19 @@ import * as React from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api/client';
 import { components } from '@/lib/api/schema';
-import { removeToken } from '@/lib/auth/token';
+import { setToken, removeToken } from '@/lib/auth/token';
+import { ApiError } from '@/lib/api/errors';
 
 type User = components['schemas']['User'];
+type LoginParams = components['schemas']['Login'];
+type RegisterParams = components['schemas']['Register'];
 
 interface AuthContextValue {
   user: User | null;
   isLoading: boolean;
   error: Error | null;
+  login: (credentials: LoginParams) => Promise<void>;
+  register: (data: RegisterParams) => Promise<void>;
   logout: () => Promise<void>;
   refreshAuth: () => Promise<void>;
 }
@@ -29,11 +34,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     queryKey: ['auth', 'user'],
     queryFn: async () => {
       try {
-        return await apiClient.get<User>('/api/accounts/me/');
+        const { data, error: apiErr } = await apiClient.GET('/api/accounts/me/');
+        // openapi-fetch will not throw on 4xx/5xx by default if we don't have middleware that throws. 
+        // Wait, our middleware THROWS on !response.ok! So it will throw an ApiError.
+        if (apiErr) {
+           throw apiErr;
+        }
+        return data as User;
       } catch (err: unknown) {
-        // If 401/403, we return null rather than throw
-        const apiErr = err as { status?: number };
-        if (apiErr?.status === 401 || apiErr?.status === 403) {
+        if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+          removeToken();
           return null;
         }
         throw err;
@@ -41,10 +51,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
   });
 
+  const login = React.useCallback(async (credentials: LoginParams) => {
+    const { data } = await apiClient.POST('/api/auth/login/', {
+      body: credentials,
+    });
+    // @ts-ignore
+    const key = data?.key; // login returns { key: string }
+    if (key) {
+      setToken(key);
+      await queryClient.invalidateQueries({ queryKey: ['auth', 'user'] });
+    }
+  }, [queryClient]);
+
+  const register = React.useCallback(async (data: RegisterParams) => {
+    await apiClient.POST('/api/auth/register/', {
+      body: data,
+    });
+  }, []);
+
   const logout = React.useCallback(async () => {
-    // Assuming backend clears cookie on this endpoint
     try {
-      await apiClient.post('/api/auth/logout/');
+      await apiClient.POST('/api/auth/logout/');
     } catch {
       // Ignore errors on logout
     }
@@ -62,10 +89,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       isLoading,
       error,
+      login,
+      register,
       logout,
       refreshAuth,
     }),
-    [user, isLoading, error, logout, refreshAuth]
+    [user, isLoading, error, login, register, logout, refreshAuth]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

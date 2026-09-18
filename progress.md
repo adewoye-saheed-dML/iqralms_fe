@@ -47,3 +47,11 @@ Status: COMPLETE (DEFERRED - BACKEND CONTRACT REQUIRED)
 
 ## Phase 17 — (Pending Specification)
 Status: NOT STARTED
+
+## Final Verification & Launch Preparation
+Status: COMPLETE
+
+- [x] V01: Cross-Repository Contract Audit (apiClient OpenAPI integration, mismatch documentation)
+- [x] V02: Tenant Isolation Regression (query cache wiping, 403 handling)
+- [x] V03: Critical E2E Journeys (Playwright flows mimicking OpenAPI structure)
+- [x] V04: Production UX, Accessibility and Documentation

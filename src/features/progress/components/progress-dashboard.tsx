@@ -5,12 +5,17 @@ import { useAcademy } from '@/lib/academy/academy-provider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProgressList } from './progress-list';
 
+import { useAuth } from '@/lib/auth/auth-provider';
+
+import { can } from '@/lib/permissions/capabilities';
+
 export function ProgressDashboard() {
   const { activeRole } = useAcademy();
+  const { user } = useAuth();
 
-  const isStudentOrParent = activeRole && ['student', 'parent'].includes(activeRole);
-  const isTeacher = activeRole && ['teacher', 'sub', 'lead'].includes(activeRole);
-  const isLeadOrAdmin = activeRole && ['lead', 'admin', 'owner'].includes(activeRole);
+  const isStudentOrParent = can('view_own_progress', { userRole: user?.role });
+  const isTeacher = can('manage_progress', { userRole: user?.role, activeRole });
+  const isLeadOrAdmin = can('manage_academy', { activeRole });
 
   const defaultTab = isStudentOrParent ? 'my-progress' : (isLeadOrAdmin ? 'snapshots' : 'snapshots');
 

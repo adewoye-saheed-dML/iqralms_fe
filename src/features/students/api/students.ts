@@ -6,8 +6,8 @@ export type PatchedStudentEnrollmentUpdate =
   components['schemas']['PatchedStudentEnrollmentUpdate'];
 
 // Since the OpenAPI schema currently lacks a response content schema for StudentEnrollment,
-// we define a minimal view model for the frontend to use.
-export interface StudentEnrollment {
+// we define a minimal view model for the frontend to use. This records the mismatch.
+export interface StudentEnrollmentView {
   id: number;
   user: number;
   username?: string;
@@ -17,28 +17,37 @@ export interface StudentEnrollment {
 }
 
 export const studentsApi = {
-  getStudents: (organizationId: number) => {
-    return apiClient.get<StudentEnrollment[]>(`/api/organizations/${organizationId}/students/`);
+  getStudents: async (organizationId: number) => {
+    const { data } = await apiClient.GET('/api/organizations/{organization_pk}/students/', {
+      params: { path: { organization_pk: organizationId } },
+    });
+    return data as unknown as StudentEnrollmentView[];
   },
 
-  getStudent: (organizationId: number, enrollmentId: number) => {
-    return apiClient.get<StudentEnrollment>(
-      `/api/organizations/${organizationId}/students/${enrollmentId}/`
-    );
+  getStudent: async (organizationId: number, enrollmentId: number) => {
+    const { data } = await apiClient.GET('/api/organizations/{organization_pk}/students/{id}/', {
+      params: { path: { organization_pk: organizationId, id: enrollmentId } },
+    });
+    return data as unknown as StudentEnrollmentView;
   },
 
-  addStudent: (organizationId: number, data: StudentEnrollmentCreate) => {
-    return apiClient.post<void>(`/api/organizations/${organizationId}/students/`, { body: data });
+  addStudent: async (organizationId: number, body: StudentEnrollmentCreate) => {
+    const { data } = await apiClient.POST('/api/organizations/{organization_pk}/students/', {
+      params: { path: { organization_pk: organizationId } },
+      body,
+    });
+    return data as void;
   },
 
-  updateStudentStatus: (
+  updateStudentStatus: async (
     organizationId: number,
     enrollmentId: number,
-    data: PatchedStudentEnrollmentUpdate
+    body: PatchedStudentEnrollmentUpdate
   ) => {
-    return apiClient.patch<StudentEnrollment>(
-      `/api/organizations/${organizationId}/students/${enrollmentId}/`,
-      { body: data }
-    );
+    const { data } = await apiClient.PATCH('/api/organizations/{organization_pk}/students/{id}/', {
+      params: { path: { organization_pk: organizationId, id: enrollmentId } },
+      body,
+    });
+    return data as unknown as StudentEnrollmentView;
   },
 };

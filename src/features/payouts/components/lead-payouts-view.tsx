@@ -1,3 +1,4 @@
+import { payoutsKeys } from '@/lib/api/query-keys';
 'use client';
 import type { TeacherPayout } from "../api/payouts";
 
@@ -18,7 +19,7 @@ export function LeadPayoutsView() {
   const { activeAcademy } = useAcademy();
   const queryClient = useQueryClient();
 
-  const queryKey = ['academy', activeAcademy?.id, 'payouts', 'lead'];
+  const queryKey = payoutsKeys.lead(activeAcademy?.id);
 
   const { data: payouts, isLoading, error, refetch } = useQuery({
     queryKey,

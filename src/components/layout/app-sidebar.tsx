@@ -4,9 +4,10 @@ import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { navigationConfig, type UserRole, type OrgRole } from '@/lib/navigation/config';
+import { navigationConfig } from '@/lib/navigation/config';
 import { useAuth } from '@/lib/auth/auth-provider';
 import { useAcademy } from '@/lib/academy/academy-provider';
+import { can } from '@/lib/permissions/capabilities';
 
 export function AppSidebar({ className }: { className?: string }) {
   const pathname = usePathname();
@@ -17,13 +18,8 @@ export function AppSidebar({ className }: { className?: string }) {
 
   // Filter navigation based on user role and org role
   const visibleNavItems = navigationConfig.filter((item) => {
-    if (item.allowedUserRoles && !item.allowedUserRoles.includes(user.role as UserRole)) {
-      return false;
-    }
-    if (item.allowedOrgRoles && activeRole) {
-      if (!item.allowedOrgRoles.includes(activeRole as OrgRole)) {
-        return false;
-      }
+    if (item.requiredCapability) {
+      return can(item.requiredCapability, { userRole: user.role, activeRole });
     }
     return true;
   });

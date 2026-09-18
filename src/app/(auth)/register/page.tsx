@@ -3,7 +3,6 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/auth-provider';
-import { apiClient } from '@/lib/api/client';
 import { ApiError } from '@/lib/api/errors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,7 +19,7 @@ import {
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, register } = useAuth();
 
   const [username, setUsername] = React.useState('');
   const [email, setEmail] = React.useState('');
@@ -48,22 +47,20 @@ export default function RegisterPage() {
     setIsSubmitting(true);
 
     try {
-      await apiClient.post('/api/auth/register/', {
-        body: {
-          username,
-          email,
-          password,
-          first_name: firstName,
-          last_name: lastName,
-          role,
-          timezone,
-          date_of_birth: dateOfBirth || null,
-        },
+      await register({
+        username,
+        email,
+        password,
+        first_name: firstName,
+        last_name: lastName,
+        role: role as any,
+        timezone,
+        date_of_birth: dateOfBirth || undefined,
       });
       // After registration, redirect to login page.
       // The backend does not auto-login on register.
       router.push('/login?registered=true');
-    } catch (err) {
+    } catch (err: unknown) {
       if (err instanceof ApiError) {
         if (err.data && typeof err.data === 'object') {
           // Flatten field errors if possible

@@ -1,4 +1,6 @@
 'use client';
+import { studentKeys, curriculumKeys, schedulingKeys } from '@/lib/api/query-keys';
+'use client';
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
@@ -16,9 +18,11 @@ import { ApiError } from '@/lib/api/errors';
 import type { RouteRequest, Routed } from '../api/scheduling';
 
 import { studentsApi } from '@/features/students/api/students';
+import { useAuth } from '@/lib/auth/auth-provider';
 
 export function BookingForm() {
-  const { activeAcademy, activeRole } = useAcademy();
+  const { activeAcademy } = useAcademy();
+  const { user } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -31,10 +35,10 @@ export function BookingForm() {
   const [error, setError] = React.useState<string | null>(null);
   const [routedResult, setRoutedResult] = React.useState<Routed | null>(null);
 
-  const isParent = activeRole === 'parent';
+  const isParent = user?.role === 'parent';
 
   const { data: tracks, isLoading: isLoadingTracks } = useQuery({
-    queryKey: ['academy', activeAcademy?.id, 'curriculum', 'tracks'],
+    queryKey: curriculumKeys.tracks(activeAcademy?.id),
     queryFn: () => {
       if (!activeAcademy?.id) throw new Error('No academy');
       return curriculumApi.getTracks(activeAcademy.id);
@@ -43,7 +47,7 @@ export function BookingForm() {
   });
 
   const { data: students, isLoading: isLoadingStudents } = useQuery({
-    queryKey: ['academy', activeAcademy?.id, 'students'],
+    queryKey: studentKeys.all(activeAcademy?.id),
     queryFn: () => {
       if (!activeAcademy?.id) throw new Error('No academy');
       return studentsApi.getStudents(activeAcademy.id);
@@ -60,10 +64,10 @@ export function BookingForm() {
       setError(null);
       setRoutedResult(result);
       queryClient.invalidateQueries({
-        queryKey: ['academy', activeAcademy?.id, 'scheduling', 'bookings'],
+        queryKey: schedulingKeys.bookings(activeAcademy?.id),
       });
       queryClient.invalidateQueries({
-        queryKey: ['academy', activeAcademy?.id, 'scheduling', 'waitlist'],
+        queryKey: schedulingKeys.waitlist(activeAcademy?.id),
       });
     },
     onError: (err) => {
@@ -94,7 +98,7 @@ export function BookingForm() {
       level: parseInt(levelId, 10),
       requested_time_window: {
         start_time_utc: localDate.toISOString(),
-        duration_minutes: duration ? parseInt(duration, 10) : undefined,
+        duration_minutes: duration ? parseInt(duration, 10) : 30,
       },
     };
 

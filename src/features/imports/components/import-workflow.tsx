@@ -1,3 +1,4 @@
+import { academyKeys } from '@/lib/api/query-keys';
 'use client';
 
 import * as React from 'react';
@@ -58,7 +59,7 @@ export function ImportWorkflow() {
       setJob(data);
       setError(null);
       // Invalidate relevant queries (e.g. students/teachers lists if we were rendering them)
-      queryClient.invalidateQueries({ queryKey: ['academy', activeAcademy?.id] });
+      queryClient.invalidateQueries({ queryKey: academyKeys.tenant(activeAcademy?.id) });
     },
     onError: (err) => {
       if (err instanceof ApiError) {

@@ -1,3 +1,4 @@
+import { assessmentKeys } from '@/lib/api/query-keys';
 'use client';
 
 import * as React from 'react';
@@ -17,13 +18,13 @@ export function ReviewQueue() {
   const { activeAcademy } = useAcademy();
   const queryClient = useQueryClient();
 
-  const queryKey = ['academy', activeAcademy?.id, 'assessment', 'review-queue'];
+  const queryKey = assessmentKeys.reviewQueue(activeAcademy?.id);
 
   const { data: assessments, isLoading, error, refetch } = useQuery({
     queryKey,
     queryFn: () => {
       if (!activeAcademy?.id) throw new Error('No active academy');
-      return assessmentApi.getReviewQueue(activeAcademy.id);
+      return assessmentApi.getQueue(activeAcademy.id);
     },
     enabled: !!activeAcademy?.id,
   });

@@ -1,3 +1,4 @@
+import { notificationKeys } from '@/lib/api/query-keys';
 'use client';
 
 import * as React from 'react';
@@ -19,7 +20,7 @@ export function MyNotificationsView() {
   const queryClient = useQueryClient();
   const [unreadOnly, setUnreadOnly] = React.useState(false);
 
-  const queryKey = ['academy', activeAcademy?.id, 'notifications', 'mine', unreadOnly];
+  const queryKey = notificationKeys.mine(activeAcademy?.id, unreadOnly);
 
   const { data: notifications, isLoading, error, refetch } = useQuery({
     queryKey,
@@ -37,7 +38,7 @@ export function MyNotificationsView() {
     },
     onSuccess: () => {
       // Invalidate all mine notifications for this academy
-      queryClient.invalidateQueries({ queryKey: ['academy', activeAcademy?.id, 'notifications', 'mine'] });
+      queryClient.invalidateQueries({ queryKey: notificationKeys.mine(activeAcademy?.id) });
     }
   });
 

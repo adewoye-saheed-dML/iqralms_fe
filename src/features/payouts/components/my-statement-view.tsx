@@ -1,3 +1,4 @@
+import { payoutsKeys } from '@/lib/api/query-keys';
 'use client';
 import type { MyTeacherPayout } from "../api/payouts";
 
@@ -22,7 +23,7 @@ export function MyStatementView() {
   const [end, setEnd] = React.useState('');
   const [searchParams, setSearchParams] = React.useState<{start: string, end: string} | null>(null);
 
-  const queryKey = ['academy', activeAcademy?.id, 'payouts', 'my-statement', searchParams?.start, searchParams?.end];
+  const queryKey = payoutsKeys.myStatement(activeAcademy?.id, searchParams?.start, searchParams?.end);
 
   const { data: statement, isLoading, error, refetch } = useQuery({
     queryKey,

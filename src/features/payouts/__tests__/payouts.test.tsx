@@ -1,6 +1,7 @@
+import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { PayoutsDashboard } from '../components/payouts-dashboard';
+import { MyStatementView } from '../components/my-statement-view';
 import { payoutsApi } from '../api/payouts';
 import { useAcademy } from '@/lib/academy/academy-provider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -12,10 +13,7 @@ vi.mock('@/lib/academy/academy-provider', () => ({
 
 vi.mock('../api/payouts', () => ({
   payoutsApi: {
-    getLeadPayouts: vi.fn(),
     getMyStatement: vi.fn(),
-    generatePayouts: vi.fn(),
-    finalizePayout: vi.fn(),
   },
 }));
 
@@ -26,7 +24,7 @@ function renderWithProviders(ui: React.ReactNode) {
   return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 }
 
-describe('Payouts Feature', () => {
+describe('MyStatement Feature', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -42,9 +40,8 @@ describe('Payouts Feature', () => {
     it('renders empty statement state when searching', async () => {
       vi.mocked(payoutsApi.getMyStatement).mockResolvedValue({ status: 'empty' } as any);
       
-      renderWithProviders(<PayoutsDashboard />);
+      renderWithProviders(<MyStatementView />);
       
-      // Initially form is present
       const startInput = screen.getByLabelText('Period Start');
       const endInput = screen.getByLabelText('Period End');
       const submitBtn = screen.getByText('View Statement');
@@ -78,7 +75,7 @@ describe('Payouts Feature', () => {
         ]
       } as any);
       
-      renderWithProviders(<PayoutsDashboard />);
+      renderWithProviders(<MyStatementView />);
       
       const startInput = screen.getByLabelText('Period Start');
       const endInput = screen.getByLabelText('Period End');
@@ -94,45 +91,6 @@ describe('Payouts Feature', () => {
         expect(screen.getByText('25000.00 NGN')).toBeInTheDocument();
         expect(screen.getByText('Booking #101')).toBeInTheDocument();
         expect(screen.getByText('johndoe')).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Lead Role', () => {
-    beforeEach(() => {
-      vi.mocked(useAcademy).mockReturnValue({
-        activeAcademy: { id: 1, name: 'Test Academy' },
-        activeRole: 'lead',
-      } as any);
-    });
-
-    it('allows generating payouts', async () => {
-      vi.mocked(payoutsApi.getLeadPayouts).mockResolvedValue([]);
-      vi.mocked(payoutsApi.generatePayouts).mockResolvedValue({
-        created_count: 2,
-        skipped_count: 1,
-        total_amount: '10000.00',
-        skipped: [{ booking_id: 10, teacher_id: 2, reason: 'no_payout_rate' }]
-      } as any);
-      
-      renderWithProviders(<PayoutsDashboard />);
-      
-      const genBtn = await screen.findByText('Generate Payouts');
-      fireEvent.click(genBtn);
-
-      const startInput = screen.getByLabelText('Period Start');
-      const endInput = screen.getByLabelText('Period End');
-      const submitBtn = screen.getByText('Run Generation');
-
-      fireEvent.change(startInput, { target: { value: '2023-01-01T00:00' } });
-      fireEvent.change(endInput, { target: { value: '2023-01-31T23:59' } });
-      fireEvent.click(submitBtn);
-
-      await waitFor(() => {
-        expect(screen.getByText('Generation Complete')).toBeInTheDocument();
-        expect(screen.getByText('2')).toBeInTheDocument();
-        expect(screen.getByText('10000.00')).toBeInTheDocument();
-        expect(screen.getByText(/no_payout_rate/)).toBeInTheDocument();
       });
     });
   });

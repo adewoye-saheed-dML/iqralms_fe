@@ -1,3 +1,4 @@
+import { pricingKeys } from '@/lib/api/query-keys';
 'use client';
 import type { PricingAgreement, MyPricingAgreement } from "../api/pricing";
 
@@ -20,7 +21,7 @@ interface AgreementListProps {
 export function AgreementList({ type }: AgreementListProps) {
   const { activeAcademy } = useAcademy();
 
-  const queryKey = ['academy', activeAcademy?.id, 'pricing', type === 'mine' ? 'mine' : 'agreements'];
+  const queryKey = type === 'mine' ? pricingKeys.mine(activeAcademy?.id) : pricingKeys.agreements(activeAcademy?.id);
 
   const { data: agreements, isLoading, error, refetch } = useQuery({
     queryKey,
