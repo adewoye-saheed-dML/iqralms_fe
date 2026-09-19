@@ -1,5 +1,6 @@
-import { schedulingKeys } from '@/lib/api/query-keys';
 'use client';
+
+import { schedulingKeys } from '@/lib/api/query-keys';
 
 import * as React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -98,7 +99,9 @@ export function BookingList({ type }: BookingListProps) {
           <Card key={booking.id}>
             <CardHeader className="pb-2">
               <div className="flex justify-between items-start">
-                <CardTitle className="text-lg">{booking.level?.name || 'Session'}</CardTitle>
+                <CardTitle className="text-lg">
+                  {booking.level?.name || (booking as unknown as { level_details?: { name?: string } }).level_details?.name || 'Session'}
+                </CardTitle>
                 <Badge variant={booking.status === 'cancelled' ? 'destructive' : booking.status === 'completed' ? 'secondary' : 'default'}>
                   {booking.status}
                 </Badge>
@@ -122,14 +125,14 @@ export function BookingList({ type }: BookingListProps) {
                 <User className="mr-2 h-4 w-4" />
                 <span>
                   {type === 'mine' 
-                    ? `Teacher: ${booking.teacher?.first_name || booking.teacher?.username || 'Unassigned'}`
-                    : `Student: ${booking.student?.first_name || booking.student?.username || 'Unknown'}`}
+                    ? `Teacher: ${booking.teacher?.first_name || (booking as unknown as { teacher_details?: { user?: { first_name?: string } } }).teacher_details?.user?.first_name || booking.teacher?.username || 'Unassigned'}`
+                    : `Student: ${booking.student?.first_name || (booking as unknown as { student_details?: { user?: { first_name?: string } } }).student_details?.user?.first_name || booking.student?.username || 'Unknown'}`}
                 </span>
               </div>
 
-              {booking.video_join_url && booking.status !== 'cancelled' && (
+              {(booking.video_join_url || (booking as unknown as { join_url?: string }).join_url) && booking.status !== 'cancelled' && (
                 <div className="pt-2">
-                  <a href={booking.video_join_url} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                  <a href={booking.video_join_url || (booking as unknown as { join_url?: string }).join_url} target="_blank" rel="noreferrer" className="text-primary hover:underline">
                     Join Session
                   </a>
                 </div>

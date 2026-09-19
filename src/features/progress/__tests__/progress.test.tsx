@@ -5,8 +5,20 @@ import { progressApi } from '../api/progress';
 import { useAcademy } from '@/lib/academy/academy-provider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
+import { curriculumApi } from '@/features/curriculum/api/curriculum';
+
 vi.mock('@/lib/academy/academy-provider', () => ({
   useAcademy: vi.fn(),
+}));
+
+vi.mock('@/lib/auth/auth-provider', () => ({
+  useAuth: vi.fn(() => ({ user: { id: 1, role: 'student' } })),
+}));
+
+vi.mock('@/features/curriculum/api/curriculum', () => ({
+  curriculumApi: {
+    getTracks: vi.fn(),
+  },
 }));
 
 vi.mock('../api/progress', () => ({
@@ -33,7 +45,10 @@ describe('Progress Feature', () => {
   });
 
   it('renders empty progress state', async () => {
-    vi.mocked(progressApi.getMyProgress).mockResolvedValue([]);
+    vi.mocked(curriculumApi.getTracks).mockResolvedValue([
+      { id: 1, name: 'Hifz' } as any,
+    ]);
+    vi.mocked(progressApi.getMyProgress).mockResolvedValue(null);
     
     renderWithProviders(<ProgressDashboard />);
     
@@ -43,15 +58,16 @@ describe('Progress Feature', () => {
   });
 
   it('renders progress data', async () => {
-    vi.mocked(progressApi.getMyProgress).mockResolvedValue([
-      {
-        id: 1,
-        track: { name: 'Hifz' },
-        completed_sessions: 15,
-        assessed_sessions: 10,
-        overall_average: '9.2'
-      } as any
+    vi.mocked(curriculumApi.getTracks).mockResolvedValue([
+      { id: 1, name: 'Hifz' } as any,
     ]);
+    vi.mocked(progressApi.getMyProgress).mockResolvedValue({
+      id: 1,
+      track: { name: 'Hifz' },
+      completed_sessions: 15,
+      assessed_sessions: 10,
+      overall_average: '9.2'
+    } as any);
     
     renderWithProviders(<ProgressDashboard />);
     

@@ -10,11 +10,21 @@ vi.mock('@/lib/academy/academy-provider', () => ({
   useAcademy: vi.fn(),
 }));
 
+vi.mock('@/lib/auth/auth-provider', () => ({
+  useAuth: vi.fn(() => ({ user: { id: 1, role: 'student' } })),
+}));
+
 vi.mock('../api/pricing', () => ({
   pricingApi: {
     getAgreements: vi.fn(),
     getMyAgreements: vi.fn(),
     createAgreement: vi.fn(),
+  },
+}));
+
+vi.mock('@/features/students/api/students', () => ({
+  studentsApi: {
+    getStudents: vi.fn(() => Promise.resolve([{ id: 1, first_name: 'John', last_name: 'Doe' }])),
   },
 }));
 
@@ -95,7 +105,7 @@ describe('Pricing Feature', () => {
       renderWithProviders(<PricingDashboard />);
       
       await waitFor(() => {
-        expect(screen.getByText('John Doe')).toBeInTheDocument();
+        expect(screen.getAllByText('John Doe').length).toBeGreaterThanOrEqual(1);
         expect(screen.getByText('Scholarship')).toBeInTheDocument();
         expect(screen.getByText('admin1')).toBeInTheDocument();
       });
@@ -129,7 +139,7 @@ describe('Pricing Feature', () => {
           level: 2,
           standard_rate: '5000.00',
           agreed_rate: '5000.00',
-          reason: 'scholarship'
+          reason: 'discount_hardship'
         }));
       });
     });

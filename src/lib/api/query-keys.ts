@@ -25,6 +25,7 @@ export const curriculumKeys = {
   all: (academyId: AcademyId) => [...academyKeys.tenant(academyId), 'curriculum'] as const,
   tracks: (academyId: AcademyId) => [...curriculumKeys.all(academyId), 'tracks'] as const,
   trackDetail: (academyId: AcademyId, trackId: number | string) => [...curriculumKeys.all(academyId), 'track', trackId] as const,
+  levels: (academyId: AcademyId, trackId?: number | string) => [...curriculumKeys.all(academyId), 'levels', trackId] as const,
 };
 
 export const schedulingKeys = {
@@ -44,6 +45,8 @@ export const assessmentKeys = {
 export const progressKeys = {
   all: (academyId: AcademyId) => [...academyKeys.tenant(academyId), 'progress'] as const,
   list: (academyId: AcademyId, type: string) => [...progressKeys.all(academyId), type] as const,
+  detail: (academyId: AcademyId, trackId?: number | string) => [...progressKeys.all(academyId), 'detail', trackId] as const,
+  snapshots: (academyId: AcademyId) => [...progressKeys.all(academyId), 'snapshots'] as const,
 };
 
 export const pricingKeys = {

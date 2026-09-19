@@ -11,14 +11,30 @@ import { curriculumKeys, staffKeys, studentKeys } from '@/lib/api/query-keys';
 import { can } from '@/lib/permissions/capabilities';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { CheckCircle2, Circle, Clock, ArrowRight } from 'lucide-react';
+import { CheckCircle2, Circle, ArrowRight, AlertCircle, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/loading';
 import { ErrorState } from '@/components/ui/error-state';
+import { Badge } from '@/components/ui/badge';
+
+export interface OnboardingStep {
+  id: string;
+  title: string;
+  description: string;
+  backendFact: string;
+  endpoint: string | null;
+  allowedRoles: string[];
+  status: 'configured' | 'action_available' | 'uncontracted';
+  statusLabel: string;
+  actionLabel?: string;
+  actionHref?: string;
+  capability?: 'manage_curriculum' | 'manage_staff' | 'manage_students';
+}
 
 export function OnboardingWizard() {
   const { activeAcademy, activeRole } = useAcademy();
   const router = useRouter();
+  const [selectedStepId, setSelectedStepId] = React.useState<string>('curriculum');
 
   const { data: tracks = [], isLoading: isLoadingTracks, error: tracksError } = useQuery({
     queryKey: curriculumKeys.tracks(activeAcademy?.id),
@@ -51,110 +67,136 @@ export function OnboardingWizard() {
   if (tracksError || staffError || studentsError) {
     return (
       <div className="mx-auto max-w-4xl p-8">
-        <ErrorState title="Failed to load onboarding status" message="An error occurred while fetching your setup progress." />
+        <ErrorState
+          title="Failed to load onboarding status"
+          message="An error occurred while fetching your setup progress."
+        />
       </div>
     );
   }
 
-  // Local progress model based on supported data
-  const isCurriculumSetup = tracks.length > 0;
-  // A new academy has at least 1 staff (the creator). So we check for > 1 or specific roles if needed.
-  // We'll just assume > 1 means they invited someone.
-  const isStaffSetup = staff.length > 1;
-  const isStudentsSetup = students.length > 0;
-
-  // We define readiness as having setup the foundation features (curriculum, staff, students)
-  const isAcademyReady = isCurriculumSetup && isStaffSetup && isStudentsSetup;
-
-  const steps = [
+  const steps: OnboardingStep[] = [
     {
-      id: 'details',
+      id: 'academy_details',
       title: 'Academy Details',
-      description: 'Name, URL slug, and timezone configured.',
-      status: 'complete' as const,
-      action: null,
+      description: 'Name, URL slug, and timezone configured for the organization.',
+      backendFact: 'Organization entity exists with valid name, slug, and timezone',
+      endpoint: 'GET /api/organizations/{id}/',
+      allowedRoles: ['owner', 'admin'],
+      status: 'configured',
+      statusLabel: 'Configured',
     },
     {
       id: 'curriculum',
       title: 'Curriculum',
-      description: 'Define tracks and subjects taught at your academy.',
-      status: isCurriculumSetup ? ('complete' as const) : ('current' as const),
-      action: {
-        label: 'Add First Track',
-        onClick: () => router.push('/app/onboarding/curriculum'),
-        disabled: !can('manage_curriculum', { activeRole }),
-        disabledReason: 'Owner or admin permissions required.',
-      },
+      description: `Define tracks and levels taught at your academy (${tracks.length} track${tracks.length === 1 ? '' : 's'} recorded).`,
+      backendFact: 'Academic tracks configured in organization',
+      endpoint: 'GET /api/curriculum/organizations/{organization_pk}/tracks/',
+      allowedRoles: ['owner', 'admin'],
+      status: 'action_available',
+      statusLabel: 'Action Available',
+      actionLabel: tracks.length === 0 ? 'Add First Track' : 'Configure Tracks',
+      actionHref: '/app/onboarding/curriculum',
+      capability: 'manage_curriculum',
     },
     {
       id: 'teachers',
       title: 'Teachers & Staff',
-      description: 'Invite teachers and staff members.',
-      status: !isCurriculumSetup ? ('pending' as const) : isStaffSetup ? ('complete' as const) : ('current' as const),
-      action: {
-        label: 'Invite Staff',
-        onClick: () => router.push('/app/teachers/add'),
-        disabled: !can('manage_staff', { activeRole }),
-        disabledReason: 'Owner or admin permissions required.',
-      },
+      description: `Invite teachers and staff members via the invitation workflow (${staff.length} member${staff.length === 1 ? '' : 's'} active).`,
+      backendFact: 'Organization invitations dispatched or memberships active',
+      endpoint: 'POST /api/organizations/{organization_pk}/invitations/',
+      allowedRoles: ['owner', 'admin'],
+      status: 'action_available',
+      statusLabel: 'Action Available',
+      actionLabel: 'Invite Staff',
+      actionHref: '/app/teachers/add',
+      capability: 'manage_staff',
     },
     {
       id: 'students',
       title: 'Students',
-      description: 'Import or invite students.',
-      status: !isCurriculumSetup || !isStaffSetup ? ('pending' as const) : isStudentsSetup ? ('complete' as const) : ('current' as const),
-      action: {
-        label: 'Add Students',
-        onClick: () => router.push('/app/students/add'),
-        disabled: !can('manage_students', { activeRole }),
-        disabledReason: 'Owner, admin, or staff permissions required.',
-      },
+      description: `Enroll students into the academy (${students.length} student${students.length === 1 ? '' : 's'} enrolled).`,
+      backendFact: 'Student enrollment records created in organization',
+      endpoint: 'GET /api/academic/students/?organization={id}',
+      allowedRoles: ['owner', 'admin'],
+      status: 'action_available',
+      statusLabel: 'Action Available',
+      actionLabel: 'Add Students',
+      actionHref: '/app/students/add',
+      capability: 'manage_students',
     },
     {
-      id: 'class_config',
+      id: 'class_configuration',
       title: 'Class Configuration',
-      description: 'Set up class durations and schedules.',
-      status: 'pending' as const,
-      isFuturePhase: true,
-      action: null,
+      description: 'Set up class durations, schedules, and routing preferences.',
+      backendFact: 'OPEN / NOT YET CONTRACTED',
+      endpoint: null,
+      allowedRoles: ['owner', 'admin'],
+      status: 'uncontracted',
+      statusLabel: 'Not available in the current academy setup',
     },
     {
       id: 'notifications',
-      title: 'Notification Preferences',
-      description: 'Configure automated emails and alerts.',
-      status: 'pending' as const,
-      isFuturePhase: true,
-      action: null,
+      title: 'Notifications',
+      description: 'Configure automated emails and notification delivery preferences.',
+      backendFact: 'OPEN / NOT YET CONTRACTED',
+      endpoint: null,
+      allowedRoles: ['owner', 'admin'],
+      status: 'uncontracted',
+      statusLabel: 'Not available in the current academy setup',
+    },
+    {
+      id: 'ready',
+      title: 'Ready',
+      description: 'Final academy readiness assessment and operational verification.',
+      backendFact: 'OPEN / NOT YET CONTRACTED',
+      endpoint: null,
+      allowedRoles: ['owner', 'admin'],
+      status: 'uncontracted',
+      statusLabel: 'Not available in the current academy setup',
     },
   ];
 
-  const currentStep = steps.find(s => s.status === 'current');
+  const selectedStep = steps.find((s) => s.id === selectedStepId) || steps[1];
+  const canPerformAction = selectedStep.capability
+    ? can(selectedStep.capability, { activeRole })
+    : true;
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <PageHeader
         title="Academy Setup"
-        description={`Welcome to ${activeAcademy.name}. Let's get your academy ready.`}
+        description={`Welcome to ${activeAcademy.name}. Explicit onboarding steps backed by backend facts.`}
       />
 
       <div className="grid gap-6 md:grid-cols-3">
         <div className="space-y-4 md:col-span-1">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Setup Progress</CardTitle>
+              <CardTitle className="text-lg">Setup Checklist</CardTitle>
               <CardDescription>
-                {isAcademyReady ? 'Foundation complete' : 'Complete setup to launch'}
+                Tracked against verified backend capabilities
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <nav aria-label="Progress" className="space-y-4">
+              <nav aria-label="Progress" className="space-y-3">
                 {steps.map((step) => {
+                  const isSelected = step.id === selectedStep.id;
                   return (
-                    <div key={step.id} className="flex items-start">
+                    <button
+                      key={step.id}
+                      type="button"
+                      onClick={() => setSelectedStepId(step.id)}
+                      className={`flex w-full items-start rounded-lg p-2 text-left transition-colors ${
+                        isSelected
+                          ? 'bg-muted font-medium'
+                          : 'hover:bg-muted/50'
+                      }`}
+                    >
                       <div className="flex h-5 items-center">
-                        {step.status === 'complete' ? (
+                        {step.status === 'configured' ? (
                           <CheckCircle2 className="text-primary h-5 w-5" aria-hidden="true" />
-                        ) : step.status === 'current' ? (
+                        ) : step.status === 'action_available' ? (
                           <Circle
                             className="text-primary h-5 w-5 fill-current"
                             aria-hidden="true"
@@ -166,24 +208,26 @@ export function OnboardingWizard() {
                       <div className="ml-3 text-sm">
                         <span
                           className={`font-medium ${
-                            step.status === 'current'
+                            isSelected
                               ? 'text-primary'
-                              : step.status === 'complete'
+                              : step.status === 'configured'
                                 ? 'text-foreground'
                                 : 'text-muted-foreground'
                           }`}
                         >
                           {step.title}
-                          {step.isFuturePhase && (
-                            <span className="ml-2 inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-800 dark:text-gray-300">
-                              <Clock className="mr-1 h-3 w-3" />
-                              Open
-                            </span>
-                          )}
                         </span>
-                        <p className="text-muted-foreground">{step.description}</p>
+                        {step.status === 'uncontracted' ? (
+                          <span className="block text-xs text-muted-foreground">
+                            Not yet configured
+                          </span>
+                        ) : (
+                          <span className="block text-xs text-muted-foreground">
+                            {step.statusLabel}
+                          </span>
+                        )}
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </nav>
@@ -192,50 +236,80 @@ export function OnboardingWizard() {
         </div>
 
         <div className="space-y-6 md:col-span-2">
-          {!isAcademyReady && currentStep ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>{currentStep.title}</CardTitle>
-                <CardDescription>{currentStep.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col items-center justify-center space-y-4 py-8 text-center">
-                  {currentStep.action && (
-                    <>
-                      {currentStep.action.disabled ? (
-                        <div className="text-sm font-medium text-amber-600">
-                          {currentStep.action.disabledReason}
-                        </div>
-                      ) : (
-                        <Button onClick={currentStep.action.onClick} className="gap-2">
-                          {currentStep.action.label}
-                          <ArrowRight className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>{selectedStep.title}</CardTitle>
+                  <CardDescription>{selectedStep.description}</CardDescription>
+                </div>
+                <Badge
+                  variant={
+                    selectedStep.status === 'configured'
+                      ? 'default'
+                      : selectedStep.status === 'action_available'
+                        ? 'secondary'
+                        : 'outline'
+                  }
+                >
+                  {selectedStep.statusLabel}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="rounded-lg border bg-muted/40 p-4 space-y-2 text-sm">
+                <div>
+                  <span className="font-semibold">Backend Fact: </span>
+                  <span className="text-muted-foreground">{selectedStep.backendFact}</span>
+                </div>
+                <div>
+                  <span className="font-semibold">Endpoint: </span>
+                  <span className="font-mono text-xs text-muted-foreground">
+                    {selectedStep.endpoint || 'None (Uncontracted)'}
+                  </span>
+                </div>
+                <div>
+                  <span className="font-semibold">Authorized Roles: </span>
+                  <span className="text-muted-foreground">
+                    {selectedStep.allowedRoles.join(', ')}
+                  </span>
+                </div>
+              </div>
+
+              {selectedStep.status === 'uncontracted' ? (
+                <div className="rounded-lg border border-dashed p-6 text-center space-y-2">
+                  <Info className="mx-auto h-8 w-8 text-muted-foreground" />
+                  <p className="font-medium text-muted-foreground">
+                    Not available in the current academy setup
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    This step is OPEN / NOT YET CONTRACTED on the backend API. No false readiness is inferred.
+                  </p>
+                </div>
+              ) : selectedStep.actionLabel && selectedStep.actionHref ? (
+                <div className="flex flex-col items-center justify-center space-y-4 py-4 text-center">
+                  {!canPerformAction ? (
+                    <div className="flex items-center gap-2 text-sm font-medium text-amber-600">
+                      <AlertCircle className="h-4 w-4" />
+                      Owner or admin permissions required.
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={() => router.push(selectedStep.actionHref!)}
+                      className="gap-2"
+                    >
+                      {selectedStep.actionLabel}
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
                   )}
                 </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>Academy Ready</CardTitle>
-                <CardDescription>Your academy setup foundation is complete.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <p className="text-muted-foreground text-sm">
-                    You have successfully defined the curriculum, invited staff, and added students.
-                    The academy is now operational!
-                  </p>
-                  <Button onClick={() => router.push('/app/dashboard')}>
-                    Continue to Dashboard
-                  </Button>
+              ) : (
+                <div className="rounded-lg border p-4 text-sm text-green-700 bg-green-50 dark:bg-green-950/20 dark:text-green-400">
+                  Step is verified and active for {activeAcademy.name}.
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

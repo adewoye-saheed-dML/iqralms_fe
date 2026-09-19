@@ -1,6 +1,7 @@
+'use client';
+
 import { staffKeys } from '@/lib/api/query-keys';
 import { can } from '@/lib/permissions/capabilities';
-'use client';
 
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -46,7 +47,7 @@ export function StaffDirectory({ showOnlyAdmin }: { showOnlyAdmin?: boolean }) {
 
   if (isError) {
     return (
-      <ErrorState title="Failed to load directory" message={error?.message} />
+      <ErrorState title="Failed to load directory" message={error?.message} onRetry={() => refetch()} />
     );
   }
 

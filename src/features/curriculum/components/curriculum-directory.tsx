@@ -1,6 +1,7 @@
+'use client';
+
 import { curriculumKeys } from '@/lib/api/query-keys';
 import { can } from '@/lib/permissions/capabilities';
-'use client';
 
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -22,6 +23,12 @@ export function CurriculumDirectory() {
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: curriculumKeys.tracks(activeAcademy?.id),
     queryFn: () => curriculumApi.getTracks(activeAcademy!.id),
+    enabled: !!activeAcademy,
+  });
+
+  const { data: levels = [] } = useQuery({
+    queryKey: curriculumKeys.levels(activeAcademy?.id),
+    queryFn: () => curriculumApi.getLevels(activeAcademy!.id),
     enabled: !!activeAcademy,
   });
 
@@ -58,14 +65,14 @@ export function CurriculumDirectory() {
     return (
       <EmptyState
         icon={<BookOpen className="text-muted-foreground h-10 w-10" />}
-        title="No curriculum tracks found"
-        description="This academy hasn't set up any learning tracks yet."
+        title="No tracks defined"
+        description="Get started by creating the first track for your academy."
         action={
           canManageCurriculum ? (
             <Button asChild>
               <Link href="/app/curriculum/tracks/add">
                 <Plus className="mr-2 h-4 w-4" />
-                Create Track
+                Create First Track
               </Link>
             </Button>
           ) : undefined
@@ -75,7 +82,7 @@ export function CurriculumDirectory() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {canManageCurriculum && (
         <div className="flex justify-end">
           <Button asChild>
@@ -88,42 +95,45 @@ export function CurriculumDirectory() {
       )}
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {tracks.map((track) => (
-          <Card key={track.id} className="flex flex-col">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="text-xl">{track.name}</CardTitle>
-                  <p className="text-muted-foreground mt-1 font-mono text-sm">{track.slug}</p>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-1">
-              <div className="space-y-3">
-                <h4 className="text-sm font-medium">Levels ({track.levels.length})</h4>
-                {track.levels.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {track.levels.map((level) => (
-                      <Badge key={level.id} variant="secondary">
-                        {level.order}. {level.name}
-                      </Badge>
-                    ))}
+        {tracks.map((track) => {
+          const trackLevels = levels.filter((l) => l.track === track.id);
+          return (
+            <Card key={track.id} className="flex flex-col">
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle className="text-xl">{track.name}</CardTitle>
+                    <p className="text-muted-foreground mt-1 font-mono text-sm">{track.slug}</p>
                   </div>
-                ) : (
-                  <p className="text-muted-foreground text-sm italic">No levels added yet.</p>
-                )}
-              </div>
-
-              {canManageCurriculum && (
-                <div className="mt-6">
-                  <Button asChild variant="outline" className="w-full">
-                    <Link href={`/app/curriculum/tracks/${track.id}`}>Manage Track</Link>
-                  </Button>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+              </CardHeader>
+              <CardContent className="flex-1">
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium">Levels ({trackLevels.length})</h4>
+                  {trackLevels.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {trackLevels.map((level) => (
+                        <Badge key={level.id} variant="secondary">
+                          {level.order}. {level.name}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-sm italic">No levels added yet.</p>
+                  )}
+                </div>
+
+                {canManageCurriculum && (
+                  <div className="mt-6">
+                    <Button asChild variant="outline" className="w-full">
+                      <Link href={`/app/curriculum/tracks/${track.id}`}>Manage Track</Link>
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );

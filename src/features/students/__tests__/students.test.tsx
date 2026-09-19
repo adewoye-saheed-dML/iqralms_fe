@@ -1,5 +1,5 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -57,7 +57,21 @@ describe('Student Management', () => {
   describe('StudentDirectory', () => {
     it('list request succeeds for allowed academy manager', async () => {
       vi.mocked(studentsApi.getStudents).mockResolvedValue([
-        { id: 10, user: 100, username: 'teststudent', status: 'active' },
+        {
+          id: 10,
+          user_id: 100,
+          username: 'teststudent',
+          email: 'test@example.com',
+          first_name: '',
+          last_name: '',
+          date_of_birth: '2010-01-01',
+          is_minor: true,
+          enrollment_status: 'active',
+          track_id: null,
+          level_id: null,
+          created_at: '2026-01-01T00:00:00Z',
+          updated_at: '2026-01-01T00:00:00Z',
+        },
       ]);
 
       renderWithProviders(<StudentDirectory />);
@@ -92,7 +106,21 @@ describe('Student Management', () => {
 
   describe('AddStudentForm', () => {
     it('add student succeeds', async () => {
-      vi.mocked(studentsApi.addStudent).mockResolvedValue(undefined);
+      vi.mocked(studentsApi.addStudent).mockResolvedValue({
+        id: 1,
+        user_id: 123,
+        username: 'student123',
+        email: 'student123@example.com',
+        first_name: '',
+        last_name: '',
+        date_of_birth: '2010-01-01',
+        is_minor: true,
+        enrollment_status: 'active',
+        track_id: null,
+        level_id: null,
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
+      });
       renderWithProviders(<AddStudentForm />);
 
       const input = screen.getByLabelText('User ID');
@@ -146,9 +174,18 @@ describe('Student Management', () => {
     it('detail request succeeds', async () => {
       vi.mocked(studentsApi.getStudent).mockResolvedValue({
         id: 5,
-        user: 200,
+        user_id: 200,
         username: 'jane',
-        status: 'active',
+        email: 'jane@example.com',
+        first_name: '',
+        last_name: '',
+        date_of_birth: '2010-01-01',
+        is_minor: true,
+        enrollment_status: 'active',
+        track_id: null,
+        level_id: null,
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
       });
       renderWithProviders(<StudentDetail enrollmentId={5} />);
 
@@ -169,15 +206,33 @@ describe('Student Management', () => {
     it('update status succeeds', async () => {
       vi.mocked(studentsApi.getStudent).mockResolvedValue({
         id: 5,
-        user: 200,
+        user_id: 200,
         username: 'jane',
-        status: 'active',
+        email: 'jane@example.com',
+        first_name: '',
+        last_name: '',
+        date_of_birth: '2010-01-01',
+        is_minor: true,
+        enrollment_status: 'active',
+        track_id: null,
+        level_id: null,
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
       });
       vi.mocked(studentsApi.updateStudentStatus).mockResolvedValue({
         id: 5,
-        user: 200,
+        user_id: 200,
         username: 'jane',
-        status: 'inactive',
+        email: 'jane@example.com',
+        first_name: '',
+        last_name: '',
+        date_of_birth: '2010-01-01',
+        is_minor: true,
+        enrollment_status: 'inactive',
+        track_id: null,
+        level_id: null,
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
       });
       renderWithProviders(<StudentDetail enrollmentId={5} />);
 
@@ -192,7 +247,7 @@ describe('Student Management', () => {
 
       // Save
       await act(async () => {
-        fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Save' }));
       });
 
       expect(studentsApi.updateStudentStatus).toHaveBeenCalledWith(1, 5, { status: 'inactive' });
@@ -202,9 +257,18 @@ describe('Student Management', () => {
     it('forbidden mutation is handled', async () => {
       vi.mocked(studentsApi.getStudent).mockResolvedValue({
         id: 5,
-        user: 200,
+        user_id: 200,
         username: 'jane',
-        status: 'active',
+        email: 'jane@example.com',
+        first_name: '',
+        last_name: '',
+        date_of_birth: '2010-01-01',
+        is_minor: true,
+        enrollment_status: 'active',
+        track_id: null,
+        level_id: null,
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
       });
       vi.mocked(studentsApi.updateStudentStatus).mockRejectedValue(new ApiError(403, 'Forbidden'));
       renderWithProviders(<StudentDetail enrollmentId={5} />);
@@ -217,7 +281,7 @@ describe('Student Management', () => {
       fireEvent.click(screen.getByRole('option', { name: 'Inactive' }));
 
       await act(async () => {
-        fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Save' }));
       });
 
       await waitFor(() => {

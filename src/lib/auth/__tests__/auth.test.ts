@@ -9,53 +9,37 @@ describe('Authentication Flow', () => {
   });
 
   it('proves the authentication chain: login -> credential established -> me -> authenticated', async () => {
-    // 1. Mock fetch for the whole chain
+    // 1. Mock fetch with real Response objects
     const fetchMock = vi.fn().mockImplementation(async (url: string | URL | Request, config?: RequestInit) => {
-      const urlStr = url.toString();
+      const urlStr = typeof url === 'string' ? url : url instanceof URL ? url.href : url.url;
       if (urlStr.includes('/api/auth/login/')) {
-        return {
-          ok: true,
+        return new Response(JSON.stringify({ key: 'test-token-123' }), {
           status: 200,
-          clone: () => ({ json: async () => ({ key: 'test-token-123' }) }),
-          json: async () => ({ key: 'test-token-123' }),
-          headers: new Headers(),
-        } as unknown as Response;
+          headers: { 'Content-Type': 'application/json' },
+        });
       }
       if (urlStr.includes('/api/accounts/me/')) {
-        // Only succeed if the token is passed
         const requestHeaders = config?.headers ? new Headers(config.headers) : new Headers();
-        // Since we are mocking fetch, the middleware would have set the header on the Request object 
-        // if it used new Request(), but openapi-fetch modifies the request headers natively.
-        // Actually we need to check request headers from Request object or config.
         let authHeader = requestHeaders.get('Authorization');
         if (url instanceof Request) {
           authHeader = url.headers.get('Authorization') || authHeader;
         }
         
         if (authHeader === 'Token test-token-123') {
-          return {
-            ok: true,
+          return new Response(JSON.stringify({ id: 1, username: 'testuser' }), {
             status: 200,
-            clone: () => ({ json: async () => ({ id: 1, username: 'testuser' }) }),
-            json: async () => ({ id: 1, username: 'testuser' }),
-            headers: new Headers(),
-          } as unknown as Response;
+            headers: { 'Content-Type': 'application/json' },
+          });
         }
-        return {
-          ok: false,
+        return new Response(JSON.stringify({ detail: 'Unauthorized' }), {
           status: 401,
-          clone: () => ({ json: async () => ({ detail: 'Unauthorized' }) }),
-          json: async () => ({ detail: 'Unauthorized' }),
-          headers: new Headers(),
-        } as unknown as Response;
+          headers: { 'Content-Type': 'application/json' },
+        });
       }
-      return { 
-        ok: false, 
-        status: 404, 
-        clone: () => ({ json: async () => ({}) }),
-        json: async () => ({}),
-        headers: new Headers(),
-      } as unknown as Response;
+      return new Response(JSON.stringify({ detail: 'Not Found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
     });
     vi.stubGlobal('fetch', fetchMock);
 
@@ -64,11 +48,12 @@ describe('Authentication Flow', () => {
       body: { username: 'testuser', password: 'password' },
     });
 
-    // @ts-ignore
-    expect(loginResponse.key).toBe('test-token-123');
+    expect(loginResponse?.key).toBe('test-token-123');
 
     // 3. Establish credential/session
-    setToken(loginResponse?.key!);
+    if (loginResponse?.key) {
+      setToken(loginResponse.key);
+    }
     expect(getToken()).toBe('test-token-123');
 
     // 4. Perform GET /api/accounts/me/
@@ -78,14 +63,16 @@ describe('Authentication Flow', () => {
     expect(meResponse?.username).toBe('testuser');
 
     // 6. Verify fetch was called with the correct headers
-    const meCall = fetchMock.mock.calls.find((call) =>
-      call[0].toString().includes('/api/accounts/me/')
-    );
+    const meCall = fetchMock.mock.calls.find((call) => {
+      const u = call[0];
+      const s = typeof u === 'string' ? u : u instanceof URL ? u.href : u.url;
+      return s.includes('/api/accounts/me/');
+    });
     expect(meCall).toBeDefined();
     let meCallAuthHeader = '';
-    if (meCall[0] instanceof Request) {
+    if (meCall && meCall[0] instanceof Request) {
       meCallAuthHeader = meCall[0].headers.get('Authorization') || '';
-    } else {
+    } else if (meCall) {
       meCallAuthHeader = new Headers(meCall[1]?.headers).get('Authorization') || '';
     }
     expect(meCallAuthHeader).toBe('Token test-token-123');

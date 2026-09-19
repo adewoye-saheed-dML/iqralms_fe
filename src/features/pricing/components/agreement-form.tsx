@@ -1,9 +1,10 @@
-import { pricingKeys } from '@/lib/api/query-keys';
 'use client';
+
+import { pricingKeys } from '@/lib/api/query-keys';
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { pricingApi, type PricingAgreementCreate } from '../api/pricing';
+import { pricingApi, type PricingAgreementCreate, type ReasonEnum } from '../api/pricing';
 import { useAcademy } from '@/lib/academy/academy-provider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,7 +22,7 @@ export function AgreementForm({ onSuccess }: AgreementFormProps) {
   const [error, setError] = React.useState<string | null>(null);
 
   const [formData, setFormData] = React.useState<Partial<PricingAgreementCreate>>({
-    reason: 'scholarship',
+    reason: 'discount_hardship',
   });
 
   const mutation = useMutation({
@@ -114,17 +115,16 @@ export function AgreementForm({ onSuccess }: AgreementFormProps) {
         <Label htmlFor="reason">Reason</Label>
         <Select 
           value={formData.reason} 
-          onValueChange={(value: string) => setFormData({ ...formData, reason: value })}
+          onValueChange={(value: string) => setFormData({ ...formData, reason: value as ReasonEnum })}
         >
           <SelectTrigger id="reason">
             <SelectValue placeholder="Select reason" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="standard">Standard</SelectItem>
-            <SelectItem value="scholarship">Scholarship</SelectItem>
-            <SelectItem value="family_discount">Family Discount</SelectItem>
-            <SelectItem value="staff_discount">Staff Discount</SelectItem>
-            <SelectItem value="promotional">Promotional</SelectItem>
+            <SelectItem value="discount_hardship">Hardship Discount</SelectItem>
+            <SelectItem value="sibling_discount">Sibling Discount</SelectItem>
+            <SelectItem value="premium_direct">Premium Direct</SelectItem>
           </SelectContent>
         </Select>
       </div>

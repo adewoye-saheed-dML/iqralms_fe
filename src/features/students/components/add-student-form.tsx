@@ -1,6 +1,6 @@
 'use client';
+
 import { studentKeys } from '@/lib/api/query-keys';
-'use client';
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';

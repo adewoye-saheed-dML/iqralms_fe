@@ -1,7 +1,7 @@
 import createClient, { Middleware } from 'openapi-fetch';
 import type { paths } from './schema';
-import { getToken } from '@/lib/auth/token';
-import { ApiError } from './errors';
+import { getToken, removeToken } from '@/lib/auth/token';
+import { ApiError, normalizeErrorMessage } from './errors';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
 
@@ -20,16 +20,27 @@ const authAndErrorMiddleware: Middleware = {
       try {
         data = await response.clone().json();
       } catch {
-        throw new ApiError(response.status, response.statusText);
+        try {
+          data = await response.clone().text();
+        } catch {
+          data = undefined;
+        }
       }
-      
-      const errorData = data as Record<string, unknown>;
-      const detail = typeof errorData?.detail === 'string' ? errorData.detail : response.statusText;
-      throw new ApiError(response.status, detail, data);
+
+      // If 401 Unauthorized, ensure stale/invalid token is removed from storage
+      if (response.status === 401) {
+        removeToken();
+      }
+
+      const message = normalizeErrorMessage(response.status, data, response.statusText);
+      throw new ApiError(response.status, message, data);
     }
     return response;
   }
 };
 
-export const apiClient = createClient<paths>({ baseUrl: API_BASE_URL });
+export const apiClient = createClient<paths>({
+  baseUrl: API_BASE_URL,
+  fetch: (input: Request) => fetch(input),
+});
 apiClient.use(authAndErrorMiddleware);

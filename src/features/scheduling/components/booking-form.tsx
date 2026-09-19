@@ -1,13 +1,13 @@
 'use client';
+
 import { studentKeys, curriculumKeys, schedulingKeys } from '@/lib/api/query-keys';
-'use client';
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAcademy } from '@/lib/academy/academy-provider';
 import { schedulingApi } from '../api/scheduling';
-import { curriculumApi } from '@/features/curriculum/api/curriculum';
+import { curriculumApi, Level } from '@/features/curriculum/api/curriculum';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -54,6 +54,19 @@ export function BookingForm() {
     },
     enabled: !!activeAcademy?.id && isParent,
   });
+
+  const embeddedLevels = React.useMemo(() => {
+    const list: { id: number; name: string; trackName: string }[] = [];
+    tracks?.forEach((t) => {
+      const embedded = (t as unknown as { levels?: Level[] }).levels;
+      if (Array.isArray(embedded)) {
+        embedded.forEach((l) => {
+          list.push({ id: l.id, name: l.name, trackName: t.name });
+        });
+      }
+    });
+    return list;
+  }, [tracks]);
 
   const routeMutation = useMutation({
     mutationFn: (data: RouteRequest) => {
@@ -162,11 +175,15 @@ export function BookingForm() {
                   <SelectValue placeholder="Select a student" />
                 </SelectTrigger>
                 <SelectContent>
-                  {students?.map(s => (
-                    <SelectItem key={s.id} value={String(s.user)}>
-                      {s.first_name || s.username}
-                    </SelectItem>
-                  ))}
+                  {students?.map((s) => {
+                    const studentUserId = s.user_id ?? (s as unknown as { user?: number }).user;
+                    const studentDisplayName = s.first_name || s.username || `Student #${s.id}`;
+                    return (
+                      <SelectItem key={s.id} value={String(studentUserId)}>
+                        {studentDisplayName}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -179,14 +196,10 @@ export function BookingForm() {
                 <SelectValue placeholder="Select a level" />
               </SelectTrigger>
               <SelectContent>
-                {tracks?.map(track => (
-                  <React.Fragment key={track.id}>
-                    {track.levels.map(level => (
-                      <SelectItem key={level.id} value={String(level.id)}>
-                        {track.name} — {level.name}
-                      </SelectItem>
-                    ))}
-                  </React.Fragment>
+                {embeddedLevels.map((lvl) => (
+                  <SelectItem key={lvl.id} value={String(lvl.id)}>
+                    {lvl.trackName} — {lvl.name}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -203,21 +216,24 @@ export function BookingForm() {
                 disabled={routeMutation.isPending}
               />
             </div>
+
             <div className="space-y-2">
-              <Label>Duration (Minutes)</Label>
-              <Input
-                type="number"
-                value={duration}
-                onChange={(e) => setDuration(e.target.value)}
-                min="15"
-                step="15"
-                disabled={routeMutation.isPending}
-              />
+              <Label>Duration (minutes)</Label>
+              <Select value={duration} onValueChange={setDuration} disabled={routeMutation.isPending}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="30">30 mins</SelectItem>
+                  <SelectItem value="45">45 mins</SelectItem>
+                  <SelectItem value="60">60 mins</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label>Preferred Teacher ID (Optional)</Label>
+            <Label>Preferred Teacher (Optional, User ID)</Label>
             <Input
               type="number"
               placeholder="e.g. 5"
@@ -225,19 +241,11 @@ export function BookingForm() {
               onChange={(e) => setPreferredTeacher(e.target.value)}
               disabled={routeMutation.isPending}
             />
-            <p className="text-xs text-muted-foreground">
-              If specified, you will be placed on their waitlist if they are not available.
-            </p>
           </div>
 
-          <div className="pt-4 flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => router.push('/app/scheduling')}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={!levelId || !startTime || (isParent && !studentId) || routeMutation.isPending}>
-              {routeMutation.isPending ? 'Requesting...' : 'Request Booking'}
-            </Button>
-          </div>
+          <Button type="submit" className="w-full" disabled={routeMutation.isPending}>
+            {routeMutation.isPending ? 'Processing...' : 'Request Booking'}
+          </Button>
         </form>
       </CardContent>
     </Card>

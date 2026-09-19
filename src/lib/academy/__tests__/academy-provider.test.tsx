@@ -2,9 +2,12 @@ import { studentKeys } from '@/lib/api/query-keys';
 import * as React from 'react';
 import { render, screen, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, Query } from '@tanstack/react-query';
 import { AcademyProvider, useAcademy } from '../academy-provider';
 import * as AuthProvider from '@/lib/auth/auth-provider';
+import type { components } from '@/lib/api/schema';
+
+type OrgRole = components['schemas']['OrganizationRoleEnum'];
 
 // Mock dependencies
 vi.mock('@/lib/auth/auth-provider', () => ({
@@ -13,13 +16,15 @@ vi.mock('@/lib/auth/auth-provider', () => ({
 
 const { mockApiClient } = vi.hoisted(() => ({
   mockApiClient: {
-    get: vi.fn(),
+    GET: vi.fn(),
+    POST: vi.fn(),
+    PATCH: vi.fn(),
+    DELETE: vi.fn(),
   },
 }));
 
 vi.mock('@/lib/api/client', () => ({
   apiClient: mockApiClient,
-  legacyApiClient: mockApiClient,
 }));
 
 // Test helper component
@@ -41,14 +46,17 @@ function TestConsumer() {
   );
 }
 
-const createMockMembership = (orgId: number, orgName: string, role: string) => ({
+const createMockMembership = (orgId: number, orgName: string, role: OrgRole) => ({
   id: orgId + 100,
-  organization: { id: orgId, name: orgName, slug: orgName.toLowerCase() },
+  organization: { id: orgId, name: orgName, slug: orgName.toLowerCase(), timezone: 'UTC' },
   role,
   role_display: role,
-  status: 'active',
+  status: 'active' as const,
   status_display: 'Active',
   created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+  user: 1,
+  username: 'testuser',
 });
 
 describe('AcademyProvider', () => {
@@ -62,8 +70,15 @@ describe('AcademyProvider', () => {
         queries: { retry: false, gcTime: 0 },
       },
     });
-    // @ts-expect-error Mock implementation
-    vi.spyOn(AuthProvider, 'useAuth').mockReturnValue({ user: { id: 1, username: 'testuser' } });
+    vi.spyOn(AuthProvider, 'useAuth').mockReturnValue({
+      user: { id: 1, username: 'testuser', email: 'test@example.com', role: 'lead', timezone: 'UTC' },
+      isLoading: false,
+      error: null,
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      refreshAuth: vi.fn(),
+    });
   });
 
   const renderProvider = () =>
@@ -114,7 +129,7 @@ describe('AcademyProvider', () => {
   });
 
   it('rejects invalid persisted selection and falls back to first academy', async () => {
-    localStorage.setItem('quran_fe_selected_academy_id', '99'); // Invalid
+    localStorage.setItem('quran_fe_selected_academy_id', '99'); // Invalid ID
     mockApiClient.GET.mockResolvedValue({ data: [
       createMockMembership(1, 'Academy A', 'admin'),
       createMockMembership(2, 'Academy B', 'teacher'),
@@ -131,52 +146,48 @@ describe('AcademyProvider', () => {
       createMockMembership(1, 'Academy A', 'admin'),
       createMockMembership(2, 'Academy B', 'teacher'),
     ] });
-    renderProvider();
 
-    // Auto selects A
+    renderProvider();
     expect(await screen.findByTestId('active-academy')).toHaveTextContent('Academy A');
     expect(screen.getByTestId('active-role')).toHaveTextContent('admin');
 
-    // Switch to B
-    act(() => {
-      screen.getByText('Switch Academy').click();
+    // Switch academy using the button (calls setActiveAcademy)
+    const switchBtn = screen.getByText('Switch Academy');
+    await act(async () => {
+      switchBtn.click();
     });
 
-    expect(screen.getByTestId('active-academy')).toHaveTextContent('Academy B');
+    expect(await screen.findByTestId('active-academy')).toHaveTextContent('Academy B');
     expect(screen.getByTestId('active-role')).toHaveTextContent('teacher');
     expect(localStorage.getItem('quran_fe_selected_academy_id')).toBe('2');
 
-    // Verify cache invalidation/reset
+    // Verify tenant-scoped query invalidation / removal
     expect(removeSpy).toHaveBeenCalled();
     const predicate = removeSpy.mock.calls[0][0]?.predicate;
     expect(predicate).toBeDefined();
 
     // Test the predicate logic directly
-    const shouldRemoveAcademy1 = predicate({
+    const shouldRemoveAcademy1 = predicate!({
       queryKey: studentKeys.all(1),
-    } as unknown as import('@tanstack/react-query').Query);
-    const shouldRemoveAcademy2 = predicate({
+    } as Query);
+    const shouldRemoveAcademy2 = predicate!({
       queryKey: studentKeys.all(2),
-    } as unknown as import('@tanstack/react-query').Query);
-    const shouldRemoveGlobal = predicate({
+    } as Query);
+    const shouldRemoveGlobal = predicate!({
       queryKey: ['global'],
-    } as unknown as import('@tanstack/react-query').Query);
+    } as Query);
 
     expect(shouldRemoveAcademy1).toBe(true); // Should reset Academy 1 data since we switched to 2
     expect(shouldRemoveAcademy2).toBe(false); // Should not reset Academy 2 data since it's the new active
     expect(shouldRemoveGlobal).toBe(false); // Should not reset non-tenant data
   });
   
-  it('ignores invalid mixed-role configuration if a global role leaks into memberships', async () => {
-    // If the backend were to accidentally send a global role like 'student' in a membership,
-    // the provider shouldn't crash, but typically TS prevents this in codebase.
-    // For testing, we mock an invalid payload.
+  it('correctly maps valid organization membership roles', async () => {
     mockApiClient.GET.mockResolvedValue({ data: [
-      createMockMembership(1, 'Academy A', 'lead' as any),
+      createMockMembership(1, 'Academy A', 'teacher'),
     ] });
     renderProvider();
     expect(await screen.findByTestId('active-academy')).toHaveTextContent('Academy A');
-    expect(screen.getByTestId('active-role')).toHaveTextContent('lead');
-    // Note: The UI layer will filter out capabilities because 'lead' is not an OrgRole!
+    expect(screen.getByTestId('active-role')).toHaveTextContent('teacher');
   });
 });

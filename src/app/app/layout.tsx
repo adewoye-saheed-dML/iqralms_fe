@@ -1,4 +1,5 @@
 'use client';
+
 import { navigationConfig } from '@/lib/navigation/config';
 import { can } from '@/lib/permissions/capabilities';
 

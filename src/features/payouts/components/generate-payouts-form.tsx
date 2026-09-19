@@ -1,5 +1,6 @@
-import { payoutsKeys } from '@/lib/api/query-keys';
 'use client';
+
+import { payoutsKeys } from '@/lib/api/query-keys';
 import type { SkippedBooking } from "../api/payouts";
 
 import * as React from 'react';

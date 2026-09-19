@@ -1,10 +1,10 @@
+'use client';
+
 import { staffKeys } from '@/lib/api/query-keys';
 import { can } from '@/lib/permissions/capabilities';
-'use client';
 
 import * as React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
 import { useAcademy } from '@/lib/academy/academy-provider';
 import { staffApi, UpdateMemberPayload, AssignableRole, Status } from '../api/staff';
 import { Button } from '@/components/ui/button';
@@ -57,7 +57,7 @@ export function StaffDetail({ memberId }: StaffDetailProps) {
   }
 
   if (isError || !member) {
-    return <ErrorState title="Member Not Found" message={error?.message} />;
+    return <ErrorState title="Member Not Found" message={error?.message} onRetry={() => refetch()} />;
   }
 
   const canManage = can('manage_staff', { activeRole });

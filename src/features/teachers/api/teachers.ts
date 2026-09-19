@@ -11,14 +11,17 @@ export const teachersApi = {
     const { data } = await apiClient.GET('/api/accounts/organizations/{organization_pk}/teacher-configurations/', {
       params: { path: { organization_pk: organizationId } },
     });
-    return data as TeacherConfiguration[];
+    return data ?? [];
   },
 
   getTeacherConfiguration: async (organizationId: number, memberId: number): Promise<TeacherConfiguration> => {
     const { data } = await apiClient.GET('/api/accounts/organizations/{organization_pk}/teacher-configurations/{id}/', {
       params: { path: { organization_pk: organizationId, id: memberId } },
     });
-    return data as TeacherConfiguration;
+    if (!data) {
+      throw new Error('Teacher configuration not found');
+    }
+    return data;
   },
 
   createTeacherConfiguration: async (organizationId: number, body: TeacherConfigurationCreate): Promise<TeacherConfiguration> => {
@@ -26,7 +29,10 @@ export const teachersApi = {
       params: { path: { organization_pk: organizationId } },
       body,
     });
-    return data as TeacherConfiguration;
+    if (!data) {
+      throw new Error('Failed to create teacher configuration');
+    }
+    return data;
   },
 
   updateTeacherConfiguration: async (
@@ -38,13 +44,16 @@ export const teachersApi = {
       params: { path: { organization_pk: organizationId, id: memberId } },
       body,
     });
-    return data as TeacherConfiguration;
+    if (!data) {
+      throw new Error('Failed to update teacher configuration');
+    }
+    return data;
   },
 
   getTeacherTracks: async (organizationId: number): Promise<TeacherTrack[]> => {
     const { data } = await apiClient.GET('/api/curriculum/organizations/{organization_pk}/teachers/', {
       params: { path: { organization_pk: organizationId } },
     });
-    return data as TeacherTrack[];
+    return data ?? [];
   },
 };

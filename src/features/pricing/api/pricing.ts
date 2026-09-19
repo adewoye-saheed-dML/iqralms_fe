@@ -8,25 +8,34 @@ export type Level = components['schemas']['Level'];
 export type ReasonEnum = components['schemas']['ReasonEnum'];
 
 export const pricingApi = {
-  getAgreements: async (organizationId: number) => {
+  getAgreements: async (organizationId: number, studentId: number): Promise<PricingAgreement[]> => {
     const { data } = await apiClient.GET('/api/pricing/organizations/{organization_pk}/agreements/', {
-      params: { path: { organization_pk: organizationId } }
+      params: {
+        path: { organization_pk: organizationId },
+        query: { student_id: studentId },
+      },
     });
-    return data as PricingAgreement[];
+    return data ?? [];
   },
 
-  createAgreement: async (organizationId: number, body: PricingAgreementCreate) => {
+  createAgreement: async (
+    organizationId: number,
+    body: PricingAgreementCreate
+  ): Promise<PricingAgreement> => {
     const { data } = await apiClient.POST('/api/pricing/organizations/{organization_pk}/agreements/', {
       params: { path: { organization_pk: organizationId } },
-      body
+      body,
     });
-    return data as PricingAgreement;
+    if (!data) {
+      throw new Error('Failed to create pricing agreement');
+    }
+    return data;
   },
 
-  getMyAgreements: async (organizationId: number) => {
+  getMyAgreements: async (organizationId: number): Promise<MyPricingAgreement[]> => {
     const { data } = await apiClient.GET('/api/pricing/organizations/{organization_pk}/agreements/mine/', {
-      params: { path: { organization_pk: organizationId } }
+      params: { path: { organization_pk: organizationId } },
     });
-    return data as MyPricingAgreement[];
+    return data ?? [];
   },
 };

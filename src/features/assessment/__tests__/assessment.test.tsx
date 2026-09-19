@@ -10,6 +10,10 @@ vi.mock('@/lib/academy/academy-provider', () => ({
   useAcademy: vi.fn(),
 }));
 
+vi.mock('@/lib/auth/auth-provider', () => ({
+  useAuth: vi.fn(() => ({ user: { id: 1, role: 'student' } })),
+}));
+
 vi.mock('../api/assessment', () => ({
   assessmentApi: {
     getMyAssessments: vi.fn(),

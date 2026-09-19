@@ -11,7 +11,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Spinner } from '@/components/ui/loading';
 import { ErrorState } from '@/components/ui/error-state';
 import { AlertCircle, ArrowLeft, CheckCircle2, Clock } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { can } from '@/lib/permissions/capabilities';
 import { Input } from '@/components/ui/input';

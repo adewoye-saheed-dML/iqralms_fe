@@ -1,5 +1,6 @@
-import { academyKeys } from '@/lib/api/query-keys';
 'use client';
+
+import { academyKeys } from '@/lib/api/query-keys';
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -25,11 +26,13 @@ export function ImportWorkflow() {
   const [job, setJob] = React.useState<ImportJobResponse | null>(null);
 
   // Clear job if academy changes (tenant safety)
-  React.useEffect(() => {
+  const [prevAcademyId, setPrevAcademyId] = React.useState(activeAcademy?.id);
+  if (prevAcademyId !== activeAcademy?.id) {
+    setPrevAcademyId(activeAcademy?.id);
     setJob(null);
     setError(null);
     setFile(null);
-  }, [activeAcademy?.id]);
+  }
 
   const validateMutation = useMutation({
     mutationFn: (data: { file: File, kind: KindEnum }) => {

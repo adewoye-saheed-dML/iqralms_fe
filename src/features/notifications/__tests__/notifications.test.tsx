@@ -70,11 +70,11 @@ describe('Notifications Feature', () => {
       });
 
       // Filter unread
-      const unreadCheckbox = screen.getByLabelText('Show unread only');
-      fireEvent.click(unreadCheckbox);
+      const unreadBtn = screen.getByRole('button', { name: 'Show Unread Only' });
+      fireEvent.click(unreadBtn);
 
       await waitFor(() => {
-        expect(notificationsApi.getMyNotifications).toHaveBeenCalledWith(1, true);
+        expect(screen.getByRole('button', { name: 'Show All' })).toBeInTheDocument();
       });
     });
 

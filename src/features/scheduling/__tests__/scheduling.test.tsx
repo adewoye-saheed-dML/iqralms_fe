@@ -1,4 +1,5 @@
 'use client';
+
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SchedulingDashboard } from '../components/scheduling-dashboard';
@@ -6,11 +7,16 @@ import { BookingForm } from '../components/booking-form';
 import { schedulingApi } from '../api/scheduling';
 import { curriculumApi } from '@/features/curriculum/api/curriculum';
 import { useAcademy } from '@/lib/academy/academy-provider';
+import { useAuth } from '@/lib/auth/auth-provider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ApiError } from '@/lib/api/errors';
 
 vi.mock('@/lib/academy/academy-provider', () => ({
   useAcademy: vi.fn(),
+}));
+
+vi.mock('@/lib/auth/auth-provider', () => ({
+  useAuth: vi.fn(),
 }));
 
 vi.mock('../api/scheduling', () => ({
@@ -48,6 +54,9 @@ describe('Scheduling Feature', () => {
       activeAcademy: { id: 1, name: 'Test Academy' },
       activeRole: 'student',
     });
+    vi.mocked(useAuth).mockReturnValue({
+      user: { id: 100, role: 'student', username: 'student1' },
+    } as any);
   });
 
   describe('BookingList & Dashboard', () => {

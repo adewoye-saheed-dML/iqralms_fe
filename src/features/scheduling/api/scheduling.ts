@@ -12,93 +12,108 @@ export type WaitlistEntry = components['schemas']['WaitlistEntry'];
 export type WaitlistPromote = components['schemas']['WaitlistPromote'];
 
 export const schedulingApi = {
-  getAvailability: async (organizationId: number, teacherId: number) => {
+  getAvailability: async (organizationId: number, teacherId: number): Promise<AvailabilityBlock[]> => {
     const { data } = await apiClient.GET('/api/scheduling/organizations/{organization_pk}/availability/', {
       params: { 
         path: { organization_pk: organizationId },
         query: { teacher_id: teacherId } 
       },
     });
-    return data as AvailabilityBlock[];
+    return data ?? [];
   },
 
-  createBooking: async (organizationId: number, body: BookingCreate) => {
+  createBooking: async (organizationId: number, body: BookingCreate): Promise<Booking> => {
     const { data } = await apiClient.POST('/api/scheduling/organizations/{organization_pk}/bookings/', {
       params: { path: { organization_pk: organizationId } },
       body,
     });
-    return data as Booking;
+    if (!data) {
+      throw new Error('Failed to create booking');
+    }
+    return data;
   },
 
-  cancelBooking: async (organizationId: number, bookingId: number) => {
+  cancelBooking: async (organizationId: number, bookingId: number): Promise<Booking> => {
     const { data } = await apiClient.POST('/api/scheduling/organizations/{organization_pk}/bookings/{id}/cancel/', {
       params: { path: { organization_pk: organizationId, id: bookingId } },
     });
-    return data as Booking;
+    if (!data) {
+      throw new Error('Failed to cancel booking');
+    }
+    return data;
   },
 
-  getMyBookings: async (organizationId: number) => {
+  getMyBookings: async (organizationId: number): Promise<Booking[]> => {
     const { data } = await apiClient.GET('/api/scheduling/organizations/{organization_pk}/bookings/mine/', {
       params: { path: { organization_pk: organizationId } },
     });
-    return data as Booking[];
+    return data ?? [];
   },
 
-  getTeachingBookings: async (organizationId: number) => {
+  getTeachingBookings: async (organizationId: number): Promise<Booking[]> => {
     const { data } = await apiClient.GET('/api/scheduling/organizations/{organization_pk}/bookings/teaching/', {
       params: { path: { organization_pk: organizationId } },
     });
-    return data as Booking[];
+    return data ?? [];
   },
 
-  createCohort: async (organizationId: number, body: CohortCreate) => {
+  createCohort: async (organizationId: number, body: CohortCreate): Promise<Cohort> => {
     const { data } = await apiClient.POST('/api/scheduling/organizations/{organization_pk}/cohorts/', {
       params: { path: { organization_pk: organizationId } },
       body,
     });
-    return data as Cohort;
+    if (!data) {
+      throw new Error('Failed to create cohort');
+    }
+    return data;
   },
 
-  getOpenCohorts: async (organizationId: number, levelId: number) => {
+  getOpenCohorts: async (organizationId: number, levelId: number): Promise<Cohort[]> => {
     const { data } = await apiClient.GET('/api/scheduling/organizations/{organization_pk}/cohorts/open/', {
       params: { 
         path: { organization_pk: organizationId },
         query: { level_id: levelId }
       },
     });
-    return data as Cohort[];
+    return data ?? [];
   },
 
-  routeBooking: async (organizationId: number, body: RouteRequest) => {
+  routeBooking: async (organizationId: number, body: RouteRequest): Promise<Routed> => {
     const { data } = await apiClient.POST('/api/scheduling/organizations/{organization_pk}/route/', {
       params: { path: { organization_pk: organizationId } },
       body,
     });
-    return data as Routed;
+    if (!data) {
+      throw new Error('Failed to route booking');
+    }
+    return data;
   },
 
-  getMyWaitlist: async (organizationId: number) => {
+  getMyWaitlist: async (organizationId: number): Promise<WaitlistEntry[]> => {
     const { data } = await apiClient.GET('/api/scheduling/organizations/{organization_pk}/waitlist/mine/', {
       params: { path: { organization_pk: organizationId } },
     });
-    return data as WaitlistEntry[];
+    return data ?? [];
   },
 
-  getTeacherWaitlist: async (organizationId: number, teacherId: number) => {
+  getTeacherWaitlist: async (organizationId: number, teacherId: number): Promise<WaitlistEntry[]> => {
     const { data } = await apiClient.GET('/api/scheduling/organizations/{organization_pk}/waitlist/for-teacher/', {
       params: { 
         path: { organization_pk: organizationId },
         query: { teacher_id: teacherId }
       },
     });
-    return data as WaitlistEntry[];
+    return data ?? [];
   },
 
-  promoteWaitlist: async (organizationId: number, waitlistId: number, body: WaitlistPromote) => {
+  promoteWaitlist: async (organizationId: number, waitlistId: number, body: WaitlistPromote): Promise<Booking> => {
     const { data } = await apiClient.POST('/api/scheduling/organizations/{organization_pk}/waitlist/{id}/promote/', {
       params: { path: { organization_pk: organizationId, id: waitlistId } },
       body,
     });
-    return data as Booking;
+    if (!data) {
+      throw new Error('Failed to promote waitlist entry');
+    }
+    return data;
   },
 };

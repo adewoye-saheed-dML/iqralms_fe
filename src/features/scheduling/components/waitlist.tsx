@@ -1,5 +1,6 @@
-import { schedulingKeys } from '@/lib/api/query-keys';
 'use client';
+
+import { schedulingKeys } from '@/lib/api/query-keys';
 
 import * as React from 'react';
 import { useQuery } from "@tanstack/react-query";

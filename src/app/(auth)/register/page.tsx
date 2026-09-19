@@ -17,6 +17,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
+import type { components } from '@/lib/api/schema';
+
+type SelfRegisterableRole = components['schemas']['SelfRegisterableRoleEnum'];
+
 export default function RegisterPage() {
   const router = useRouter();
   const { user, isLoading, register } = useAuth();
@@ -26,7 +30,7 @@ export default function RegisterPage() {
   const [password, setPassword] = React.useState('');
   const [firstName, setFirstName] = React.useState('');
   const [lastName, setLastName] = React.useState('');
-  const [role, setRole] = React.useState('student');
+  const [role, setRole] = React.useState<SelfRegisterableRole>('student');
   const [timezone] = React.useState(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
   const [dateOfBirth, setDateOfBirth] = React.useState('');
 
@@ -53,7 +57,7 @@ export default function RegisterPage() {
         password,
         first_name: firstName,
         last_name: lastName,
-        role: role as any,
+        role,
         timezone,
         date_of_birth: dateOfBirth || undefined,
       });
@@ -158,7 +162,7 @@ export default function RegisterPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="role">Role</Label>
-                <Select value={role} onValueChange={setRole} disabled={isSubmitting}>
+                <Select value={role} onValueChange={(val) => setRole(val as SelfRegisterableRole)} disabled={isSubmitting}>
                   <SelectTrigger id="role">
                     <SelectValue placeholder="Select a role" />
                   </SelectTrigger>

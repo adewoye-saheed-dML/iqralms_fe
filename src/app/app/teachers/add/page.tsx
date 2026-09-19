@@ -30,8 +30,7 @@ export default function AddStaffPage() {
         <CardHeader>
           <CardTitle>Member Details</CardTitle>
           <CardDescription>
-            You must know the user&apos;s ID to add them. (Invitations are not yet supported in this
-            phase).
+            Invite a teacher or staff member to this academy by email.
           </CardDescription>
         </CardHeader>
         <CardContent>

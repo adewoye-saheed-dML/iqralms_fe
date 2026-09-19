@@ -31,8 +31,8 @@ const MOCK_ACADEMIES = [
     organization: { id: 2, name: 'Academy B', slug: 'academy-b' },
     user: 1,
     username: 'testadmin',
-    role: 'teacher',
-    role_display: 'Teacher',
+    role: 'admin',
+    role_display: 'Admin',
     status: 'active',
     status_display: 'Active',
     created_at: '2026-01-01T00:00:00Z',
@@ -94,7 +94,7 @@ test.describe('Critical E2E Journeys', () => {
 
     await page.addInitScript(() => {
       window.localStorage.setItem('quran_fe_selected_academy_id', '1');
-      window.localStorage.setItem('quran_fe_token', 'mock-token-123');
+      window.localStorage.setItem('auth_token', 'mock-token-123');
     });
 
     // Assume there is an onboarding or setup page
@@ -117,7 +117,7 @@ test.describe('Critical E2E Journeys', () => {
 
     await page.addInitScript(() => {
       window.localStorage.setItem('quran_fe_selected_academy_id', '1');
-      window.localStorage.setItem('quran_fe_token', 'mock-token-123');
+      window.localStorage.setItem('auth_token', 'mock-token-123');
     });
 
     await page.goto('/app/students');
@@ -126,16 +126,8 @@ test.describe('Critical E2E Journeys', () => {
     await expect(page.locator('body')).toContainText('studentA');
     await expect(page.locator('body')).not.toContainText('studentB');
 
-    // Assuming we have an academy switcher in the UI
-    // For now, since we know we built tenant isolation, we can trigger the switch via localStorage and reload
-    // or simulate a click if we know the selector. We will just use the DOM selector if possible.
-    // If the academy switcher is a select or dropdown, we'd click it.
-    // We can also just set local storage and reload to prove the tenant changes cleanly.
-    
-    await page.evaluate(() => {
-      window.localStorage.setItem('quran_fe_selected_academy_id', '2');
-    });
-    await page.reload();
+    // Switch academy using the UI academy switcher
+    await page.selectOption('select[aria-label="Select Academy"]', '2');
 
     // Should see studentB
     await expect(page.locator('body')).toContainText('studentB');
@@ -147,7 +139,7 @@ test.describe('Additional Workflows', () => {
   test.beforeEach(async ({ page }) => {
     // Authenticate by default
     await page.addInitScript(() => {
-      window.localStorage.setItem('quran_fe_token', 'mock-token-123');
+      window.localStorage.setItem('auth_token', 'mock-token-123');
       window.localStorage.setItem('quran_fe_selected_academy_id', '1');
     });
     
@@ -169,8 +161,8 @@ test.describe('Additional Workflows', () => {
       }
     });
 
-    await page.goto('/app/staff');
-    await expect(page.locator('body')).toContainText('Staff');
+    await page.goto('/app/teachers');
+    await expect(page.locator('body')).toContainText('Teachers');
   });
 
   test('4. admin adds/enrolls student', async ({ page }) => {
@@ -198,7 +190,7 @@ test.describe('Additional Workflows', () => {
     await page.route('**/api/assessment/organizations/1/teacher/mine/', async route => {
       await route.fulfill({ status: 200, json: [] });
     });
-    await page.goto('/app/assessment/teacher');
+    await page.goto('/app/assessments');
     // Basic structural check
     await expect(page.locator('body')).toBeVisible();
   });
@@ -207,7 +199,7 @@ test.describe('Additional Workflows', () => {
     await page.route('**/api/assessment/organizations/1/review/queue/', async route => {
       await route.fulfill({ status: 200, json: [] });
     });
-    await page.goto('/app/assessment/queue');
+    await page.goto('/app/assessments');
     await expect(page.locator('body')).toBeVisible();
   });
 
@@ -223,12 +215,12 @@ test.describe('Additional Workflows', () => {
     await page.route('**/api/notifications/organizations/1/deliveries/', async route => {
       await route.fulfill({ status: 200, json: [] });
     });
-    await page.goto('/app/audit');
+    await page.goto('/app/notifications');
     await expect(page.locator('body')).toBeVisible();
   });
-});
+
   test('5. student/parent sees only permitted academy data', async ({ page }) => {
-    // We mock that the user is a student in Academy 1, but they maliciously try to request Academy 2 data
+    // We mock that the user is in Academy 1, but they maliciously try to request Academy 2 data
     await page.route('**/api/organizations/2/students/', async route => {
       await route.fulfill({ status: 403, json: { detail: 'You do not have permission to perform this action.' } });
     });
@@ -243,3 +235,4 @@ test.describe('Additional Workflows', () => {
     // Expect error state component to render
     await expect(page.locator('body')).toContainText('Failed to load students');
   });
+});

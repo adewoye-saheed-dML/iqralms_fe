@@ -17,7 +17,7 @@ export function ValidationSummary({ job }: ValidationSummaryProps) {
         <div className="mt-4">
           <h4 className="text-sm font-semibold mb-2">Error Report:</h4>
           <ul className="text-sm text-destructive list-disc pl-5 space-y-1 max-h-40 overflow-y-auto">
-            {job.error_report.map((err: any, idx: number) => (
+            {job.error_report.map((err: unknown, idx: number) => (
               <li key={idx}>
                 {typeof err === 'string' ? err : JSON.stringify(err)}
               </li>

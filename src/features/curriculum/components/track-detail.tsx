@@ -1,16 +1,16 @@
+'use client';
+
 import { curriculumKeys } from '@/lib/api/query-keys';
 import { can } from '@/lib/permissions/capabilities';
-'use client';
 
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAcademy } from '@/lib/academy/academy-provider';
 import { curriculumApi } from '../api/curriculum';
 import { ApiError } from '@/lib/api/errors';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { LoadingState } from '@/components/ui/loading';
 import { ErrorState } from '@/components/ui/error-state';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Plus, Pencil } from 'lucide-react';

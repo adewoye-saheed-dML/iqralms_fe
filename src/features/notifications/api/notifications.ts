@@ -7,37 +7,36 @@ export type EventTypeEnum = components['schemas']['EventTypeEnum'];
 export type ChannelEnum = components['schemas']['ChannelEnum'];
 
 export const notificationsApi = {
-  getMyNotifications: async (organizationId: number) => {
+  getMyNotifications: async (organizationId: number): Promise<Notification[]> => {
     const { data } = await apiClient.GET('/api/notifications/organizations/{organization_pk}/mine/', {
       params: { path: { organization_pk: organizationId } },
     });
-    return data as Notification[];
+    return data ?? [];
   },
 
-  markAsRead: async (organizationId: number, notificationId: number) => {
+  markAsRead: async (organizationId: number, notificationId: number): Promise<Notification> => {
     const { data } = await apiClient.POST('/api/notifications/organizations/{organization_pk}/{id}/read/', {
       params: { path: { organization_pk: organizationId, id: notificationId } },
     });
-    return data as Notification;
+    if (!data) {
+      throw new Error('Failed to mark notification as read');
+    }
+    return data;
   },
 
-  getAdminNotifications: async (organizationId: number) => {
+  getAdminNotifications: async (organizationId: number): Promise<Notification[]> => {
     const { data } = await apiClient.GET('/api/notifications/organizations/{organization_pk}/admin/', {
       params: { path: { organization_pk: organizationId } },
     });
-    return data as Notification[];
+    return data ?? [];
   },
 
-  getDeliveries: async (organizationId: number, eventType?: EventTypeEnum, channel?: ChannelEnum) => {
+  getDeliveries: async (organizationId: number): Promise<NotificationDelivery[]> => {
     const { data } = await apiClient.GET('/api/notifications/organizations/{organization_pk}/deliveries/', {
       params: { 
         path: { organization_pk: organizationId },
-        query: { 
-          ...(eventType ? { event_type: eventType } : {}),
-          ...(channel ? { channel } : {})
-        }
       },
     });
-    return data as NotificationDelivery[];
+    return data ?? [];
   },
 };

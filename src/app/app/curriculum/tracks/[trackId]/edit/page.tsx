@@ -1,5 +1,6 @@
-import { curriculumKeys } from '@/lib/api/query-keys';
 'use client';
+
+import { curriculumKeys } from '@/lib/api/query-keys';
 
 import * as React from 'react';
 import { PageHeader } from '@/components/ui/page-header';

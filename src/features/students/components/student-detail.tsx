@@ -1,9 +1,9 @@
-import { studentKeys } from '@/lib/api/query-keys';
 'use client';
 
 import * as React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAcademy } from '@/lib/academy/academy-provider';
+import { studentKeys } from '@/lib/api/query-keys';
 import { studentsApi } from '../api/students';
 import { ApiError } from '@/lib/api/errors';
 import {
@@ -12,7 +12,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -45,14 +44,13 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
     isLoading,
     isError,
     error,
-    refetch,
   } = useQuery({
     queryKey: studentKeys.detail(activeAcademy?.id, enrollmentId),
     queryFn: () => studentsApi.getStudent(activeAcademy!.id, enrollmentId),
     enabled: !!activeAcademy,
   });
 
-  const currentStatus = status || student?.status || '';
+  const currentStatus = status || student?.enrollment_status || '';
 
   const updateMutation = useMutation({
     mutationFn: async (newStatus: 'active' | 'inactive') => {
@@ -65,7 +63,6 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
         queryKey: studentKeys.detail(activeAcademy?.id, enrollmentId),
       });
       queryClient.invalidateQueries({ queryKey: studentKeys.all(activeAcademy?.id) });
-      // clear success message after a few seconds
       setTimeout(() => setSuccessMessage(''), 3000);
     },
   });
@@ -77,7 +74,7 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
   };
 
   const handleSave = () => {
-    if (status && status !== student?.status) {
+    if (status && status !== student?.enrollment_status) {
       setSuccessMessage('');
       updateMutation.mutate(status as 'active' | 'inactive');
     }
@@ -98,22 +95,21 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
       return (
         <ErrorState
           title="Student Not Found"
-          message="This student enrollment does not exist in the active academy."
+          message="The requested student enrollment was not found in this academy."
         />
       );
     }
     return (
       <ErrorState
-        title="Failed to load student details"
-        message={error instanceof Error ? error.message : 'An unknown error occurred.'}
-       
+        title="Error loading student"
+        message={error instanceof Error ? error.message : 'An unexpected error occurred'}
       />
     );
   }
 
   if (!student) return null;
 
-  const hasChanges = status && status !== student.status;
+  const hasChanges = status && status !== student.enrollment_status;
   const canManage = can('manage_students', { activeRole });
 
   let errorMessage = '';
@@ -143,8 +139,8 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
               Academy Enrollment Profile
             </CardDescription>
           </div>
-          <Badge variant={student.status === 'active' ? 'default' : 'secondary'}>
-            {student.status}
+          <Badge variant={student.enrollment_status === 'active' ? 'default' : 'secondary'}>
+            {student.enrollment_status}
           </Badge>
         </div>
       </CardHeader>
@@ -179,16 +175,21 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
                 <SelectItem value="inactive">Inactive</SelectItem>
               </SelectContent>
             </Select>
+
             {canManage && (
-              <Button onClick={handleSave} disabled={!hasChanges || updateMutation.isPending}>
-                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
+              <Button
+                onClick={handleSave}
+                disabled={!hasChanges || updateMutation.isPending}
+              >
+                {updateMutation.isPending ? 'Saving...' : 'Save'}
               </Button>
             )}
           </div>
-        </div>
-        
-        <div className="pt-4 border-t text-sm text-muted-foreground">
-          <p>Curriculum assignments and placement test features are not yet available for this academy.</p>
+          {!canManage && (
+            <p className="text-muted-foreground text-xs">
+              Only owners and administrators can change student enrollment status.
+            </p>
+          )}
         </div>
       </CardContent>
     </Card>

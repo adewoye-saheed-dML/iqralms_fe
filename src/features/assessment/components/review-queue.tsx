@@ -1,5 +1,6 @@
-import { assessmentKeys } from '@/lib/api/query-keys';
 'use client';
+
+import { assessmentKeys } from '@/lib/api/query-keys';
 
 import * as React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -72,9 +73,9 @@ export function ReviewQueue() {
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <div className="text-muted-foreground">
-              Score: {assessment.overall_score}
+              Average Score: {assessment.overall_average}
             </div>
-            <p className="italic">"{assessment.teacher_summary}"quot;{assessment.teacher_summary}"{assessment.teacher_summary}"quot;</p>
+            <p className="italic">&ldquo;{assessment.teacher_summary}&rdquo;</p>
             <div className="pt-2">
               <Button 
                 size="sm" 

@@ -2511,7 +2511,7 @@ export interface components {
          */
         ImportJobResponseStatusEnum: "uploaded" | "validated" | "failed" | "running" | "completed" | "partially_completed";
         ImportJobValidate: {
-            /** Format: uri */
+            /** Format: binary */
             file: string;
             kind: components["schemas"]["KindEnum"];
             column_mapping?: unknown;
@@ -2893,11 +2893,11 @@ export interface components {
             /** @description IANA zone name, e.g. 'Africa/Lagos'. The academy's own zone, validated by the same rule as User.timezone. */
             timezone: string;
             /** @description Whether the academy is operating. Disabling an organization is a later phase's workflow, so nothing reads this yet — access is decided by active membership alone (see learnings.md). */
-            readonly is_active: boolean;
+            readonly is_active?: boolean;
             /** Format: date-time */
-            readonly created_at: string;
+            readonly created_at?: string;
             /** Format: date-time */
-            readonly updated_at: string;
+            readonly updated_at?: string;
         };
         OrganizationInvitation: {
             readonly id: number;
@@ -3588,6 +3588,25 @@ export interface components {
          * @enum {string}
          */
         StatementStatusEnum: "empty" | "generated" | "partly_finalized" | "finalized";
+        /** @description A student's enrollment, as seen in the academy's detail view. */
+        StudentDetail: {
+            readonly id: number;
+            readonly user_id: number;
+            readonly username: string;
+            readonly email: string;
+            readonly first_name: string;
+            readonly last_name: string;
+            /** Format: date */
+            readonly date_of_birth: string;
+            readonly is_minor: boolean;
+            readonly enrollment_status: string;
+            readonly track_id: number | null;
+            readonly level_id: number | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
         /** @description Enrolling an existing student user into an academy. */
         StudentEnrollmentCreate: {
             user: number;
@@ -3600,6 +3619,25 @@ export interface components {
          * @enum {string}
          */
         StudentEnrollmentUpdateStatusEnum: "active" | "inactive";
+        /** @description A student's enrollment, as seen in the academy's list. */
+        StudentList: {
+            readonly id: number;
+            readonly user_id: number;
+            readonly username: string;
+            readonly email: string;
+            readonly first_name: string;
+            readonly last_name: string;
+            /** Format: date */
+            readonly date_of_birth: string;
+            readonly is_minor: boolean;
+            readonly enrollment_status: string;
+            readonly track_id: number | null;
+            readonly level_id: number | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
         /**
          * @description Progress in one track, for the student or their linked parent.
          *
@@ -5829,7 +5867,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ImportJobValidate"];
+                    "application/json": components["schemas"]["ImportJobResponse"];
                 };
             };
         };
@@ -6098,6 +6136,20 @@ export interface operations {
                     "application/json": components["schemas"]["OrganizationInvitation"][];
                 };
             };
+            /** @description Not authenticated. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an owner or administrator here. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     organizations_invitations_create: {
@@ -6122,8 +6174,29 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OrganizationInvitationCreate"];
+                    "application/json": components["schemas"]["OrganizationInvitation"];
                 };
+            };
+            /** @description Invalid invitation data. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an owner or administrator here. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -6256,12 +6329,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description List of students */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["StudentList"][];
+                };
             };
             /** @description Not authenticated. */
             401: {
@@ -6296,12 +6370,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Student attached successfully */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["StudentList"];
+                };
             };
             /** @description Unknown user, not a student, or already enrolled */
             400: {
@@ -6338,12 +6413,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Student enrollment details */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["StudentDetail"];
+                };
             };
             /** @description Not authenticated. */
             401: {
@@ -6386,12 +6462,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Student enrollment updated */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["StudentDetail"];
+                };
             };
             /** @description Nothing to change or invalid status */
             400: {

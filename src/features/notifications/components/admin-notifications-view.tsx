@@ -1,5 +1,6 @@
-import { notificationKeys } from '@/lib/api/query-keys';
 'use client';
+
+import { notificationKeys } from '@/lib/api/query-keys';
 
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';

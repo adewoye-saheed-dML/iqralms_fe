@@ -1,12 +1,12 @@
 'use client';
-import { staffKeys } from '@/lib/api/query-keys';
-'use client';
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useAcademy } from '@/lib/academy/academy-provider';
-import { staffApi, AddMemberPayload } from '../api/staff';
+import { staffKeys } from '@/lib/api/query-keys';
+import { staffApi, type InvitationCreate } from '../api/staff';
+import { can } from '@/lib/permissions/capabilities';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,17 +16,20 @@ import { AlertCircle } from 'lucide-react';
 export function StaffInviteForm() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { activeAcademy } = useAcademy();
+  const { activeAcademy, activeRole } = useAcademy();
 
-  const [formData, setFormData] = React.useState({
-    user: '',
-    role: 'teacher' as AddMemberPayload['role'],
+  const [formData, setFormData] = React.useState<InvitationCreate>({
+    email: '',
+    role: 'teacher',
   });
+  const [validationError, setValidationError] = React.useState<string | null>(null);
 
-  const createMutation = useMutation({
-    mutationFn: (data: AddMemberPayload) => {
+  const canInvite = can('manage_staff', { activeRole });
+
+  const inviteMutation = useMutation({
+    mutationFn: (data: InvitationCreate) => {
       if (!activeAcademy) throw new Error('No active academy context');
-      return staffApi.addMember(activeAcademy.id, data);
+      return staffApi.inviteStaff(activeAcademy.id, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: staffKeys.all(activeAcademy?.id) });
@@ -36,8 +39,16 @@ export function StaffInviteForm() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createMutation.mutate({
-      user: parseInt(formData.user, 10),
+    setValidationError(null);
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email.trim())) {
+      setValidationError('Please enter a valid email address.');
+      return;
+    }
+
+    inviteMutation.mutate({
+      email: formData.email.trim(),
       role: formData.role,
     });
   };
@@ -46,32 +57,54 @@ export function StaffInviteForm() {
     return <div className="text-sm text-red-500">Missing academy context.</div>;
   }
 
+  if (!canInvite) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Permission Denied</AlertTitle>
+        <AlertDescription>
+          Only academy owners and administrators can invite new teachers or staff members.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {createMutation.isError && (
+      {validationError && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Add Member Failed</AlertTitle>
+          <AlertTitle>Validation Error</AlertTitle>
+          <AlertDescription>{validationError}</AlertDescription>
+        </Alert>
+      )}
+
+      {inviteMutation.isError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Invitation Failed</AlertTitle>
           <AlertDescription>
-            {createMutation.error instanceof Error
-              ? createMutation.error.message
+            {inviteMutation.error instanceof Error
+              ? inviteMutation.error.message
               : 'Unknown error occurred'}
           </AlertDescription>
         </Alert>
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="user">User ID</Label>
+        <Label htmlFor="email">Email Address</Label>
         <Input
-          id="user"
-          type="number"
+          id="email"
+          type="email"
           required
-          placeholder="e.g. 123"
-          value={formData.user}
-          onChange={(e) => setFormData({ ...formData, user: e.target.value })}
-          disabled={createMutation.isPending}
+          placeholder="teacher@example.com"
+          value={formData.email}
+          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          disabled={inviteMutation.isPending}
         />
-        <p className="text-muted-foreground text-xs">Enter the existing User ID.</p>
+        <p className="text-muted-foreground text-xs">
+          An invitation will be sent to this email address.
+        </p>
       </div>
 
       <div className="space-y-2">
@@ -81,9 +114,9 @@ export function StaffInviteForm() {
           className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
           value={formData.role}
           onChange={(e) =>
-            setFormData({ ...formData, role: e.target.value as AddMemberPayload['role'] })
+            setFormData({ ...formData, role: e.target.value as InvitationCreate['role'] })
           }
-          disabled={createMutation.isPending}
+          disabled={inviteMutation.isPending}
         >
           <option value="teacher">Teacher</option>
           <option value="staff">Staff</option>
@@ -91,8 +124,8 @@ export function StaffInviteForm() {
         </select>
       </div>
 
-      <Button type="submit" className="w-full" disabled={createMutation.isPending}>
-        {createMutation.isPending ? 'Adding Member...' : 'Add Member'}
+      <Button type="submit" className="w-full" disabled={inviteMutation.isPending}>
+        {inviteMutation.isPending ? 'Sending Invitation...' : 'Send Invitation'}
       </Button>
     </form>
   );

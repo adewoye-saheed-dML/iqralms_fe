@@ -13,55 +13,98 @@ export type PayoutStatusEnum = components['schemas']['PayoutStatusEnum'];
 export type StatementStatusEnum = components['schemas']['StatementStatusEnum'];
 
 export const payoutsApi = {
-  getLeadPayouts: async (organizationId: number, teacherId?: number) => {
+  getLeadPayouts: async (
+    organizationId: number,
+    teacherId?: number,
+    start?: string,
+    end?: string
+  ): Promise<TeacherPayout[]> => {
     const { data } = await apiClient.GET('/api/payouts/organizations/{organization_pk}/lead/', {
       params: { 
         path: { organization_pk: organizationId },
-        query: teacherId ? { teacher_id: teacherId } : {}
-      }
+        query: {
+          ...(teacherId ? { teacher_id: teacherId } : {}),
+          ...(start ? { start } : {}),
+          ...(end ? { end } : {}),
+        },
+      },
     });
-    return data as TeacherPayout[];
+    return data ?? [];
   },
 
-  getMyPayouts: async (organizationId: number) => {
+  getMyPayouts: async (organizationId: number): Promise<MyTeacherPayout[]> => {
     const { data } = await apiClient.GET('/api/payouts/organizations/{organization_pk}/mine/', {
-      params: { path: { organization_pk: organizationId } }
+      params: { path: { organization_pk: organizationId } },
     });
-    return data as MyTeacherPayout[];
+    return data ?? [];
   },
 
-  getStatement: async (organizationId: number, teacherId: number, start: string, end: string) => {
+  getStatement: async (
+    organizationId: number,
+    teacherId: number,
+    start?: string,
+    end?: string
+  ): Promise<Statement> => {
     const { data } = await apiClient.GET('/api/payouts/organizations/{organization_pk}/statements/', {
       params: { 
         path: { organization_pk: organizationId },
-        query: { teacher_id: teacherId, start, end } 
-      }
+        query: {
+          teacher_id: teacherId,
+          ...(start ? { start } : {}),
+          ...(end ? { end } : {}),
+        },
+      },
     });
-    return data as Statement;
+    if (!data) {
+      throw new Error('Failed to load statement');
+    }
+    return data;
   },
 
-  getMyStatement: async (organizationId: number, start: string, end: string) => {
+  getMyStatement: async (
+    organizationId: number,
+    start?: string,
+    end?: string
+  ): Promise<MyStatement> => {
     const { data } = await apiClient.GET('/api/payouts/organizations/{organization_pk}/statements/mine/', {
       params: { 
         path: { organization_pk: organizationId },
-        query: { start, end } 
-      }
+        query: {
+          ...(start ? { start } : {}),
+          ...(end ? { end } : {}),
+        },
+      },
     });
-    return data as MyStatement;
+    if (!data) {
+      throw new Error('Failed to load my statement');
+    }
+    return data;
   },
 
-  generatePayouts: async (organizationId: number, body: PayoutGenerate) => {
+  generatePayouts: async (
+    organizationId: number,
+    body: PayoutGenerate
+  ): Promise<GenerationResult> => {
     const { data } = await apiClient.POST('/api/payouts/organizations/{organization_pk}/generate/', {
       params: { path: { organization_pk: organizationId } },
-      body
+      body,
     });
-    return data as GenerationResult;
+    if (!data) {
+      throw new Error('Failed to generate payouts');
+    }
+    return data;
   },
 
-  finalizePayout: async (organizationId: number, payoutId: number) => {
+  finalizePayout: async (
+    organizationId: number,
+    payoutId: number
+  ): Promise<TeacherPayout> => {
     const { data } = await apiClient.POST('/api/payouts/organizations/{organization_pk}/{id}/finalize/', {
-      params: { path: { organization_pk: organizationId, id: payoutId } }
+      params: { path: { organization_pk: organizationId, id: payoutId } },
     });
-    return data as TeacherPayout;
-  }
+    if (!data) {
+      throw new Error('Failed to finalize payout');
+    }
+    return data;
+  },
 };

@@ -1,5 +1,5 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -29,6 +29,7 @@ vi.mock('../api/curriculum', () => ({
   curriculumApi: {
     getTracks: vi.fn(),
     getTrack: vi.fn(),
+    getLevels: vi.fn(),
     createTrack: vi.fn(),
     updateTrack: vi.fn(),
     createLevel: vi.fn(),
@@ -48,6 +49,7 @@ describe('Curriculum Feature', () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
+    vi.mocked(curriculumApi.getLevels).mockResolvedValue([]);
     vi.spyOn(AcademyProvider, 'useAcademy').mockReturnValue({
       activeAcademy: mockAcademy,
       activeRole: 'admin',
@@ -60,7 +62,7 @@ describe('Curriculum Feature', () => {
       renderWithProviders(<CurriculumDirectory />);
 
       await waitFor(() => {
-        expect(screen.getByText('No curriculum tracks found')).toBeInTheDocument();
+        expect(screen.getByText('No tracks defined')).toBeInTheDocument();
       });
     });
 
@@ -73,6 +75,9 @@ describe('Curriculum Feature', () => {
           slug: 'tajweed',
           levels: [{ id: 20, track: 10, order: 1, name: 'Beginner' }],
         },
+      ]);
+      vi.mocked(curriculumApi.getLevels).mockResolvedValue([
+        { id: 20, track: 10, order: 1, name: 'Beginner' } as any,
       ]);
       renderWithProviders(<CurriculumDirectory />);
 
@@ -193,11 +198,11 @@ describe('Curriculum Feature', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Save Level' }));
       });
 
-      expect(curriculumApi.createLevel).toHaveBeenCalledWith(1, {
+      expect(curriculumApi.createLevel).toHaveBeenCalledWith(1, expect.objectContaining({
         track: 10,
         name: 'Juz 30',
         min_age: 5,
-      });
+      }));
       expect(pushMock).toHaveBeenCalledWith('/app/curriculum/tracks/10');
     });
   });

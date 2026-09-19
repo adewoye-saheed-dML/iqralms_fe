@@ -1,6 +1,6 @@
 'use client';
+
 import { curriculumKeys } from '@/lib/api/query-keys';
-'use client';
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
@@ -27,6 +27,7 @@ export function LevelForm({ trackId, initialData }: LevelFormProps) {
   const queryClient = useQueryClient();
   const { activeAcademy } = useAcademy();
   const [name, setName] = React.useState(initialData?.name || '');
+  const [groupEligible, setGroupEligible] = React.useState<boolean>(initialData?.group_eligible ?? false);
   const [minAge, setMinAge] = React.useState<string>(
     initialData?.min_age !== undefined && initialData?.min_age !== null
       ? initialData.min_age.toString()
@@ -64,7 +65,10 @@ export function LevelForm({ trackId, initialData }: LevelFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const payload: Omit<LevelCreate, 'track'> = { name };
+    const payload: Omit<LevelCreate, 'track'> = {
+      name,
+      group_eligible: groupEligible,
+    };
     const ageVal = parseInt(minAge, 10);
     if (!isNaN(ageVal)) {
       payload.min_age = ageVal;
@@ -154,6 +158,18 @@ export function LevelForm({ trackId, initialData }: LevelFormProps) {
               placeholder="e.g. 5"
               disabled={mutation.isPending}
             />
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <input
+              id="groupEligible"
+              type="checkbox"
+              className="h-4 w-4 rounded border-gray-300"
+              checked={groupEligible}
+              onChange={(e) => setGroupEligible(e.target.checked)}
+              disabled={mutation.isPending}
+            />
+            <Label htmlFor="groupEligible">Group Eligible</Label>
           </div>
         </CardContent>
         <CardFooter className="flex justify-end gap-2">

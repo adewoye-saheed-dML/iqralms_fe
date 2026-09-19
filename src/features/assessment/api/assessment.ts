@@ -11,55 +11,90 @@ export type PatchedAssessmentRubricUpdate = components['schemas']['PatchedAssess
 export type LeadReview = components['schemas']['LeadReview'];
 
 export const assessmentApi = {
-  getQueue: async (organizationId: number) => {
+  getQueue: async (organizationId: number): Promise<LeadAssessment[]> => {
     const { data } = await apiClient.GET('/api/assessment/organizations/{organization_pk}/review/queue/', {
       params: { path: { organization_pk: organizationId } },
     });
-    return data as LeadAssessment[];
+    return data ?? [];
   },
 
-  reviewAssessment: async (organizationId: number, assessmentId: number, body: LeadReview) => {
+  reviewAssessment: async (
+    organizationId: number,
+    assessmentId: number,
+    body: LeadReview
+  ): Promise<LeadAssessment> => {
     const { data } = await apiClient.POST('/api/assessment/organizations/{organization_pk}/{id}/review/', {
       params: { path: { organization_pk: organizationId, id: assessmentId } },
       body,
     });
-    return data as LeadAssessment;
+    if (!data) {
+      throw new Error('Failed to review assessment');
+    }
+    return data;
   },
 
-  getFamilyAssessments: async (organizationId: number, studentId: number) => {
+  submitAssessment: async (
+    organizationId: number,
+    bookingId: number,
+    body: SessionAssessmentCreate
+  ): Promise<TeacherAssessment> => {
+    const { data } = await apiClient.POST(
+      '/api/assessment/organizations/{organization_pk}/bookings/{booking_id}/',
+      {
+        params: { path: { organization_pk: organizationId, booking_id: bookingId } },
+        body,
+      }
+    );
+    if (!data) {
+      throw new Error('Failed to submit assessment');
+    }
+    return data;
+  },
+
+  getFamilyAssessments: async (organizationId: number, studentId: number): Promise<FamilyAssessment[]> => {
     const { data } = await apiClient.GET('/api/assessment/organizations/{organization_pk}/child/', {
       params: { path: { organization_pk: organizationId }, query: { student_id: studentId } },
     });
-    return data as FamilyAssessment[];
+    return data ?? [];
   },
 
-  getMyAssessments: async (organizationId: number) => {
+  getMyAssessments: async (organizationId: number): Promise<TeacherAssessment[]> => {
     const { data } = await apiClient.GET('/api/assessment/organizations/{organization_pk}/teacher/mine/', {
       params: { path: { organization_pk: organizationId } },
     });
-    return data as TeacherAssessment[];
+    return data ?? [];
   },
 
-  getRubrics: async (organizationId: number) => {
+  getRubrics: async (organizationId: number): Promise<AssessmentRubric[]> => {
     const { data } = await apiClient.GET('/api/assessment/organizations/{organization_pk}/rubrics/', {
       params: { path: { organization_pk: organizationId } },
     });
-    return data as AssessmentRubric[];
+    return data ?? [];
   },
 
-  createRubric: async (organizationId: number, body: AssessmentRubricCreate) => {
+  createRubric: async (organizationId: number, body: AssessmentRubricCreate): Promise<AssessmentRubric> => {
     const { data } = await apiClient.POST('/api/assessment/organizations/{organization_pk}/rubrics/', {
       params: { path: { organization_pk: organizationId } },
       body,
     });
-    return data as AssessmentRubric;
+    if (!data) {
+      throw new Error('Failed to create rubric');
+    }
+    return data;
   },
 
-  updateRubric: async (organizationId: number, rubricId: number, body: PatchedAssessmentRubricUpdate) => {
+  updateRubric: async (
+    organizationId: number,
+    rubricId: number,
+    body: PatchedAssessmentRubricUpdate
+  ): Promise<AssessmentRubric> => {
     const { data } = await apiClient.PATCH('/api/assessment/organizations/{organization_pk}/rubrics/{id}/', {
       params: { path: { organization_pk: organizationId, id: rubricId } },
       body,
     });
-    return data as AssessmentRubric;
+    if (!data) {
+      throw new Error('Failed to update rubric');
+    }
+    return data;
   },
 };

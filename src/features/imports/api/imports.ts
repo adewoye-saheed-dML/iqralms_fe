@@ -2,12 +2,16 @@ import { apiClient } from '@/lib/api/client';
 import type { components } from '@/lib/api/schema';
 
 export type ImportJobResponse = components['schemas']['ImportJobResponse'];
+export type ImportJobValidate = components['schemas']['ImportJobValidate'];
 export type KindEnum = components['schemas']['KindEnum'];
 
 export const importsApi = {
-  validateImport: async (organizationId: number, file: File, kind: KindEnum, columnMapping?: any) => {
-    // openapi-fetch supports multipart/form-data natively by passing the object,
-    // but file must be properly typed. Or we can pass FormData.
+  validateImport: async (
+    organizationId: number,
+    file: File,
+    kind: KindEnum,
+    columnMapping?: Record<string, string>
+  ): Promise<ImportJobResponse> => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('kind', kind);
@@ -15,17 +19,24 @@ export const importsApi = {
       formData.append('column_mapping', JSON.stringify(columnMapping));
     }
 
+    // openapi-fetch accepts FormData for multipart/form-data
     const { data } = await apiClient.POST('/api/imports/organizations/{organization_pk}/validate/', {
       params: { path: { organization_pk: organizationId } },
-      body: formData as any, // using as any since openapi-fetch typescript might expect a specific object structure
+      body: formData as unknown as ImportJobValidate,
     });
-    return data as unknown as ImportJobResponse;
+    if (!data) {
+      throw new Error('Failed to validate import file');
+    }
+    return data;
   },
 
-  commitImport: async (organizationId: number, jobId: number) => {
+  commitImport: async (organizationId: number, jobId: number): Promise<ImportJobResponse> => {
     const { data } = await apiClient.POST('/api/imports/organizations/{organization_pk}/{id}/commit/', {
       params: { path: { organization_pk: organizationId, id: jobId } },
     });
-    return data as ImportJobResponse;
+    if (!data) {
+      throw new Error('Failed to commit import job');
+    }
+    return data;
   },
 };

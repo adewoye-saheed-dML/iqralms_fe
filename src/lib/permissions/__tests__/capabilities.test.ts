@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { can, type Capability, type PermissionContext } from '../capabilities';
-import type { UserRole, OrgRole } from '@/lib/navigation/config';
 
 interface TestCase {
   scenario: string;
@@ -73,12 +72,9 @@ describe('Capabilities Module', () => {
       ],
     },
     {
-      scenario: 'Staff',
+      scenario: 'Staff (cannot manage staff, students, or curriculum — restricted to owner/admin)',
       context: { activeRole: 'staff', userRole: null },
       expectedCapabilities: [
-        'manage_staff',
-        'manage_students',
-        'manage_curriculum',
         'manage_scheduling',
         'view_own_payouts',
         'manage_progress',

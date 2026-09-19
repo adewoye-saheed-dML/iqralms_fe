@@ -1,5 +1,6 @@
-import { assessmentKeys } from '@/lib/api/query-keys';
 'use client';
+
+import { assessmentKeys } from '@/lib/api/query-keys';
 
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -54,7 +55,7 @@ export function AssessmentList({ type }: AssessmentListProps) {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {assessments.map((assessment: any) => (
+      {assessments.map((assessment: { id: number; lead_reviewed?: boolean; overall_score?: string; teacher_summary?: string }) => (
         <Card key={assessment.id}>
           <CardHeader className="pb-2">
             <div className="flex justify-between items-start">
@@ -69,7 +70,7 @@ export function AssessmentList({ type }: AssessmentListProps) {
               Score: {assessment.overall_score}
             </div>
             {assessment.teacher_summary && (
-              <p className="italic">"{assessment.teacher_summary}"quot;{assessment.teacher_summary}"{assessment.teacher_summary}"quot;</p>
+              <p className="italic">&ldquo;{assessment.teacher_summary}&rdquo;</p>
             )}
           </CardContent>
         </Card>

@@ -1,5 +1,6 @@
-import { payoutsKeys } from '@/lib/api/query-keys';
 'use client';
+
+import { payoutsKeys } from '@/lib/api/query-keys';
 import type { TeacherPayout } from "../api/payouts";
 
 import * as React from 'react';
@@ -14,11 +15,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Wallet } from 'lucide-react';
 import { ApiError } from '@/lib/api/errors';
+import { can } from '@/lib/permissions/capabilities';
 
 export function LeadPayoutsView() {
-  const { activeAcademy } = useAcademy();
+  const { activeAcademy, activeRole } = useAcademy();
   const queryClient = useQueryClient();
 
+  const canViewAcademyPayouts = can('view_academy_payouts', { activeRole });
   const queryKey = payoutsKeys.lead(activeAcademy?.id);
 
   const { data: payouts, isLoading, error, refetch } = useQuery({
@@ -27,7 +30,7 @@ export function LeadPayoutsView() {
       if (!activeAcademy?.id) throw new Error('No active academy');
       return payoutsApi.getLeadPayouts(activeAcademy.id);
     },
-    enabled: !!activeAcademy?.id,
+    enabled: !!activeAcademy?.id && canViewAcademyPayouts,
   });
 
   const finalizeMutation = useMutation({
@@ -39,6 +42,15 @@ export function LeadPayoutsView() {
       queryClient.invalidateQueries({ queryKey });
     }
   });
+
+  if (!canViewAcademyPayouts) {
+    return (
+      <ErrorState
+        title="Access Denied"
+        message="You don't have permission to view academy payouts."
+      />
+    );
+  }
 
   if (isLoading) return <LoadingState />;
   
@@ -72,7 +84,9 @@ export function LeadPayoutsView() {
             </div>
             {payout.teacher && (
               <div className="text-sm text-muted-foreground">
-                Teacher: {payout.teacher.first_name} {payout.teacher.last_name}
+                Teacher: {typeof payout.teacher === 'object'
+                  ? `${(payout.teacher as { first_name?: string; last_name?: string }).first_name || ''} ${(payout.teacher as { first_name?: string; last_name?: string }).last_name || ''}`.trim() || (payout.teacher as { username?: string }).username || JSON.stringify(payout.teacher)
+                  : payout.teacher}
               </div>
             )}
           </CardHeader>

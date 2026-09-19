@@ -29,32 +29,29 @@ export interface PermissionContext {
 /**
  * Validates whether a user has a specific capability based on their global and academy roles.
  * This is the central permission gate for UI rendering.
+ * Authoritative enforcement remains on the backend.
  */
 export function can(capability: Capability, context: PermissionContext): boolean {
   const { userRole, activeRole } = context;
 
   switch (capability) {
     case 'manage_academy':
+    case 'manage_staff':
+    case 'manage_students':
+    case 'manage_curriculum':
     case 'manage_finance':
     case 'view_audit':
     case 'view_academy_payouts':
     case 'manage_notifications':
     case 'manage_imports':
     case 'manage_pricing':
-      // Strictly admin/owner actions
+      // Strictly admin/owner actions matching backend permission classes
       return activeRole === 'admin' || activeRole === 'owner';
-
-    case 'manage_staff':
-    case 'manage_students':
-    case 'manage_curriculum':
-      // Often delegated to staff as well
-      return activeRole === 'admin' || activeRole === 'owner' || activeRole === 'staff';
 
     case 'manage_scheduling':
     case 'manage_progress':
     case 'manage_assessments':
-      // Admin/Owner manage all, Lead Teachers manage for their groups, Teachers manage their own.
-      // We grant baseline UI access for these roles, then filter scoped data in the components/backend.
+      // Teaching operations within the academy
       return (
         activeRole === 'admin' ||
         activeRole === 'owner' ||

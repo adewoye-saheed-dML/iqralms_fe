@@ -1,32 +1,42 @@
 import { apiClient } from '@/lib/api/client';
-import { components } from '@/lib/api/schema';
+import type { components } from '@/lib/api/schema';
 
 export type Organization = components['schemas']['Organization'];
-export type Track = components['schemas']['Track'];
+export type Track = components['schemas']['TrackBrief'];
 
-export type CreateOrganizationPayload = components['schemas']['Organization'];
+export type CreateOrganizationPayload = {
+  name: string;
+  slug: string;
+  timezone: string;
+};
 export type CreateTrackPayload = components['schemas']['TrackWrite'];
 
 export const onboardingApi = {
-  createAcademy: async (payload: CreateOrganizationPayload) => {
+  createAcademy: async (payload: CreateOrganizationPayload): Promise<Organization> => {
     const { data } = await apiClient.POST('/api/organizations/', {
-      body: payload,
+      body: payload as unknown as components['schemas']['Organization'],
     });
-    return data as Organization;
+    if (!data) {
+      throw new Error('Failed to create academy');
+    }
+    return data;
   },
 
-  getTracks: async (organizationId: number) => {
+  getTracks: async (organizationId: number): Promise<Track[]> => {
     const { data } = await apiClient.GET('/api/curriculum/organizations/{organization_pk}/tracks/', {
       params: { path: { organization_pk: organizationId } },
     });
-    return data as Track[];
+    return data ?? [];
   },
 
-  createTrack: async (organizationId: number, payload: CreateTrackPayload) => {
+  createTrack: async (organizationId: number, payload: CreateTrackPayload): Promise<Track> => {
     const { data } = await apiClient.POST('/api/curriculum/organizations/{organization_pk}/tracks/', {
       params: { path: { organization_pk: organizationId } },
       body: payload,
     });
-    return data as Track;
+    if (!data) {
+      throw new Error('Failed to create track');
+    }
+    return data;
   },
 };
