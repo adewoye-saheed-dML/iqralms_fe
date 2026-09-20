@@ -37,7 +37,7 @@ describe('Teacher Workflows', () => {
       activeRole: 'owner',
     } as any);
     vi.mocked(Capabilities.can).mockImplementation((cap) => {
-      if (cap === 'manage_staff') return true;
+      if (cap === 'manage_teachers') return true;
       if (cap === 'manage_finance') return true;
       return false;
     });
