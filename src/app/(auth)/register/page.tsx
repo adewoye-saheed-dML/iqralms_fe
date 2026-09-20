@@ -35,7 +35,7 @@ export default function RegisterPage() {
             <Info className="h-5 w-5" />
             <AlertTitle className="font-semibold">Public Self-Registration Disabled</AlertTitle>
             <AlertDescription className="text-xs sm:text-sm mt-1">
-              Public self-registration into arbitrary roles (Student, Parent, Teacher, Staff) is not permitted. Access is provisioned strictly through structured workflows:
+              Public self-registration into arbitrary roles (Student, Parent, Teacher) is not permitted. Access is provisioned strictly through structured workflows:
             </AlertDescription>
           </Alert>
 

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth/auth-provider';
 import { useAcademy } from '@/lib/academy/academy-provider';
-import { staffApi } from '@/features/staff/api/staff';
+import { invitationsApi, type InvitationPreview } from '@/features/invitations/api/invitations';
 import { ApiError } from '@/lib/api/errors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,8 +13,6 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle2, AlertCircle, Mail, LogIn, ArrowRight } from 'lucide-react';
-
-import type { Membership as OrganizationMembership } from '@/features/staff/api/staff';
 
 function AcceptInvitationForm() {
   const router = useRouter();
@@ -27,19 +25,52 @@ function AcceptInvitationForm() {
 
   const [token, setToken] = React.useState(tokenParam);
   const [orgId, setOrgId] = React.useState(orgParam);
+  const [preview, setPreview] = React.useState<InvitationPreview | null>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [successMembership, setSuccessMembership] = React.useState<OrganizationMembership | null>(null);
+  const [successRole, setSuccessRole] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
 
-  const handleAccept = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  React.useEffect(() => {
+    if (!token.trim() || !orgId.trim()) return;
+    const parsedOrgId = Number(orgId);
+    if (!Number.isInteger(parsedOrgId) || parsedOrgId <= 0) return;
+
+    let cancelled = false;
+    setIsPreviewLoading(true);
+    invitationsApi
+      .preview(parsedOrgId, token.trim())
+      .then((data) => {
+        if (!cancelled) {
+          setPreview(data);
+          setError(null);
+        }
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setPreview(null);
+          setError(err instanceof Error ? err.message : 'Unable to load invitation.');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsPreviewLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token, orgId]);
+
+  const handleAccept = async (event?: React.FormEvent) => {
+    event?.preventDefault();
+
     if (!token.trim() || !orgId.trim()) {
       setError('Please provide both an Academy ID and an Invitation Token.');
       return;
     }
 
     const parsedOrgId = Number(orgId);
-    if (isNaN(parsedOrgId) || parsedOrgId <= 0) {
+    if (!Number.isInteger(parsedOrgId) || parsedOrgId <= 0) {
       setError('Invalid Academy ID.');
       return;
     }
@@ -48,30 +79,15 @@ function AcceptInvitationForm() {
     setIsSubmitting(true);
 
     try {
-      const membership = await staffApi.acceptInvitation(parsedOrgId, {
-        token: token.trim(),
-      });
-
-      setSuccessMembership(membership);
+      const membership = await invitationsApi.accept(parsedOrgId, { token: token.trim() });
+      setSuccessRole(membership.role_display || membership.role);
       await refreshAcademies();
-      if (membership.organization) {
-        setActiveAcademy(membership.organization);
-      }
     } catch (err: unknown) {
       if (err instanceof ApiError) {
-        if (err.status === 400) {
-          setError(
-            err.message ||
-              'This invitation token is invalid, expired, or has already been used.'
-          );
-        } else if (err.status === 403) {
-          setError(
-            err.message ||
-              'Access forbidden. Ensure you are signed in with the exact email address the invitation was sent to.'
-          );
-        } else {
-          setError(err.message || 'Failed to accept invitation. Please verify your token.');
-        }
+        setError(
+          err.message ||
+            'This invitation is invalid, expired, revoked, or was sent to a different email address.',
+        );
       } else if (err instanceof Error) {
         setError(err.message);
       } else {
@@ -92,16 +108,15 @@ function AcceptInvitationForm() {
     );
   }
 
-  // If user is not authenticated, instruct them to log in first
   if (!user) {
     const returnUrl = encodeURIComponent(
-      `/accept-invitation?token=${encodeURIComponent(token)}&org=${encodeURIComponent(orgId)}`
+      `/accept-invitation?token=${encodeURIComponent(token)}&org=${encodeURIComponent(orgId)}`,
     );
 
     return (
       <Card className="w-full max-w-md">
         <CardHeader>
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary mb-2">
+          <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <Mail className="h-5 w-5" />
           </div>
           <CardTitle className="text-2xl">Academy Invitation</CardTitle>
@@ -110,19 +125,22 @@ function AcceptInvitationForm() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 text-sm">
+          {preview && (
+            <Alert>
+              <AlertDescription>
+                You are invited to join <strong>{preview.organization_name}</strong> as a{' '}
+                <strong className="capitalize">{preview.role}</strong>.
+              </AlertDescription>
+            </Alert>
+          )}
           <p className="text-muted-foreground">
-            To accept this invitation and claim your role, please sign in with your account credentials.
+            Sign in with the same email address that received the invitation, then return here to accept it.
           </p>
-          <Alert>
-            <AlertDescription className="text-xs">
-              Make sure to sign in using the same email address that received the invitation link.
-            </AlertDescription>
-          </Alert>
         </CardContent>
         <CardFooter className="flex flex-col gap-2">
           <Button asChild className="w-full">
             <Link href={`/login?returnUrl=${returnUrl}`}>
-              <LogIn className="h-4 w-4 mr-2" /> Sign In to Accept Invitation
+              <LogIn className="mr-2 h-4 w-4" /> Sign In to Accept Invitation
             </Link>
           </Button>
           <Button variant="ghost" asChild className="w-full text-xs">
@@ -133,38 +151,25 @@ function AcceptInvitationForm() {
     );
   }
 
-  // If successfully accepted
-  if (successMembership) {
+  if (successRole) {
     return (
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-300 mb-2">
+          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-300">
             <CheckCircle2 className="h-6 w-6" />
           </div>
           <CardTitle className="text-2xl">Invitation Accepted!</CardTitle>
-          <CardDescription>
-            You are now a verified member of the academy.
-          </CardDescription>
+          <CardDescription>You are now a member of the academy.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 text-center text-sm">
           <div className="rounded-lg bg-muted p-4">
             <p className="text-xs text-muted-foreground">Assigned Role</p>
-            <p className="text-lg font-semibold capitalize text-foreground mt-0.5">
-              {successMembership.role_display || successMembership.role}
-            </p>
+            <p className="mt-0.5 text-lg font-semibold capitalize text-foreground">{successRole}</p>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Your role-specific dashboard is ready with your classes, schedule, and permissions.
-          </p>
         </CardContent>
         <CardFooter>
-          <Button
-            className="w-full"
-            onClick={() => {
-              router.push('/app/dashboard');
-            }}
-          >
-            Go to Your Dashboard <ArrowRight className="h-4 w-4 ml-2" />
+          <Button className="w-full" onClick={() => router.push('/app/dashboard')}>
+            Go to Your Dashboard <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </CardFooter>
       </Card>
@@ -184,8 +189,22 @@ function AcceptInvitationForm() {
           {error && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Unable to accept</AlertTitle>
-              <AlertDescription className="text-xs mt-1">{error}</AlertDescription>
+              <AlertTitle>Unable to continue</AlertTitle>
+              <AlertDescription className="mt-1 text-xs">{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {isPreviewLoading && (
+            <p className="text-sm text-muted-foreground">Checking invitation...</p>
+          )}
+
+          {preview && (
+            <Alert>
+              <AlertDescription>
+                Join <strong>{preview.organization_name}</strong> as{' '}
+                <strong className="capitalize">{preview.role}</strong>.{' '}
+                This invitation expires {new Date(preview.expires_at).toLocaleString()}.
+              </AlertDescription>
             </Alert>
           )}
 
@@ -197,7 +216,7 @@ function AcceptInvitationForm() {
               required
               placeholder="e.g. 1"
               value={orgId}
-              onChange={(e) => setOrgId(e.target.value)}
+              onChange={(event) => setOrgId(event.target.value)}
               disabled={isSubmitting}
             />
           </div>
@@ -210,13 +229,13 @@ function AcceptInvitationForm() {
               required
               placeholder="Paste invitation token from email"
               value={token}
-              onChange={(e) => setToken(e.target.value)}
+              onChange={(event) => setToken(event.target.value)}
               disabled={isSubmitting}
             />
           </div>
 
           <Button type="submit" className="w-full" disabled={isSubmitting || !token || !orgId}>
-            {isSubmitting ? 'Verifying & Accepting...' : 'Accept Invitation'}
+            {isSubmitting ? 'Accepting...' : 'Accept Invitation'}
           </Button>
         </form>
       </CardContent>
@@ -231,7 +250,7 @@ function AcceptInvitationForm() {
 
 export default function AcceptInvitationPage() {
   return (
-    <div className="bg-muted/40 flex min-h-screen items-center justify-center p-4">
+    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
       <React.Suspense fallback={null}>
         <AcceptInvitationForm />
       </React.Suspense>

@@ -45,7 +45,7 @@ export function TeacherDirectory() {
     return <ErrorState title="Failed to load teachers" message={error?.message} />;
   }
 
-  const canManage = can('manage_staff', { activeRole });
+  const canManage = can('manage_teachers', { activeRole });
 
   const filtered = (teachers || []).filter((t) =>
     t.username.toLowerCase().includes(search.toLowerCase())

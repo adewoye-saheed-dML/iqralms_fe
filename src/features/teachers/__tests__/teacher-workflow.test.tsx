@@ -37,7 +37,7 @@ describe('Teacher Workflows', () => {
       activeRole: 'owner',
     } as any);
     vi.mocked(Capabilities.can).mockImplementation((cap) => {
-      if (cap === 'manage_staff') return true;
+      if (cap === 'manage_teachers') return true;
       if (cap === 'manage_finance') return true;
       return false;
     });
@@ -93,12 +93,12 @@ describe('Teacher Workflows', () => {
     });
   });
 
-  it('forbidden management actions for ordinary staff', async () => {
+  it('forbidden management actions for ordinary teacher', async () => {
     vi.mocked(AcademyProvider.useAcademy).mockReturnValue({
       activeAcademy: { id: 1, name: 'Test Academy' },
-      activeRole: 'staff',
+      activeRole: 'teacher',
     } as any);
-    vi.mocked(Capabilities.can).mockReturnValue(false); // Staff cannot manage_staff or manage_finance
+    vi.mocked(Capabilities.can).mockReturnValue(false); // Teacher cannot manage teacher or finance actions
     
     vi.mocked(teachersApi.getTeacherConfigurations).mockResolvedValue([
       { id: 10, membership: 1, user: 100, approved: false, username: 'teacher1', max_weekly_hours: 10, hourly_payout_rate: '15.00' } as any

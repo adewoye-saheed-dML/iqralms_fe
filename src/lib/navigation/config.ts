@@ -20,7 +20,7 @@ import type { Capability } from '@/lib/permissions/capabilities';
 
 // Global user account roles vs academy membership roles
 export type UserRole = 'lead' | 'sub' | 'student' | 'parent';
-export type OrgRole = 'owner' | 'admin' | 'staff' | 'teacher' | 'parent' | 'student';
+export type OrgRole = 'owner' | 'admin' | 'teacher' | 'parent' | 'student';
 export type RoleExperience = 'owner_admin' | 'teacher' | 'parent' | 'student';
 
 export interface NavItem {
@@ -46,7 +46,7 @@ export function resolveRoleExperience(context: {
   if (activeRole === 'owner' || activeRole === 'admin') {
     return 'owner_admin';
   }
-  if (activeRole === 'teacher' || activeRole === 'staff') {
+  if (activeRole === 'teacher') {
     return 'teacher';
   }
   if (activeRole === 'parent') {
@@ -93,7 +93,7 @@ export const navigationConfig: NavItem[] = [
     label: 'Teachers',
     href: '/app/teachers',
     icon: Users,
-    requiredCapability: 'manage_staff',
+    requiredCapability: 'manage_teachers',
     allowedOrgRoles: ['owner', 'admin'],
   },
   {
@@ -174,7 +174,7 @@ export function getNavigationForRole(experience: RoleExperience): NavItem[] {
       return [
         { label: 'Dashboard', href: '/app/dashboard', icon: LayoutDashboard },
         { label: 'Academy', href: '/app/academy', icon: GraduationCap, requiredCapability: 'manage_academy' },
-        { label: 'Teachers', href: '/app/teachers', icon: Users, requiredCapability: 'manage_staff' },
+        { label: 'Teachers', href: '/app/teachers', icon: Users, requiredCapability: 'manage_teachers' },
         { label: 'Students', href: '/app/students', icon: Users, requiredCapability: 'manage_students' },
         { label: 'Curriculum', href: '/app/curriculum', icon: BookOpen, requiredCapability: 'manage_curriculum' },
         { label: 'Scheduling', href: '/app/scheduling', icon: Calendar },

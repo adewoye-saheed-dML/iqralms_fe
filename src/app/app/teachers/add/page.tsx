@@ -1,17 +1,17 @@
 import { Metadata } from 'next';
 import { PageHeader } from '@/components/ui/page-header';
-import { StaffInviteForm } from '@/features/staff/components/staff-invite-form';
+import { InvitationForm } from '@/features/invitations/components/invitation-form';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Add Staff - Quran Academy',
-  description: 'Add a new member to the academy.',
+  title: 'Invite Teacher | Quran Academy',
+  description: 'Invite a teacher to join the academy.',
 };
 
-export default function AddStaffPage() {
+export default function AddTeacherPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex items-center space-x-4">
@@ -21,20 +21,20 @@ export default function AddStaffPage() {
           </Link>
         </Button>
         <PageHeader
-          title="Invite Teacher / Staff"
-          description="Send an email invitation to join this academy as an instructor or staff member."
+          title="Invite Teacher"
+          description="Send an email invitation to join this academy as a teacher."
         />
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Member Details</CardTitle>
+          <CardTitle>Teacher Details</CardTitle>
           <CardDescription>
-            Invite a teacher or staff member to this academy by email.
+            The teacher will receive an email with a secure invitation link.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <StaffInviteForm />
+          <InvitationForm role="teacher" />
         </CardContent>
       </Card>
     </div>

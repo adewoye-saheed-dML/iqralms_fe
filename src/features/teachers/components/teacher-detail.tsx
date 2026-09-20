@@ -60,7 +60,7 @@ export function TeacherDetail({ membershipId }: TeacherDetailProps) {
     return <ErrorState title="Teacher Not Found" message={error?.message || 'Configuration not found for this member.'} />;
   }
 
-  const canManage = can('manage_staff', { activeRole });
+  const canManage = can('manage_teachers', { activeRole });
   const canManageFinance = can('manage_finance', { activeRole });
 
   const handleApprove = () => {

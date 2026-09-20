@@ -34,7 +34,7 @@ The core operating journey is:
 Onboard
 → configure academy
 → establish curriculum
-→ invite staff
+→ invite teachers
 → add students
 → enroll students
 → schedule learning
@@ -133,10 +133,6 @@ Focus on:
 - audit
 - settings
 
-### STAFF
-
-UI depends on backend permissions. Do not invent client-only permissions.
-
 ### TEACHER / LEAD TEACHER
 
 Focus on:
@@ -188,7 +184,7 @@ Create academy
 → academy details
 → timezone/contact configuration
 → curriculum choice
-→ teachers/staff
+→ teachers
 → students/import
 → class configuration
 → notification preferences

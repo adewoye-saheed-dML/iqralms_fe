@@ -9,7 +9,7 @@ interface TestCase {
 
 const ALL_CAPABILITIES: Capability[] = [
   'manage_academy',
-  'manage_staff',
+  'manage_teachers',
   'manage_students',
   'manage_curriculum',
   'manage_scheduling',
@@ -72,8 +72,8 @@ describe('Capabilities Module', () => {
       ],
     },
     {
-      scenario: 'Staff (cannot manage staff, students, or curriculum — restricted to owner/admin)',
-      context: { activeRole: 'staff', userRole: null },
+      scenario: 'Teacher (cannot manage teacher, student, or curriculum administration)',
+      context: { activeRole: 'teacher', userRole: null },
       expectedCapabilities: [
         'manage_scheduling',
         'view_own_payouts',

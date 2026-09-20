@@ -96,6 +96,13 @@ export function ValidationSummary({ job }: ValidationSummaryProps) {
               <span className="font-medium">{job.skipped_count}</span>
             </div>
           </div>
+          {job.invitations_created !== undefined && job.invitations_created > 0 && (
+            <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
+              <div className="rounded bg-muted/50 p-2"><span className="text-muted-foreground">Invitations:</span> <span className="font-medium">{job.invitations_created}</span></div>
+              <div className="rounded bg-muted/50 p-2"><span className="text-muted-foreground">Emails sent:</span> <span className="font-medium">{job.emails_sent}</span></div>
+              <div className="rounded bg-muted/50 p-2"><span className="text-muted-foreground">Emails failed:</span> <span className="font-medium">{job.emails_failed}</span></div>
+            </div>
+          )}
         </div>
       )}
 

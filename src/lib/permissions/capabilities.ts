@@ -2,7 +2,8 @@ import type { UserRole, OrgRole } from '@/lib/navigation/config';
 
 export type Capability =
   | 'manage_academy'
-  | 'manage_staff'
+  | 'manage_teachers'
+  | 'manage_invitations'
   | 'manage_students'
   | 'manage_curriculum'
   | 'manage_scheduling'
@@ -27,16 +28,15 @@ export interface PermissionContext {
 }
 
 /**
- * Validates whether a user has a specific capability based on their global and academy roles.
- * This is the central permission gate for UI rendering.
- * Authoritative enforcement remains on the backend.
+ * Frontend capability gate. Backend authorization remains authoritative.
  */
 export function can(capability: Capability, context: PermissionContext): boolean {
-  const { userRole, activeRole } = context;
+  const { activeRole, userRole } = context;
 
   switch (capability) {
     case 'manage_academy':
-    case 'manage_staff':
+    case 'manage_teachers':
+    case 'manage_invitations':
     case 'manage_students':
     case 'manage_curriculum':
     case 'manage_finance':
@@ -45,17 +45,14 @@ export function can(capability: Capability, context: PermissionContext): boolean
     case 'manage_notifications':
     case 'manage_imports':
     case 'manage_pricing':
-      // Strictly admin/owner actions matching backend permission classes
       return activeRole === 'admin' || activeRole === 'owner';
 
     case 'manage_scheduling':
     case 'manage_progress':
     case 'manage_assessments':
-      // Teaching operations within the academy
       return (
         activeRole === 'admin' ||
         activeRole === 'owner' ||
-        activeRole === 'staff' ||
         activeRole === 'teacher' ||
         userRole === 'lead' ||
         userRole === 'sub'
@@ -63,8 +60,7 @@ export function can(capability: Capability, context: PermissionContext): boolean
 
     case 'view_own_payouts':
       return (
-        activeRole === 'teacher' || 
-        activeRole === 'staff' || 
+        activeRole === 'teacher' ||
         userRole === 'sub' ||
         activeRole === 'owner' ||
         activeRole === 'admin'

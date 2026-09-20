@@ -5,9 +5,9 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useAcademy } from '@/lib/academy/academy-provider';
 import { onboardingApi } from '../api/onboarding';
-import { staffApi } from '@/features/staff/api/staff';
+import { invitationsApi } from '@/features/invitations/api/invitations';
 import { studentsApi } from '@/features/students/api/students';
-import { curriculumKeys, staffKeys, studentKeys } from '@/lib/api/query-keys';
+import { curriculumKeys, invitationKeys, studentKeys } from '@/lib/api/query-keys';
 import { can } from '@/lib/permissions/capabilities';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -28,7 +28,7 @@ export interface OnboardingStep {
   statusLabel: string;
   actionLabel?: string;
   actionHref?: string;
-  capability?: 'manage_curriculum' | 'manage_staff' | 'manage_students';
+  capability?: 'manage_curriculum' | 'manage_invitations' | 'manage_students';
 }
 
 export function OnboardingWizard() {
@@ -42,9 +42,9 @@ export function OnboardingWizard() {
     enabled: !!activeAcademy,
   });
 
-  const { data: staff = [], isLoading: isLoadingStaff, error: staffError } = useQuery({
-    queryKey: staffKeys.all(activeAcademy?.id),
-    queryFn: () => staffApi.getMemberships(activeAcademy!.id),
+  const { data: invitations = [], isLoading: isLoadingInvitations, error: invitationsError } = useQuery({
+    queryKey: invitationKeys.all(activeAcademy?.id),
+    queryFn: () => invitationsApi.list(activeAcademy!.id),
     enabled: !!activeAcademy,
   });
 
@@ -56,7 +56,7 @@ export function OnboardingWizard() {
 
   if (!activeAcademy) return null;
 
-  if (isLoadingTracks || isLoadingStaff || isLoadingStudents) {
+  if (isLoadingTracks || isLoadingInvitations || isLoadingStudents) {
     return (
       <div className="flex min-h-[400px] items-center justify-center p-8">
         <Spinner className="h-8 w-8" />
@@ -64,7 +64,7 @@ export function OnboardingWizard() {
     );
   }
 
-  if (tracksError || staffError || studentsError) {
+  if (tracksError || invitationsError || studentsError) {
     return (
       <div className="mx-auto max-w-4xl p-8">
         <ErrorState
@@ -101,16 +101,16 @@ export function OnboardingWizard() {
     },
     {
       id: 'teachers',
-      title: 'Teachers & Staff',
-      description: `Invite teachers and staff members via the invitation workflow (${staff.length} member${staff.length === 1 ? '' : 's'} active).`,
+      title: 'Teachers',
+      description: `Invite teachers by email or upload a teacher list (${invitations.filter((item) => item.role === 'teacher' && item.status === 'pending').length} pending invitation${invitations.filter((item) => item.role === 'teacher' && item.status === 'pending').length === 1 ? '' : 's'}).`,
       backendFact: 'Organization invitations dispatched or memberships active',
       endpoint: 'POST /api/organizations/{organization_pk}/invitations/',
       allowedRoles: ['owner', 'admin'],
       status: 'action_available',
       statusLabel: 'Action Available',
-      actionLabel: 'Invite Staff',
+      actionLabel: 'Invite Teachers',
       actionHref: '/app/teachers/add',
-      capability: 'manage_staff',
+      capability: 'manage_invitations',
     },
     {
       id: 'students',
