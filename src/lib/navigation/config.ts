@@ -20,7 +20,7 @@ import type { Capability } from '@/lib/permissions/capabilities';
 
 // Global user account roles vs academy membership roles
 export type UserRole = 'lead' | 'sub' | 'student' | 'parent';
-export type OrgRole = 'owner' | 'admin' | 'staff' | 'teacher';
+export type OrgRole = 'owner' | 'admin' | 'staff' | 'teacher' | 'parent' | 'student';
 export type RoleExperience = 'owner_admin' | 'teacher' | 'parent' | 'student';
 
 export interface NavItem {
@@ -48,6 +48,12 @@ export function resolveRoleExperience(context: {
   }
   if (activeRole === 'teacher' || activeRole === 'staff') {
     return 'teacher';
+  }
+  if (activeRole === 'parent') {
+    return 'parent';
+  }
+  if (activeRole === 'student') {
+    return 'student';
   }
 
   // Fallback to user global account role

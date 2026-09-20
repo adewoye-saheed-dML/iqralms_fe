@@ -4,7 +4,7 @@ import type { components } from '@/lib/api/schema';
 export type Organization = components['schemas']['Organization'];
 export type Track = components['schemas']['TrackBrief'];
 
-export type CreateOrganizationPayload = Omit<Organization, 'id'> & {
+export type CreateOrganizationPayload = Omit<Organization, 'id' | 'is_active' | 'created_at' | 'updated_at'> & {
   id?: number;
 };
 export type CreateTrackPayload = components['schemas']['TrackWrite'];

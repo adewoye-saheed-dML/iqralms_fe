@@ -1152,6 +1152,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
+         * Upload and validate an import file
          * @description Resolves the URL's organization to the caller's own membership, once.
          *
          *     The permission classes and the querysets both need the same answer to "is this
@@ -1352,6 +1353,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/organizations/{organization_pk}/invitations/{id}/resend/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /api/organizations/{organization_pk}/invitations/{pk}/resend/
+         *     Resends an invitation with a fresh token and resets expiry.
+         */
+        post: operations["organizations_invitations_resend_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/organizations/{organization_pk}/invitations/{id}/revoke/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /api/organizations/{organization_pk}/invitations/{pk}/revoke/
+         *     Explicitly revokes a pending invitation.
+         */
+        post: operations["organizations_invitations_revoke_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/organizations/{organization_pk}/invitations/accept/": {
         parameters: {
             query?: never;
@@ -1363,6 +1404,26 @@ export interface paths {
         put?: never;
         /** @description POST /api/organizations/{id}/invitations/accept/ */
         post: operations["organizations_invitations_accept_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/organizations/{organization_pk}/invitations/preview/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description GET /api/organizations/{organization_pk}/invitations/preview/?token=<token>
+         *     Safe public preview of an invitation before authentication/acceptance.
+         */
+        get: operations["organizations_invitations_preview_retrieve"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2054,6 +2115,11 @@ export interface components {
          *     * `membership.role_changed` - Membership Role Changed
          *     * `membership.suspended` - Membership Suspended
          *     * `membership.reactivated` - Membership Reactivated
+         *     * `invitation.created` - Invitation Created
+         *     * `invitation.resent` - Invitation Resent
+         *     * `invitation.revoked` - Invitation Revoked
+         *     * `invitation.accepted` - Invitation Accepted
+         *     * `invitation.email_failed` - Invitation Email Failed
          *     * `permission.changed` - Permission Changed
          *     * `curriculum.track_created` - Track Created
          *     * `curriculum.track_updated` - Track Updated
@@ -2101,7 +2167,7 @@ export interface components {
          *     * `bulk_import.failed` - Bulk Import Failed
          * @enum {string}
          */
-        ActionEnum: "auth.login_success" | "auth.login_failed" | "auth.logout" | "auth.password_changed" | "auth.password_reset_requested" | "organization.created" | "organization.settings_updated" | "membership.created" | "membership.role_changed" | "membership.suspended" | "membership.reactivated" | "permission.changed" | "curriculum.track_created" | "curriculum.track_updated" | "curriculum.track_archived" | "curriculum.level_created" | "curriculum.level_updated" | "curriculum.level_archived" | "curriculum.teacher_assignment_changed" | "enrollment.created" | "enrollment.updated" | "enrollment.withdrawn" | "availability.created" | "availability.updated" | "availability.deleted" | "booking.created" | "booking.updated" | "booking.cancelled" | "booking.completed" | "booking.no_show" | "cohort.created" | "cohort.updated" | "cohort.cancelled" | "cohort.assignment_changed" | "assessment.created" | "assessment.updated" | "assessment.finalized" | "assessment.reopened" | "pricing.agreement_created" | "pricing.agreement_updated" | "pricing.agreement_deactivated" | "pricing.rate_changed" | "payout.created" | "payout.finalized" | "payout.reopened" | "notification.provider_updated" | "notification.configuration_updated" | "notification.sent" | "video.provider_updated" | "video.meeting_created" | "video.meeting_updated" | "video.meeting_cancelled" | "bulk_import.started" | "bulk_import.validated" | "bulk_import.completed" | "bulk_import.failed";
+        ActionEnum: "auth.login_success" | "auth.login_failed" | "auth.logout" | "auth.password_changed" | "auth.password_reset_requested" | "organization.created" | "organization.settings_updated" | "membership.created" | "membership.role_changed" | "membership.suspended" | "membership.reactivated" | "invitation.created" | "invitation.resent" | "invitation.revoked" | "invitation.accepted" | "invitation.email_failed" | "permission.changed" | "curriculum.track_created" | "curriculum.track_updated" | "curriculum.track_archived" | "curriculum.level_created" | "curriculum.level_updated" | "curriculum.level_archived" | "curriculum.teacher_assignment_changed" | "enrollment.created" | "enrollment.updated" | "enrollment.withdrawn" | "availability.created" | "availability.updated" | "availability.deleted" | "booking.created" | "booking.updated" | "booking.cancelled" | "booking.completed" | "booking.no_show" | "cohort.created" | "cohort.updated" | "cohort.cancelled" | "cohort.assignment_changed" | "assessment.created" | "assessment.updated" | "assessment.finalized" | "assessment.reopened" | "pricing.agreement_created" | "pricing.agreement_updated" | "pricing.agreement_deactivated" | "pricing.rate_changed" | "payout.created" | "payout.finalized" | "payout.reopened" | "notification.provider_updated" | "notification.configuration_updated" | "notification.sent" | "video.provider_updated" | "video.meeting_created" | "video.meeting_updated" | "video.meeting_cancelled" | "bulk_import.started" | "bulk_import.validated" | "bulk_import.completed" | "bulk_import.failed";
         /**
          * @description * `USER` - User
          *     * `SYSTEM` - System
@@ -2215,9 +2281,11 @@ export interface components {
          * @description * `admin` - admin
          *     * `staff` - staff
          *     * `teacher` - teacher
+         *     * `parent` - parent
+         *     * `student` - student
          * @enum {string}
          */
-        AssignableOrganizationRoleEnum: "admin" | "staff" | "teacher";
+        AssignableOrganizationRoleEnum: "admin" | "staff" | "teacher" | "parent" | "student";
         AuditLog: {
             readonly id: number;
             readonly organization: number;
@@ -2492,6 +2560,9 @@ export interface components {
             readonly updated_count: number;
             readonly skipped_count: number;
             readonly error_count: number;
+            readonly invitations_created: number;
+            readonly emails_sent: number;
+            readonly emails_failed: number;
             readonly error_report: unknown;
             /** Format: date-time */
             readonly created_at: string;
@@ -2511,11 +2582,19 @@ export interface components {
          */
         ImportJobResponseStatusEnum: "uploaded" | "validated" | "failed" | "running" | "completed" | "partially_completed";
         ImportJobValidate: {
-            /** Format: binary */
+            /** Format: uri */
             file: string;
             kind: components["schemas"]["KindEnum"];
             column_mapping?: unknown;
         };
+        /**
+         * @description * `admin` - admin
+         *     * `teacher` - teacher
+         *     * `parent` - parent
+         *     * `student` - student
+         * @enum {string}
+         */
+        InvitableOrganizationRoleEnum: "admin" | "teacher" | "parent" | "student";
         /**
          * @description * `teachers` - Teachers
          *     * `students` - Students
@@ -2667,6 +2746,8 @@ export interface components {
              *     * `admin` - Administrator
              *     * `staff` - Staff
              *     * `teacher` - Teacher
+             *     * `parent` - Parent
+             *     * `student` - Student
              */
             readonly role: components["schemas"]["OrganizationRoleEnum"];
             readonly role_display: string;
@@ -2893,11 +2974,11 @@ export interface components {
             /** @description IANA zone name, e.g. 'Africa/Lagos'. The academy's own zone, validated by the same rule as User.timezone. */
             timezone: string;
             /** @description Whether the academy is operating. Disabling an organization is a later phase's workflow, so nothing reads this yet — access is decided by active membership alone (see learnings.md). */
-            readonly is_active?: boolean;
+            readonly is_active: boolean;
             /** Format: date-time */
-            readonly created_at?: string;
+            readonly created_at: string;
             /** Format: date-time */
-            readonly updated_at?: string;
+            readonly updated_at: string;
         };
         OrganizationInvitation: {
             readonly id: number;
@@ -2913,6 +2994,8 @@ export interface components {
              *     * `admin` - Administrator
              *     * `staff` - Staff
              *     * `teacher` - Teacher
+             *     * `parent` - Parent
+             *     * `student` - Student
              */
             readonly role: components["schemas"]["OrganizationRoleEnum"];
             readonly status: components["schemas"]["OrganizationInvitationStatusEnum"];
@@ -2920,6 +3003,7 @@ export interface components {
             readonly expires_at: string;
             /** Format: date-time */
             readonly created_at: string;
+            readonly email_delivery_status: string;
         };
         /** @description Accepts an invitation using its token. */
         OrganizationInvitationAccept: {
@@ -2929,7 +3013,16 @@ export interface components {
         OrganizationInvitationCreate: {
             /** Format: email */
             email: string;
-            role: components["schemas"]["AssignableOrganizationRoleEnum"];
+            role: components["schemas"]["InvitableOrganizationRoleEnum"];
+        };
+        /** @description Safe public representation of an invitation for the acceptance screen. */
+        OrganizationInvitationPreview: {
+            readonly organization_id: number;
+            readonly organization_name: string;
+            readonly role: string;
+            readonly status: string;
+            /** Format: date-time */
+            readonly expires_at: string;
         };
         /**
          * @description * `pending` - Pending
@@ -2959,6 +3052,8 @@ export interface components {
              *     * `admin` - Administrator
              *     * `staff` - Staff
              *     * `teacher` - Teacher
+             *     * `parent` - Parent
+             *     * `student` - Student
              */
             readonly role: components["schemas"]["OrganizationRoleEnum"];
             readonly role_display: string;
@@ -2980,9 +3075,11 @@ export interface components {
          *     * `admin` - Administrator
          *     * `staff` - Staff
          *     * `teacher` - Teacher
+         *     * `parent` - Parent
+         *     * `student` - Student
          * @enum {string}
          */
-        OrganizationRoleEnum: "owner" | "admin" | "staff" | "teacher";
+        OrganizationRoleEnum: "owner" | "admin" | "staff" | "teacher" | "parent" | "student";
         /**
          * @description One academy's terms for one teacher, as an owner or admin reads them.
          *
@@ -6200,6 +6297,78 @@ export interface operations {
             };
         };
     };
+    organizations_invitations_resend_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                organization_pk: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationInvitation"];
+                };
+            };
+            /** @description Invitation cannot be resent (accepted or revoked). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invitation not found in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    organizations_invitations_revoke_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                organization_pk: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationInvitation"];
+                };
+            };
+            /** @description Only pending invitations can be revoked. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invitation not found in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     organizations_invitations_accept_create: {
         parameters: {
             query?: never;
@@ -6224,6 +6393,41 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["OrganizationMembership"];
                 };
+            };
+        };
+    };
+    organizations_invitations_preview_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_pk: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationInvitationPreview"];
+                };
+            };
+            /** @description Missing token query parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invitation not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
