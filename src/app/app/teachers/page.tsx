@@ -1,31 +1,35 @@
 'use client';
 
-import * as React from 'react';
 import { PageHeader } from '@/components/ui/page-header';
-import { StaffDirectory } from '@/features/staff/components/staff-directory';
 import { TeacherDirectory } from '@/features/teachers/components/teacher-directory';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { UserPlus, Upload } from 'lucide-react';
+import Link from 'next/link';
 
 export default function TeachersPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <PageHeader
-        title="Teachers & Staff"
-        description="View and manage the people who operate this academy."
+        title="Teachers"
+        description="Manage academy teachers, invitations, and teaching configuration."
       />
-      
-      <Tabs defaultValue="teachers">
-        <TabsList className="mb-4">
-          <TabsTrigger value="teachers">Teachers</TabsTrigger>
-          <TabsTrigger value="staff">Administrative Staff</TabsTrigger>
-        </TabsList>
-        <TabsContent value="teachers">
-          <TeacherDirectory />
-        </TabsContent>
-        <TabsContent value="staff">
-          <StaffDirectory showOnlyAdmin={true} />
-        </TabsContent>
-      </Tabs>
+
+      <div className="flex flex-wrap gap-2">
+        <Button asChild>
+          <Link href="/app/invitations?role=teacher">
+            <UserPlus className="mr-2 h-4 w-4" />
+            Invite Teacher
+          </Link>
+        </Button>
+        <Button variant="outline" asChild>
+          <Link href="/app/imports?kind=teachers">
+            <Upload className="mr-2 h-4 w-4" />
+            Upload Teacher List
+          </Link>
+        </Button>
+      </div>
+
+      <TeacherDirectory />
     </div>
   );
 }
