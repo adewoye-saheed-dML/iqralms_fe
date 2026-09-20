@@ -7,7 +7,7 @@ import { OnboardingWizard } from '../components/onboarding-wizard';
 import * as AcademyProvider from '@/lib/academy/academy-provider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { onboardingApi } from '../api/onboarding';
-import { staffApi } from '@/features/staff/api/staff';
+import { invitationsApi } from '@/features/invitations/api/invitations';
 import { studentsApi } from '@/features/students/api/students';
 
 const pushMock = vi.fn();
@@ -25,7 +25,7 @@ vi.mock('../api/onboarding', () => ({
 }));
 
 vi.mock('@/features/staff/api/staff', () => ({
-  staffApi: { getMemberships: vi.fn() },
+  invitationsApi: { list: vi.fn() },
 }));
 
 vi.mock('@/features/students/api/students', () => ({
@@ -55,7 +55,7 @@ describe('OnboardingWizard (Explicit Steps)', () => {
 
   it('renders all explicit onboarding steps with their backend facts and endpoints', async () => {
     vi.mocked(onboardingApi.getTracks).mockResolvedValue([]);
-    vi.mocked(staffApi.getMemberships).mockResolvedValue([]);
+    vi.mocked(invitationsApi.list).mockResolvedValue([]);
     vi.mocked(studentsApi.getStudents).mockResolvedValue([]);
 
     renderWizard();
@@ -63,7 +63,7 @@ describe('OnboardingWizard (Explicit Steps)', () => {
     await waitFor(() => {
       expect(screen.getAllByText('Academy Details').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Curriculum').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Teachers & Staff').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Teachers').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Students').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Class Configuration').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Notifications').length).toBeGreaterThan(0);
@@ -73,7 +73,7 @@ describe('OnboardingWizard (Explicit Steps)', () => {
 
   it('displays truthful uncontracted messaging for Class Configuration, Notifications, and Ready', async () => {
     vi.mocked(onboardingApi.getTracks).mockResolvedValue([]);
-    vi.mocked(staffApi.getMemberships).mockResolvedValue([]);
+    vi.mocked(invitationsApi.list).mockResolvedValue([]);
     vi.mocked(studentsApi.getStudents).mockResolvedValue([]);
 
     renderWizard();
@@ -95,7 +95,7 @@ describe('OnboardingWizard (Explicit Steps)', () => {
 
   it('navigates to curriculum setup when clicking Add First Track', async () => {
     vi.mocked(onboardingApi.getTracks).mockResolvedValue([]);
-    vi.mocked(staffApi.getMemberships).mockResolvedValue([]);
+    vi.mocked(invitationsApi.list).mockResolvedValue([]);
     vi.mocked(studentsApi.getStudents).mockResolvedValue([]);
 
     renderWizard();
@@ -108,30 +108,30 @@ describe('OnboardingWizard (Explicit Steps)', () => {
     expect(pushMock).toHaveBeenCalledWith('/app/onboarding/curriculum');
   });
 
-  it('navigates to teachers invite route when Teachers & Staff is selected', async () => {
+  it('navigates to teachers invite route when Teachers is selected', async () => {
     vi.mocked(onboardingApi.getTracks).mockResolvedValue([]);
-    vi.mocked(staffApi.getMemberships).mockResolvedValue([]);
+    vi.mocked(invitationsApi.list).mockResolvedValue([]);
     vi.mocked(studentsApi.getStudents).mockResolvedValue([]);
 
     renderWizard();
 
     await waitFor(() => {
-      expect(screen.getAllByText('Teachers & Staff').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Teachers').length).toBeGreaterThan(0);
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /Teachers & Staff/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Teachers/i }));
 
     await waitFor(() => {
-      expect(screen.getByText('Invite Staff')).toBeInTheDocument();
+      expect(screen.getByText('Invite Teachers')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('Invite Staff'));
+    fireEvent.click(screen.getByText('Invite Teachers'));
     expect(pushMock).toHaveBeenCalledWith('/app/teachers/add');
   });
 
   it('navigates to student add route when Students is selected', async () => {
     vi.mocked(onboardingApi.getTracks).mockResolvedValue([]);
-    vi.mocked(staffApi.getMemberships).mockResolvedValue([]);
+    vi.mocked(invitationsApi.list).mockResolvedValue([]);
     vi.mocked(studentsApi.getStudents).mockResolvedValue([]);
 
     renderWizard();
@@ -157,7 +157,7 @@ describe('OnboardingWizard (Explicit Steps)', () => {
     } as any);
 
     vi.mocked(onboardingApi.getTracks).mockResolvedValue([]);
-    vi.mocked(staffApi.getMemberships).mockResolvedValue([]);
+    vi.mocked(invitationsApi.list).mockResolvedValue([]);
     vi.mocked(studentsApi.getStudents).mockResolvedValue([]);
 
     renderWizard();
@@ -170,7 +170,7 @@ describe('OnboardingWizard (Explicit Steps)', () => {
   it('does not falsely declare academy ready based on counts', async () => {
     // Populate counts that used to trigger fake readiness
     vi.mocked(onboardingApi.getTracks).mockResolvedValue([{ id: 1 } as any]);
-    vi.mocked(staffApi.getMemberships).mockResolvedValue([{ id: 1 }, { id: 2 }] as any[]);
+    vi.mocked(invitationsApi.list).mockResolvedValue([{ id: 1 }, { id: 2 }] as any[]);
     vi.mocked(studentsApi.getStudents).mockResolvedValue([{ id: 1 }] as any[]);
 
     renderWizard();
