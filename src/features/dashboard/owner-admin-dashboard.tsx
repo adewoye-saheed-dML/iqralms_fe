@@ -35,7 +35,7 @@ export function OwnerAdminDashboard() {
     enabled: !!activeAcademy?.id,
   });
 
-  const { data: studentsList = [] }, = [] } = useQuery({
+  const { data: studentsList = [] } = useQuery({
     queryKey: studentKeys.all(activeAcademy?.id),
     queryFn: () => studentsApi.getStudents(activeAcademy!.id),
     enabled: !!activeAcademy?.id,
