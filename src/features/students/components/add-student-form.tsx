@@ -90,6 +90,14 @@ export function AddStudentForm() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <Alert className="border-blue-200 bg-blue-50/50 text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="text-xs">
+              <span className="font-semibold">Direct Email Invitation: BACKEND CONTRACT REQUIRED.</span>{' '}
+              Parent and student invitation endpoints are pending backend contract delivery. Students currently enroll using their existing global User ID.
+            </AlertDescription>
+          </Alert>
+
           {errorMessage && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />

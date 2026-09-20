@@ -1,33 +1,32 @@
 'use client';
 
 import * as React from 'react';
-import { PageHeader } from '@/components/ui/page-header';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/lib/auth/auth-provider';
 import { useAcademy } from '@/lib/academy/academy-provider';
+import { resolveRoleExperience } from '@/lib/navigation/config';
+import { OwnerAdminDashboard } from '@/features/dashboard/owner-admin-dashboard';
+import { TeacherDashboard } from '@/features/dashboard/teacher-dashboard';
+import { ParentDashboard } from '@/features/dashboard/parent-dashboard';
+import { StudentDashboard } from '@/features/dashboard/student-dashboard';
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { activeAcademy, activeRole } = useAcademy();
+  const { activeRole } = useAcademy();
 
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Dashboard"
-        description={`Welcome back, ${user?.first_name || user?.username}.`}
-      />
+  const experience = resolveRoleExperience({
+    activeRole,
+    userRole: user?.role,
+  });
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Current Academy</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activeAcademy?.name || 'None Selected'}</div>
-            <p className="text-muted-foreground mt-1 text-xs">Role: {activeRole || 'N/A'}</p>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
+  switch (experience) {
+    case 'owner_admin':
+      return <OwnerAdminDashboard />;
+    case 'teacher':
+      return <TeacherDashboard />;
+    case 'parent':
+      return <ParentDashboard />;
+    case 'student':
+    default:
+      return <StudentDashboard />;
+  }
 }

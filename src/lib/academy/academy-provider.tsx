@@ -69,10 +69,47 @@ export function AcademyProvider({ children }: { children: React.ReactNode }) {
       if (typeof window !== 'undefined') {
         localStorage.setItem(ACADEMY_STORAGE_KEY, String(id));
       }
+      // Remove stale queries from other academies
       queryClient.removeQueries({
         predicate: (query) => {
           const key = query.queryKey;
-          return Array.isArray(key) && key[0] === 'academy' && key[1] !== id;
+          if (!Array.isArray(key)) return false;
+          if (
+            key[0] === 'auth' ||
+            (key[0] === 'organizations' && key[1] === 'mine') ||
+            key[0] === 'global'
+          ) {
+            return false;
+          }
+          if (key[0] === 'academy') {
+            return key[1] !== undefined && key[1] !== id;
+          }
+          const tenantFeatures = [
+            'students',
+            'teachers',
+            'staff',
+            'curriculum',
+            'scheduling',
+            'assessment',
+            'progress',
+            'pricing',
+            'payouts',
+            'notifications',
+            'imports',
+            'audit',
+          ];
+          if (tenantFeatures.some((f) => key.includes(f))) {
+            return key.some((k) => typeof k === 'number' && k !== id);
+          }
+          return false;
+        },
+      });
+
+      // Invalidate active tenant queries so new academy data is refetched
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          return Array.isArray(key) && key[0] === 'academy' && key[1] === id;
         },
       });
     },

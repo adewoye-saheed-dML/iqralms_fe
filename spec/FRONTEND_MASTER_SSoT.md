@@ -72,7 +72,7 @@ Public:
 ├── pricing
 ├── contact
 ├── login
-└── register
+└── accept-invitation
 ```
 
 Authenticated:

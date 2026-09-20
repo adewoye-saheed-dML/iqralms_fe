@@ -4,17 +4,15 @@ import type { components } from '@/lib/api/schema';
 export type Organization = components['schemas']['Organization'];
 export type Track = components['schemas']['TrackBrief'];
 
-export type CreateOrganizationPayload = {
-  name: string;
-  slug: string;
-  timezone: string;
+export type CreateOrganizationPayload = Omit<Organization, 'id'> & {
+  id?: number;
 };
 export type CreateTrackPayload = components['schemas']['TrackWrite'];
 
 export const onboardingApi = {
   createAcademy: async (payload: CreateOrganizationPayload): Promise<Organization> => {
     const { data } = await apiClient.POST('/api/organizations/', {
-      body: payload as unknown as components['schemas']['Organization'],
+      body: payload as components['schemas']['Organization'],
     });
     if (!data) {
       throw new Error('Failed to create academy');

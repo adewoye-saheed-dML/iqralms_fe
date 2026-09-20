@@ -4,7 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { navigationConfig } from '@/lib/navigation/config';
+import { getNavigationForRole, resolveRoleExperience } from '@/lib/navigation/config';
 import { useAuth } from '@/lib/auth/auth-provider';
 import { useAcademy } from '@/lib/academy/academy-provider';
 import { can } from '@/lib/permissions/capabilities';
@@ -16,8 +16,11 @@ export function AppSidebar({ className }: { className?: string }) {
 
   if (!user) return null;
 
-  // Filter navigation based on user role and org role
-  const visibleNavItems = navigationConfig.filter((item) => {
+  // Resolve role experience and get role-specific navigation
+  const experience = resolveRoleExperience({ activeRole, userRole: user.role });
+  const roleNavItems = getNavigationForRole(experience);
+
+  const visibleNavItems = roleNavItems.filter((item) => {
     if (item.requiredCapability) {
       return can(item.requiredCapability, { userRole: user.role, activeRole });
     }
@@ -34,7 +37,8 @@ export function AppSidebar({ className }: { className?: string }) {
       <div className="flex-1 overflow-auto py-2">
         <nav className="grid items-start px-2 text-sm font-medium">
           {visibleNavItems.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const itemBaseHref = item.href.split('?')[0];
+            const isActive = pathname === itemBaseHref || pathname.startsWith(`${itemBaseHref}/`);
             const Icon = item.icon;
             return (
               <Link
@@ -42,10 +46,10 @@ export function AppSidebar({ className }: { className?: string }) {
                 href={item.href}
                 className={cn(
                   'text-muted-foreground hover:text-primary flex items-center gap-3 rounded-lg px-3 py-2 transition-all',
-                  isActive ? 'bg-muted text-primary' : ''
+                  isActive ? 'bg-muted text-primary font-semibold' : ''
                 )}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="h-4 w-4 shrink-0" />
                 {item.label}
               </Link>
             );

@@ -107,9 +107,9 @@ function LoginForm() {
           </Button>
 
           <div className="text-center text-sm">
-            <span className="text-muted-foreground">Don&apos;t have an account? </span>
-            <a href="/register" className="text-primary hover:underline">
-              Register
+            <span className="text-muted-foreground">Looking to establish an academy? </span>
+            <a href="/pricing" className="text-primary hover:underline">
+              View Pricing & Access
             </a>
           </div>
         </form>

@@ -21,8 +21,8 @@ export default function AddStaffPage() {
           </Link>
         </Button>
         <PageHeader
-          title="Add Staff Member"
-          description="Enter an existing user's ID to invite them to this academy."
+          title="Invite Teacher / Staff"
+          description="Send an email invitation to join this academy as an instructor or staff member."
         />
       </div>
 
