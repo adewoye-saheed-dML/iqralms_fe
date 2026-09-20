@@ -82,10 +82,6 @@ function AcceptInvitationForm() {
       const membership = await invitationsApi.accept(parsedOrgId, { token: token.trim() });
       setSuccessRole(membership.role_display || membership.role);
       await refreshAcademies();
-      if (membership.organization) {
-        const academy = (await refreshAcademies())?.find?.((item) => item.id === membership.organization);
-        if (academy) setActiveAcademy(academy);
-      }
     } catch (err: unknown) {
       if (err instanceof ApiError) {
         setError(
