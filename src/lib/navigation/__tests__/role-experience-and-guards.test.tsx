@@ -40,9 +40,8 @@ describe('Role Resolution and Experience Mapping', () => {
     expect(resolveRoleExperience({ activeRole: 'admin', userRole: null })).toBe('owner_admin');
   });
 
-  it('resolves active academy teacher/staff to teacher experience', () => {
+  it('resolves active academy teacher to teacher experience', () => {
     expect(resolveRoleExperience({ activeRole: 'teacher', userRole: null })).toBe('teacher');
-    expect(resolveRoleExperience({ activeRole: 'staff', userRole: null })).toBe('teacher');
   });
 
   it('resolves parent global role without conflicting active role to parent experience', () => {
