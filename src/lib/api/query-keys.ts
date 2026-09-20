@@ -1,7 +1,6 @@
 /**
  * Centralized React Query key factories.
- * Ensures every tenant-scoped query explicitly incorporates the academy ID.
- * Helps prevent cross-tenant data leakage and simplifies cache invalidation.
+ * Every tenant-scoped key includes the academy ID.
  */
 
 type AcademyId = number | undefined;
@@ -11,21 +10,29 @@ export const academyKeys = {
   tenant: (academyId: AcademyId) => ['academy', academyId] as const,
 };
 
-export const staffKeys = {
-  all: (academyId: AcademyId) => [...academyKeys.tenant(academyId), 'staff'] as const,
-  detail: (academyId: AcademyId, memberId: number | string) => [...staffKeys.all(academyId), memberId] as const,
+export const membershipKeys = {
+  all: (academyId: AcademyId) => [...academyKeys.tenant(academyId), 'memberships'] as const,
+  detail: (academyId: AcademyId, memberId: number | string) =>
+    [...membershipKeys.all(academyId), memberId] as const,
+};
+
+export const invitationKeys = {
+  all: (academyId: AcademyId) => [...academyKeys.tenant(academyId), 'invitations'] as const,
 };
 
 export const studentKeys = {
   all: (academyId: AcademyId) => [...academyKeys.tenant(academyId), 'students'] as const,
-  detail: (academyId: AcademyId, enrollmentId: number | string) => [...studentKeys.all(academyId), enrollmentId] as const,
+  detail: (academyId: AcademyId, enrollmentId: number | string) =>
+    [...studentKeys.all(academyId), enrollmentId] as const,
 };
 
 export const curriculumKeys = {
   all: (academyId: AcademyId) => [...academyKeys.tenant(academyId), 'curriculum'] as const,
   tracks: (academyId: AcademyId) => [...curriculumKeys.all(academyId), 'tracks'] as const,
-  trackDetail: (academyId: AcademyId, trackId: number | string) => [...curriculumKeys.all(academyId), 'track', trackId] as const,
-  levels: (academyId: AcademyId, trackId?: number | string) => [...curriculumKeys.all(academyId), 'levels', trackId] as const,
+  trackDetail: (academyId: AcademyId, trackId: number | string) =>
+    [...curriculumKeys.all(academyId), 'track', trackId] as const,
+  levels: (academyId: AcademyId, trackId?: number | string) =>
+    [...curriculumKeys.all(academyId), 'levels', trackId] as const,
 };
 
 export const schedulingKeys = {
