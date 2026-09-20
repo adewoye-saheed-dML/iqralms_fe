@@ -1,8 +1,9 @@
 'use client';
 
-import { academyKeys } from '@/lib/api/query-keys';
+import { academyKeys, invitationKeys, teacherKeys, studentKeys } from '@/lib/api/query-keys';
 
 import * as React from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { importsApi, type ImportJobResponse, type KindEnum } from '../api/imports';
 import { useAcademy } from '@/lib/academy/academy-provider';
@@ -16,9 +17,12 @@ import { ValidationSummary } from './validation-summary';
 
 export function ImportWorkflow() {
   const { activeAcademy } = useAcademy();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
 
-  const [kind, setKind] = React.useState<KindEnum>('students');
+  const requestedKind = searchParams.get('kind') as KindEnum | null;
+  const initialKind: KindEnum = requestedKind === 'teachers' || requestedKind === 'parents' || requestedKind === 'students' ? requestedKind : 'students';
+  const [kind, setKind] = React.useState<KindEnum>(initialKind);
   const [file, setFile] = React.useState<File | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   
@@ -63,6 +67,13 @@ export function ImportWorkflow() {
       setError(null);
       // Invalidate relevant queries (e.g. students/teachers lists if we were rendering them)
       queryClient.invalidateQueries({ queryKey: academyKeys.tenant(activeAcademy?.id) });
+      if (kind === 'teachers') {
+        queryClient.invalidateQueries({ queryKey: invitationKeys.all(activeAcademy?.id) });
+        queryClient.invalidateQueries({ queryKey: teacherKeys.all(activeAcademy?.id) });
+      }
+      if (kind === 'students') {
+        queryClient.invalidateQueries({ queryKey: studentKeys.all(activeAcademy?.id) });
+      }
     },
     onError: (err) => {
       if (err instanceof ApiError) {
@@ -108,7 +119,7 @@ export function ImportWorkflow() {
     <div className="space-y-8">
       {/* Step 1: Upload Form */}
       <div className="rounded-lg border bg-card p-6 shadow-sm">
-        <h2 className="text-lg font-medium mb-4">1. Select Data File</h2>
+        <h2 className="text-lg font-medium mb-4">1. Upload {kind === 'teachers' ? 'Teacher List' : kind === 'parents' ? 'Parent List' : 'Student List'}</h2>
         <form onSubmit={handleValidate} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
