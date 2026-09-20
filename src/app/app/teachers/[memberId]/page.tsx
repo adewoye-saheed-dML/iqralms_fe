@@ -57,7 +57,7 @@ export default function TeacherMemberPage({ params }: PageProps) {
       {member.role === 'teacher' ? (
         <TeacherDetail membershipId={memberId} />
       ) : (
-        <StaffDetail memberId={memberId} />
+        <ErrorState title="Unsupported membership" message="This page is only available for teachers." />
       )}
     </div>
   );
