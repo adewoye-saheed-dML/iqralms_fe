@@ -50,6 +50,22 @@ export const invitationsApi = {
     return data;
   },
 
+  preview: async (organizationId: number, token: string): Promise<InvitationPreview> => {
+    const { data } = await apiClient.GET(
+      '/api/organizations/{organization_pk}/invitations/preview/',
+      {
+        params: {
+          path: { organization_pk: organizationId },
+          query: { token },
+        },
+      },
+    );
+    if (!data) {
+      throw new Error('Failed to load invitation preview');
+    }
+    return data;
+  },
+
   resend: async (
     organizationId: number,
     invitationId: number,
