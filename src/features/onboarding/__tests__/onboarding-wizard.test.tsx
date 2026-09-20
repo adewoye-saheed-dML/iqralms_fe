@@ -24,7 +24,7 @@ vi.mock('../api/onboarding', () => ({
   onboardingApi: { getTracks: vi.fn() },
 }));
 
-vi.mock('@/features/staff/api/staff', () => ({
+vi.mock('@/features/invitations/api/invitations', () => ({
   invitationsApi: { list: vi.fn() },
 }));
 
