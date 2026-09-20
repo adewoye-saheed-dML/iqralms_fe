@@ -20,8 +20,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth/auth-provider';
 import { useAcademy } from '@/lib/academy/academy-provider';
-import { staffKeys, studentKeys, curriculumKeys } from '@/lib/api/query-keys';
-import { staffApi } from '@/features/staff/api/staff';
+import { invitationKeys, studentKeys, curriculumKeys } from '@/lib/api/query-keys';
+import { invitationsApi } from '@/features/invitations/api/invitations';
 import { studentsApi } from '@/features/students/api/students';
 import { curriculumApi } from '@/features/curriculum/api/curriculum';
 
@@ -29,13 +29,13 @@ export function OwnerAdminDashboard() {
   const { user } = useAuth();
   const { activeAcademy, activeRole } = useAcademy();
 
-  const { data: staffList = [] } = useQuery({
-    queryKey: staffKeys.all(activeAcademy?.id),
-    queryFn: () => staffApi.getMemberships(activeAcademy!.id),
+  const { data: invitationsList = [] } = useQuery({
+    queryKey: invitationKeys.all(activeAcademy?.id),
+    queryFn: () => invitationsApi.list(activeAcademy!.id),
     enabled: !!activeAcademy?.id,
   });
 
-  const { data: studentsList = [] } = useQuery({
+  const { data: studentsList = [] }, = [] } = useQuery({
     queryKey: studentKeys.all(activeAcademy?.id),
     queryFn: () => studentsApi.getStudents(activeAcademy!.id),
     enabled: !!activeAcademy?.id,
@@ -62,7 +62,7 @@ export function OwnerAdminDashboard() {
           </Button>
           <Button size="sm" asChild>
             <Link href="/app/teachers/add">
-              <UserPlus className="h-4 w-4 mr-1.5" /> Invite Staff
+              <UserPlus className="h-4 w-4 mr-1.5" /> Invite Teacher
             </Link>
           </Button>
         </div>
@@ -83,11 +83,11 @@ export function OwnerAdminDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Teachers & Staff</CardTitle>
+            <CardTitle className="text-sm font-medium">Teachers</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{staffList.length}</div>
+            <div className="text-2xl font-bold">{invitationsList.filter((invitation) => invitation.role === 'teacher' && invitation.status === 'accepted').length}</div>
             <p className="text-xs text-muted-foreground mt-1">Active academy members</p>
           </CardContent>
         </Card>
@@ -123,15 +123,15 @@ export function OwnerAdminDashboard() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-primary" />
-                <CardTitle className="text-base">Teachers & Staff</CardTitle>
+                <CardTitle className="text-base">Teachers</CardTitle>
               </div>
               <CardDescription className="text-xs mt-2">
-                Manage staff directories, invite qualified teachers via email tokens, and assign hourly rates.
+                Manage teachers, send invitations, upload teacher lists, and configure teaching terms.
               </CardDescription>
             </CardHeader>
             <CardFooter className="pt-0">
               <Button variant="ghost" size="sm" asChild className="w-full justify-between">
-                <Link href="/app/teachers">Manage Staff <ArrowRight className="h-4 w-4" /></Link>
+                <Link href="/app/teachers">Manage Teachers <ArrowRight className="h-4 w-4" /></Link>
               </Button>
             </CardFooter>
           </Card>
