@@ -3,9 +3,8 @@
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAcademy } from '@/lib/academy/academy-provider';
-import { staffApi } from '@/features/staff/api/staff';
-import { staffKeys } from '@/lib/api/query-keys';
-import { StaffDetail } from '@/features/staff/components/staff-detail';
+import { membershipsApi } from '@/features/memberships/api/memberships';
+import { membershipKeys } from '@/lib/api/query-keys';
 import { TeacherDetail } from '@/features/teachers/components/teacher-detail';
 import { Spinner } from '@/components/ui/loading';
 import { ErrorState } from '@/components/ui/error-state';
@@ -16,7 +15,7 @@ interface PageProps {
   };
 }
 
-export default function StaffMemberPage({ params }: PageProps) {
+export default function TeacherMemberPage({ params }: PageProps) {
   const memberId = parseInt(params.memberId, 10);
   const { activeAcademy } = useAcademy();
 
@@ -26,8 +25,8 @@ export default function StaffMemberPage({ params }: PageProps) {
     isError,
     error,
   } = useQuery({
-    queryKey: staffKeys.detail(activeAcademy?.id, memberId),
-    queryFn: () => staffApi.getMembership(activeAcademy!.id, memberId),
+    queryKey: membershipKeys.detail(activeAcademy?.id, memberId),
+    queryFn: () => membershipsApi.get(activeAcademy!.id, memberId),
     enabled: !!activeAcademy && !isNaN(memberId),
   });
 
@@ -48,7 +47,7 @@ export default function StaffMemberPage({ params }: PageProps) {
   if (isError || !member) {
     return (
       <div className="mx-auto max-w-5xl">
-        <ErrorState title="Member Not Found" message={error?.message} />
+        <ErrorState title="Teacher Not Found" message={error?.message} />
       </div>
     );
   }
