@@ -28,7 +28,7 @@ export interface OnboardingStep {
   statusLabel: string;
   actionLabel?: string;
   actionHref?: string;
-  capability?: 'manage_curriculum' | 'manage_staff' | 'manage_students';
+  capability?: 'manage_curriculum' | 'manage_invitations' | 'manage_students';
 }
 
 export function OnboardingWizard() {
@@ -48,7 +48,7 @@ export function OnboardingWizard() {
     enabled: !!activeAcademy,
   });
 
-  const { data: students = [] , = [], isLoading: isLoadingStudents, error: studentsError } = useQuery({
+  const { data: students = [], isLoading: isLoadingStudents, error: studentsError } = useQuery({
     queryKey: studentKeys.all(activeAcademy?.id),
     queryFn: () => studentsApi.getStudents(activeAcademy!.id),
     enabled: !!activeAcademy,
