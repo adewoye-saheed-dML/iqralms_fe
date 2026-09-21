@@ -36,7 +36,7 @@ describe('Capabilities Module', () => {
       context: { activeRole: 'owner', userRole: null },
       expectedCapabilities: [
         'manage_academy',
-        'manage_staff',
+        'manage_teachers',
         'manage_students',
         'manage_curriculum',
         'manage_scheduling',
@@ -56,7 +56,7 @@ describe('Capabilities Module', () => {
       context: { activeRole: 'admin', userRole: null },
       expectedCapabilities: [
         'manage_academy',
-        'manage_staff',
+        'manage_teachers',
         'manage_students',
         'manage_curriculum',
         'manage_scheduling',

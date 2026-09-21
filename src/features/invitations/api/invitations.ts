@@ -4,8 +4,12 @@ import type { components } from '@/lib/api/schema';
 export type Invitation = components['schemas']['OrganizationInvitation'];
 export type InvitationCreate = components['schemas']['OrganizationInvitationCreate'];
 export type InvitationAccept = components['schemas']['OrganizationInvitationAccept'];
-export type InvitationPreview = components['schemas']['OrganizationInvitationPreview'];
+export type InvitationPreview = components['schemas']['OrganizationInvitationPreview'] & {
+  readonly email?: string;
+};
 export type InvitationRole = components['schemas']['InvitableOrganizationRoleEnum'];
+export type InvitationRegister = components['schemas']['OrganizationInvitationRegister'];
+export type InvitationRegisterResponse = components['schemas']['OrganizationInvitationRegisterResponse'];
 
 export const invitationsApi = {
   list: async (organizationId: number): Promise<Invitation[]> => {
@@ -46,6 +50,23 @@ export const invitationsApi = {
     );
     if (!data) {
       throw new Error('Failed to accept invitation');
+    }
+    return data;
+  },
+
+  register: async (
+    organizationId: number,
+    body: InvitationRegister,
+  ): Promise<InvitationRegisterResponse> => {
+    const { data } = await apiClient.POST(
+      '/api/organizations/{organization_pk}/invitations/register/',
+      {
+        params: { path: { organization_pk: organizationId } },
+        body,
+      },
+    );
+    if (!data) {
+      throw new Error('Failed to register and accept invitation');
     }
     return data;
   },

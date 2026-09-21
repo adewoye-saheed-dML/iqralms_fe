@@ -24,7 +24,7 @@ export type Capability =
 
 export interface PermissionContext {
   userRole?: UserRole | null;
-  activeRole?: OrgRole | null;
+  activeRole?: OrgRole | string | null;
 }
 
 /**

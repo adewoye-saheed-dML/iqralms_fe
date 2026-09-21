@@ -1430,6 +1430,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/organizations/{organization_pk}/invitations/register/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description POST /api/organizations/{organization_pk}/invitations/register/ */
+        post: operations["organizations_invitations_register_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/organizations/{organization_pk}/memberships/": {
         parameters: {
             query?: never;
@@ -3023,6 +3040,28 @@ export interface components {
             readonly status: string;
             /** Format: date-time */
             readonly expires_at: string;
+            /** Format: email */
+            readonly email?: string;
+        };
+        /** @description Registers a new user and accepts a pending invitation in one step. */
+        OrganizationInvitationRegister: {
+            token: string;
+            /** @default  */
+            first_name: string;
+            /** @default  */
+            last_name: string;
+            password: string;
+            timezone: string;
+            /** Format: date */
+            date_of_birth?: string | null;
+        };
+        /** @description Response returned upon successful invitation-based registration. */
+        OrganizationInvitationRegisterResponse: {
+            /** @description DRF auth token key. */
+            key: string;
+            readonly user: components["schemas"]["User"];
+            readonly membership: components["schemas"]["OrganizationMembership"];
+            readonly detail: string;
         };
         /**
          * @description * `pending` - Pending
@@ -6398,7 +6437,9 @@ export interface operations {
     };
     organizations_invitations_preview_retrieve: {
         parameters: {
-            query?: never;
+            query: {
+                token: string;
+            };
             header?: never;
             path: {
                 organization_pk: number;
@@ -6423,6 +6464,48 @@ export interface operations {
                 content?: never;
             };
             /** @description Invitation not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    organizations_invitations_register_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_pk: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrganizationInvitationRegister"];
+                "application/x-www-form-urlencoded": components["schemas"]["OrganizationInvitationRegister"];
+                "multipart/form-data": components["schemas"]["OrganizationInvitationRegister"];
+            };
+        };
+        responses: {
+            /** @description Account created and invitation accepted. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationInvitationRegisterResponse"];
+                };
+            };
+            /** @description Validation error (e.g. invalid token, expired invitation, account already exists, weak password, invalid timezone). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Organization not found. */
             404: {
                 headers: {
                     [name: string]: unknown;

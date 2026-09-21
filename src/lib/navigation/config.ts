@@ -37,7 +37,7 @@ export interface NavItem {
  * The active academy membership role is prioritized.
  */
 export function resolveRoleExperience(context: {
-  activeRole?: OrgRole | null;
+  activeRole?: OrgRole | string | null;
   userRole?: UserRole | null;
 }): RoleExperience {
   const { activeRole, userRole } = context;
@@ -230,7 +230,7 @@ export function getNavigationForRole(experience: RoleExperience): NavItem[] {
  */
 export function canAccessRoute(
   pathname: string,
-  context: { activeRole?: OrgRole | null; userRole?: UserRole | null }
+  context: { activeRole?: OrgRole | string | null; userRole?: UserRole | null }
 ): boolean {
   const experience = resolveRoleExperience(context);
 
