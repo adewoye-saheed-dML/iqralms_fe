@@ -337,6 +337,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/assessment/organizations/{organization_pk}/progress/teaching/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description GET /api/assessment/organizations/<organization_pk>/progress/teaching/?student_id=&track_id= — an assigned student's progress.
+         *
+         *     Lead teacher and teacher can inspect the progress of students they have an active teaching relationship with (via Booking).
+         *     Owners and admins have academy-wide access.
+         */
+        get: operations["assessment_organizations_progress_teaching_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/assessment/organizations/{organization_pk}/reports/teachers/": {
         parameters: {
             query?: never;
@@ -481,16 +503,19 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * @description GET / POST /api/assessment/organizations/<organization_pk>/snapshots/ — snapshots management for owner/admin/lead.
+         *
+         *     GET lists academy snapshots.
+         *     POST freezes a period.
+         */
+        get: operations["assessment_organizations_snapshots_list"];
         put?: never;
         /**
-         * @description POST /api/assessment/organizations/<organization_pk>/snapshots/ — the lead freezes a period.
+         * @description GET / POST /api/assessment/organizations/<organization_pk>/snapshots/ — snapshots management for owner/admin/lead.
          *
-         *     An explicit lead action, deliberately: automatic snapshot jobs are out of scope
-         *     for this phase. Repeating a request for the same student, track and period
-         *     returns the **existing** row with a **200** and changes nothing, which is the
-         *     spec's duplicate rule — a snapshot that moved when you asked for it twice would
-         *     not be a snapshot.
+         *     GET lists academy snapshots.
+         *     POST freezes a period.
          */
         post: operations["assessment_organizations_snapshots_create"];
         delete?: never;
@@ -1410,6 +1435,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/organizations/{organization_pk}/invitations/accept-and-register/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description POST /api/organizations/{organization_pk}/invitations/register/ */
+        post: operations["organizations_invitations_accept_and_register_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/organizations/{organization_pk}/invitations/preview/": {
         parameters: {
             query?: never;
@@ -1556,6 +1598,30 @@ export interface paths {
          *     PATCH updates the enrollment status.
          */
         patch: operations["organizations_students_partial_update"];
+        trace?: never;
+    };
+    "/api/organizations/{organization_pk}/students/mine/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description GET /api/organizations/<organization_pk>/students/mine/ — role-specific student list.
+         *
+         *     - Teachers/Lead teachers read students assigned to them via Booking in this academy.
+         *     - Parents read their linked children enrolled in this academy.
+         *     - Owners/Admins read all enrolled students in this academy.
+         *     - Students are denied access.
+         */
+        get: operations["organizations_students_mine_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/organizations/{id}/": {
@@ -1901,6 +1967,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/scheduling/organizations/{organization_pk}/bookings/{id}/meeting/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description GET /api/scheduling/organizations/{id}/bookings/{id}/meeting/ — provider-neutral class meeting access. */
+        get: operations["scheduling_organizations_bookings_meeting_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scheduling/organizations/{organization_pk}/bookings/academy/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description GET /api/scheduling/organizations/{id}/bookings/academy/ — academy-wide schedule for management. */
+        get: operations["scheduling_organizations_bookings_academy_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/scheduling/organizations/{organization_pk}/bookings/mine/": {
         parameters: {
             query?: never;
@@ -1947,17 +2047,34 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * @description GET /api/scheduling/organizations/{id}/cohorts/ — list academy cohorts.
+         *     POST /api/scheduling/organizations/{id}/cohorts/ — open a group class.
+         */
+        get: operations["scheduling_organizations_cohorts_list"];
         put?: never;
         /**
-         * @description POST /api/scheduling/organizations/{id}/cohorts/ — the lead opens a group class.
-         *
-         *     Lead-only: a cohort commits a teacher's time, so it is not something a
-         *     sub-teacher grants themselves. Whether the level may run as a group at all,
-         *     and whether the teacher teaches its track, are ``Cohort.clean()``'s calls and
-         *     arrive here as 400s.
+         * @description GET /api/scheduling/organizations/{id}/cohorts/ — list academy cohorts.
+         *     POST /api/scheduling/organizations/{id}/cohorts/ — open a group class.
          */
         post: operations["scheduling_organizations_cohorts_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scheduling/organizations/{organization_pk}/cohorts/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description GET /api/scheduling/organizations/{id}/cohorts/{pk}/ — retrieve a cohort. */
+        get: operations["scheduling_organizations_cohorts_retrieve"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2033,17 +2150,9 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * @description POST /api/scheduling/organizations/{id}/waitlist/{id}/promote/ — the lead grants the request.
+         * @description POST /api/scheduling/organizations/{id}/waitlist/{id}/promote/ — grant the request.
          *
-         *     The whole fulfillment mechanism this phase ships. Automatic offering when a
-         *     slot frees up is explicitly out of scope (spec, tech-debt.md): it needs
-         *     background jobs and notification delivery, which is a phase of its own.
-         *
-         *     Lead-only, for the same reason opening a cohort is: it commits a teacher's
-         *     time. The booking goes through ``routing.promote_waitlist_entry``, so it takes
-         *     the teacher's lock and re-validates every rule — an entry made last week
-         *     against a teacher who has since filled up is refused with a 400 rather than
-         *     forced through, which is acceptance criterion 8.
+         *     Owner, admin, or lead teacher.
          */
         post: operations["scheduling_organizations_waitlist_promote_create"];
         delete?: never;
@@ -2066,10 +2175,7 @@ export interface paths {
          *     ``TeacherWaitlist.Meta.ordering`` rather than being re-stated here — the
          *     endpoint and any future automatic offer must agree about who is next.
          *
-         *     Lead-only. A sub-teacher reading who is waiting for *them* is a reasonable
-         *     thing to want and a different decision (it exposes other families' requests
-         *     to a teacher who cannot act on them), so it is deliberately not folded in
-         *     here — see tech-debt.md.
+         *     Management-only (owner/admin/lead teacher).
          */
         get: operations["scheduling_organizations_waitlist_for_teacher_list"];
         put?: never;
@@ -2392,6 +2498,14 @@ export interface components {
             duration_minutes: number;
             /** @description Required when a parent books; ignored when a student books. */
             student?: number;
+        };
+        /** @description Provider-neutral meeting details for an authorized class attendee. */
+        BookingMeeting: {
+            readonly provider: string;
+            readonly provider_meeting_id: string;
+            /** Format: uri */
+            readonly join_url: string;
+            readonly display_name: string;
         };
         /** @description A person on one side of a booking. No signup_code, no sprawl. */
         BookingParty: {
@@ -3040,12 +3154,12 @@ export interface components {
             readonly status: string;
             /** Format: date-time */
             readonly expires_at: string;
-            /** Format: email */
-            readonly email?: string;
         };
         /** @description Registers a new user and accepts a pending invitation in one step. */
         OrganizationInvitationRegister: {
             token: string;
+            /** @default  */
+            username: string;
             /** @default  */
             first_name: string;
             /** @default  */
@@ -4661,6 +4775,57 @@ export interface operations {
             };
         };
     };
+    assessment_organizations_progress_teaching_retrieve: {
+        parameters: {
+            query: {
+                /** @description Inclusive ISO-8601 start of the period, by session date. */
+                from?: string;
+                /** @description Which assigned student. */
+                student_id: number;
+                /** @description Exclusive ISO-8601 end of the period, by session date. */
+                to?: string;
+                /** @description Which track's progress. */
+                track_id: number;
+            };
+            header?: never;
+            path: {
+                organization_pk: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentProgress"];
+                };
+            };
+            /** @description A missing or unknown parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description You do not have an assigned teaching relationship with this student. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Student not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     assessment_organizations_reports_teachers_retrieve: {
         parameters: {
             query?: {
@@ -4861,6 +5026,37 @@ export interface operations {
             };
         };
     };
+    assessment_organizations_snapshots_list: {
+        parameters: {
+            query?: {
+                student_id?: number;
+                track_id?: number;
+            };
+            header?: never;
+            path: {
+                organization_pk: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgressSnapshot"][];
+                };
+            };
+            /** @description Not an authorized reviewer. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     assessment_organizations_snapshots_create: {
         parameters: {
             query?: never;
@@ -4903,7 +5099,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Not the lead teacher. */
+            /** @description Not the lead teacher, owner, or admin. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -6435,11 +6631,51 @@ export interface operations {
             };
         };
     };
+    organizations_invitations_accept_and_register_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_pk: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrganizationInvitationRegister"];
+                "application/x-www-form-urlencoded": components["schemas"]["OrganizationInvitationRegister"];
+                "multipart/form-data": components["schemas"]["OrganizationInvitationRegister"];
+            };
+        };
+        responses: {
+            /** @description Account created and invitation accepted. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationInvitationRegisterResponse"];
+                };
+            };
+            /** @description Validation error (e.g. invalid token, expired invitation, account already exists, weak password, invalid timezone). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Organization not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     organizations_invitations_preview_retrieve: {
         parameters: {
-            query: {
-                token: string;
-            };
+            query?: never;
             header?: never;
             path: {
                 organization_pk: number;
@@ -6780,6 +7016,40 @@ export interface operations {
             };
             /** @description No such student in this organization. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    organizations_students_mine_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_pk: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Assigned or linked students list. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Permission denied for this role. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7318,6 +7588,99 @@ export interface operations {
             };
         };
     };
+    scheduling_organizations_bookings_meeting_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                organization_pk: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingMeeting"];
+                };
+            };
+            /** @description Booking is cancelled. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description You do not have access to this class. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Booking not found in this academy. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    scheduling_organizations_bookings_academy_list: {
+        parameters: {
+            query?: {
+                /** @description Filter by exact date (YYYY-MM-DD). */
+                date?: string;
+                /** @description Filter to end date (YYYY-MM-DD). */
+                end_date?: string;
+                /** @description Filter from start date (YYYY-MM-DD). */
+                start_date?: string;
+                /** @description Filter by booking status. */
+                status?: string;
+                /** @description Filter by student ID. */
+                student_id?: number;
+                /** @description Filter by teacher ID. */
+                teacher_id?: number;
+                /** @description Filter by track ID. */
+                track_id?: number;
+            };
+            header?: never;
+            path: {
+                organization_pk: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Booking"][];
+                };
+            };
+            /** @description Unauthenticated. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Permission denied. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     scheduling_organizations_bookings_mine_list: {
         parameters: {
             query?: never;
@@ -7360,6 +7723,49 @@ export interface operations {
             };
         };
     };
+    scheduling_organizations_cohorts_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_pk: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Cohort"][];
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Cohort"][];
+                };
+            };
+            /** @description Level is not group-eligible, the teacher is unapproved, or the teacher does not teach the level's track. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member of this organization. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     scheduling_organizations_cohorts_create: {
         parameters: {
             query?: never;
@@ -7382,22 +7788,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["CohortCreate"];
+                };
+            };
+        };
+    };
+    scheduling_organizations_cohorts_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                organization_pk: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
                     "application/json": components["schemas"]["Cohort"];
                 };
-            };
-            /** @description Level is not group-eligible, the teacher is unapproved, or the teacher does not teach the level's track. */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Not an active member of this organization. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
         };
     };
