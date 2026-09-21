@@ -20,7 +20,7 @@ export function ImportWorkflow() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
 
-  const requestedKind = searchParams.get('kind') as KindEnum | null;
+  const requestedKind = searchParams?.get('kind') as KindEnum | null;
   const initialKind: KindEnum = requestedKind === 'teachers' || requestedKind === 'parents' || requestedKind === 'students' ? requestedKind : 'students';
   const [kind, setKind] = React.useState<KindEnum>(initialKind);
   const [file, setFile] = React.useState<File | null>(null);

@@ -3154,6 +3154,8 @@ export interface components {
             readonly status: string;
             /** Format: date-time */
             readonly expires_at: string;
+            /** Format: email */
+            readonly email?: string;
         };
         /** @description Registers a new user and accepts a pending invitation in one step. */
         OrganizationInvitationRegister: {
@@ -6675,7 +6677,9 @@ export interface operations {
     };
     organizations_invitations_preview_retrieve: {
         parameters: {
-            query?: never;
+            query: {
+                token: string;
+            };
             header?: never;
             path: {
                 organization_pk: number;

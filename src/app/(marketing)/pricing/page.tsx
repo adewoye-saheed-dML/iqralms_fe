@@ -12,7 +12,7 @@ export default function PricingPage() {
           Transparent Pricing & Institutional Access
         </h1>
         <p className="text-muted-foreground text-lg">
-          Clear, structured academy tiers designed to scale with your Quranic teaching staff and student body.
+          Clear, structured academy tiers designed to scale with your Quranic teachers and student body.
         </p>
       </div>
 
@@ -71,7 +71,7 @@ export default function PricingPage() {
           </div>
           <CardHeader>
             <CardTitle className="text-xl">Professional Academy</CardTitle>
-            <CardDescription>For established Quran academies with dedicated staff and cohorts.</CardDescription>
+            <CardDescription>For established Quran academies with dedicated teachers and cohorts.</CardDescription>
             <div className="mt-4">
               <span className="text-4xl font-bold">$129</span>
               <span className="text-muted-foreground text-sm"> / month</span>
@@ -80,7 +80,7 @@ export default function PricingPage() {
           <CardContent className="space-y-3 text-sm">
             <div className="flex items-center gap-2">
               <Check className="h-4 w-4 text-emerald-600 shrink-0" />
-              <span>Unlimited Instructors & Staff</span>
+              <span>Unlimited Teachers & Instructors</span>
             </div>
             <div className="flex items-center gap-2">
               <Check className="h-4 w-4 text-emerald-600 shrink-0" />
@@ -96,7 +96,7 @@ export default function PricingPage() {
             </div>
             <div className="flex items-center gap-2">
               <Check className="h-4 w-4 text-emerald-600 shrink-0" />
-              <span>Audit Logging & Staff Permission Controls</span>
+              <span>Audit Logging & Role Permission Controls</span>
             </div>
           </CardContent>
           <CardFooter>

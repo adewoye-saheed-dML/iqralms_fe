@@ -12,7 +12,7 @@ const invitationRoles: InvitationRole[] = ['teacher', 'parent', 'student'];
 
 export function InvitationsDashboard() {
   const searchParams = useSearchParams();
-  const requestedRole = searchParams.get('role') as InvitationRole | null;
+  const requestedRole = searchParams?.get('role') as InvitationRole | null;
   const initialRole = invitationRoles.includes(requestedRole ?? 'teacher')
     ? (requestedRole as InvitationRole)
     : 'teacher';

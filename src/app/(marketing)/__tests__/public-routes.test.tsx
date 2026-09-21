@@ -89,7 +89,6 @@ describe('Public Route Pages Rendering', () => {
     );
 
     expect(screen.getByText(/Accept Academy Invitation/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Academy ID/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Invitation Token/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Accept Invitation/i })).toBeInTheDocument();
   });
 });

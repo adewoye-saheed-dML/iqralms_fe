@@ -2757,6 +2757,11 @@ paths:
         schema:
           type: integer
         required: true
+      - in: query
+        name: token
+        schema:
+          type: string
+        required: true
       tags:
       - organizations
       security:
@@ -6169,6 +6174,10 @@ components:
         expires_at:
           type: string
           format: date-time
+          readOnly: true
+        email:
+          type: string
+          format: email
           readOnly: true
       required:
       - expires_at

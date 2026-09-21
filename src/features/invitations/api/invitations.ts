@@ -8,7 +8,9 @@ export type InvitationPreview = components['schemas']['OrganizationInvitationPre
   readonly email?: string;
 };
 export type InvitationRole = components['schemas']['InvitableOrganizationRoleEnum'];
-export type InvitationRegister = components['schemas']['OrganizationInvitationRegister'];
+export type InvitationRegister = Omit<components['schemas']['OrganizationInvitationRegister'], 'username'> & {
+  username?: string;
+};
 export type InvitationRegisterResponse = components['schemas']['OrganizationInvitationRegisterResponse'];
 
 export const invitationsApi = {
@@ -62,7 +64,7 @@ export const invitationsApi = {
       '/api/organizations/{organization_pk}/invitations/register/',
       {
         params: { path: { organization_pk: organizationId } },
-        body,
+        body: body as components['schemas']['OrganizationInvitationRegister'],
       },
     );
     if (!data) {

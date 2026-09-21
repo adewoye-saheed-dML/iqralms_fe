@@ -57,7 +57,7 @@ export const schedulingApi = {
     return data ?? [];
   },
 
-  createCohort: async (organizationId: number, body: CohortCreate): Promise<Cohort> => {
+  createCohort: async (organizationId: number, body: CohortCreate): Promise<CohortCreate> => {
     const { data } = await apiClient.POST('/api/scheduling/organizations/{organization_pk}/cohorts/', {
       params: { path: { organization_pk: organizationId } },
       body,

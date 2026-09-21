@@ -39,8 +39,8 @@ function AcceptInvitationForm() {
   const { user, isLoading: isAuthLoading, refreshAuth, logout } = useAuth();
   const { refreshAcademies, setActiveAcademy } = useAcademy();
 
-  const tokenParam = searchParams.get('token') || '';
-  const orgParam = searchParams.get('org') || searchParams.get('organization') || '';
+  const tokenParam = searchParams?.get('token') || '';
+  const orgParam = searchParams?.get('org') || searchParams?.get('organization') || '';
 
   const [token, setToken] = React.useState(tokenParam);
   const [orgId, setOrgId] = React.useState(orgParam);

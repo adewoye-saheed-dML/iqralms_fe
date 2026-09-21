@@ -157,7 +157,7 @@ export default function HomePage() {
               3
             </div>
             <h4 className="font-semibold text-base mb-1">Invite Teachers</h4>
-            <p className="text-xs text-muted-foreground">Dispatch email invitations via secure tokens for staff and qualified instructors.</p>
+            <p className="text-xs text-muted-foreground">Dispatch email invitations via secure tokens for teachers and qualified instructors.</p>
           </div>
 
           <div className="flex flex-col items-center text-center p-4">
