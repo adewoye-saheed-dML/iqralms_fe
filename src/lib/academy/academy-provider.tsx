@@ -52,15 +52,20 @@ export function AcademyProvider({ children }: { children: React.ReactNode }) {
     enabled: !!user,
   });
 
+  // Explicit academy selection resolution per SSoT remediation
   const activeAcademyId = React.useMemo(() => {
     if (memberships.length === 0) return null;
+    if (memberships.length === 1) {
+      return memberships[0].organization.id;
+    }
     if (
       storedAcademyId !== null &&
       memberships.some((m) => m.organization.id === storedAcademyId)
     ) {
       return storedAcademyId;
     }
-    return memberships[0].organization.id;
+    // Multiple academies with no valid persisted selection requires explicit selection
+    return null;
   }, [memberships, storedAcademyId]);
 
   const setActiveAcademy = React.useCallback(
@@ -98,45 +103,49 @@ export function AcademyProvider({ children }: { children: React.ReactNode }) {
             'imports',
             'audit',
           ];
-          if (tenantFeatures.some((f) => key.includes(f))) {
-            return key.some((k) => typeof k === 'number' && k !== id);
+          if (tenantFeatures.includes(key[0] as string)) {
+            return true;
           }
           return false;
-        },
-      });
-
-      // Invalidate active tenant queries so new academy data is refetched
-      queryClient.invalidateQueries({
-        predicate: (query) => {
-          const key = query.queryKey;
-          return Array.isArray(key) && key[0] === 'academy' && key[1] === id;
         },
       });
     },
     [queryClient]
   );
 
-  const refreshAcademies = React.useCallback(async () => {
-    await refetch();
-  }, [refetch]);
-
   const activeMembership = React.useMemo(() => {
     if (!activeAcademyId) return null;
     return memberships.find((m) => m.organization.id === activeAcademyId) || null;
   }, [memberships, activeAcademyId]);
 
-  const value = React.useMemo<AcademyContextValue>(
+  const activeAcademy = React.useMemo(() => {
+    return activeMembership ? activeMembership.organization : null;
+  }, [activeMembership]);
+
+  const activeRole = React.useMemo(() => {
+    return activeMembership ? activeMembership.role : null;
+  }, [activeMembership]);
+
+  const academies = React.useMemo(() => {
+    return memberships.map((m) => m.organization);
+  }, [memberships]);
+
+  const refreshAcademies = React.useCallback(async () => {
+    await refetch();
+  }, [refetch]);
+
+  const value = React.useMemo(
     () => ({
-      academies: memberships.map((m) => m.organization),
-      activeAcademy: activeMembership?.organization || null,
+      academies,
+      activeAcademy,
       activeMembership,
-      activeRole: activeMembership?.role || null,
+      activeRole,
       isLoading,
-      error,
+      error: error || null,
       setActiveAcademy,
       refreshAcademies,
     }),
-    [memberships, activeMembership, isLoading, error, setActiveAcademy, refreshAcademies]
+    [academies, activeAcademy, activeMembership, activeRole, isLoading, error, setActiveAcademy, refreshAcademies]
   );
 
   return <AcademyContext.Provider value={value}>{children}</AcademyContext.Provider>;

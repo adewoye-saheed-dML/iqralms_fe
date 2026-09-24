@@ -42,8 +42,20 @@ function AcceptInvitationForm() {
   const tokenParam = searchParams?.get('token') || '';
   const orgParam = searchParams?.get('org') || searchParams?.get('organization') || '';
 
-  const [token, setToken] = React.useState(tokenParam);
-  const [orgId, setOrgId] = React.useState(orgParam);
+  const [tokenInput, setTokenInput] = React.useState<string | null>(null);
+  const [orgInput, setOrgInput] = React.useState<string | null>(null);
+  const [prevParams, setPrevParams] = React.useState({ tokenParam, orgParam });
+
+  if (prevParams.tokenParam !== tokenParam || prevParams.orgParam !== orgParam) {
+    setPrevParams({ tokenParam, orgParam });
+    setTokenInput(null);
+    setOrgInput(null);
+  }
+
+  const token = tokenInput ?? tokenParam;
+  const orgId = orgInput ?? orgParam;
+  const setToken = (val: string) => setTokenInput(val);
+  const setOrgId = (val: string) => setOrgInput(val);
 
   // Form fields for new account creation
   const [firstName, setFirstName] = React.useState('');
@@ -52,30 +64,25 @@ function AcceptInvitationForm() {
   const [confirmPassword, setConfirmPassword] = React.useState('');
 
   const [preview, setPreview] = React.useState<InvitationPreview | null>(null);
-  const [isPreviewLoading, setIsPreviewLoading] = React.useState(false);
+  const initialLoading = Boolean(tokenParam.trim() && orgParam.trim() && Number(orgParam) > 0);
+  const [isPreviewLoading, setIsPreviewLoading] = React.useState(initialLoading);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [successRole, setSuccessRole] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [accountExistsError, setAccountExistsError] = React.useState(false);
 
-  // Sync state if query params change
-  React.useEffect(() => {
-    if (tokenParam && tokenParam !== token) {
-      setToken(tokenParam);
-    }
-    if (orgParam && orgParam !== orgId) {
-      setOrgId(orgParam);
-    }
-  }, [tokenParam, orgParam]);
-
   // Load invitation preview
   React.useEffect(() => {
-    if (!token.trim() || !orgId.trim()) return;
     const parsedOrgId = Number(orgId);
-    if (!Number.isInteger(parsedOrgId) || parsedOrgId <= 0) return;
+    if (!token.trim() || !orgId.trim() || !Number.isInteger(parsedOrgId) || parsedOrgId <= 0) {
+      return;
+    }
 
     let cancelled = false;
-    setIsPreviewLoading(true);
+    Promise.resolve().then(() => {
+      if (!cancelled) setIsPreviewLoading(true);
+    });
+
     invitationsApi
       .preview(parsedOrgId, token.trim())
       .then((data) => {

@@ -10,6 +10,13 @@ export type Level = components['schemas']['Level'];
 export type LevelCreate = components['schemas']['LevelCreate'];
 export type PatchedLevelUpdate = components['schemas']['PatchedLevelUpdate'];
 
+export type PlacementResult = components['schemas']['PlacementResult'];
+export type PlacementSubmit = components['schemas']['PlacementSubmit'];
+export type PlacementReview = components['schemas']['PlacementReview'];
+export type PlacementAudioAccess = components['schemas']['PlacementAudioAccess'];
+export type TeacherTrack = components['schemas']['TeacherTrack'];
+export type TeacherTrackCreate = components['schemas']['TeacherTrackCreate'];
+
 export const curriculumApi = {
   getTracks: async (organizationId: number) => {
     const { data } = await apiClient.GET('/api/curriculum/organizations/{organization_pk}/tracks/', {
@@ -73,5 +80,98 @@ export const curriculumApi = {
       body,
     });
     return data as Level;
+  },
+
+  // Placements API
+  submitPlacement: async (organizationId: number, body: PlacementSubmit): Promise<PlacementResult> => {
+    const { data } = await apiClient.POST('/api/curriculum/organizations/{organization_pk}/placements/', {
+      params: { path: { organization_pk: organizationId } },
+      body,
+    });
+    if (!data) throw new Error('Failed to submit placement assessment');
+    return data;
+  },
+
+  getMyPlacements: async (organizationId: number): Promise<PlacementResult[]> => {
+    const { data } = await apiClient.GET('/api/curriculum/organizations/{organization_pk}/placements/mine/', {
+      params: { path: { organization_pk: organizationId } },
+    });
+    return data ?? [];
+  },
+
+  getChildPlacements: async (organizationId: number): Promise<PlacementResult[]> => {
+    const { data } = await apiClient.GET('/api/curriculum/organizations/{organization_pk}/placements/children/', {
+      params: { path: { organization_pk: organizationId } },
+    });
+    return data ?? [];
+  },
+
+  getPendingPlacements: async (organizationId: number): Promise<PlacementResult[]> => {
+    const { data } = await apiClient.GET('/api/curriculum/organizations/{organization_pk}/placements/pending/', {
+      params: { path: { organization_pk: organizationId } },
+    });
+    return data ?? [];
+  },
+
+  reviewPlacement: async (
+    organizationId: number,
+    placementId: number,
+    body: PlacementReview
+  ): Promise<PlacementResult> => {
+    const { data } = await apiClient.POST(
+      '/api/curriculum/organizations/{organization_pk}/placements/{id}/review/',
+      {
+        params: { path: { organization_pk: organizationId, id: placementId } },
+        body,
+      }
+    );
+    if (!data) throw new Error('Failed to review placement');
+    return data;
+  },
+
+  getPlacementAudioUrl: async (
+    organizationId: number,
+    placementId: number
+  ): Promise<PlacementAudioAccess> => {
+    const { data } = await apiClient.GET(
+      '/api/curriculum/organizations/{organization_pk}/placements/{id}/audio-url/',
+      {
+        params: { path: { organization_pk: organizationId, id: placementId } },
+      }
+    );
+    if (!data) throw new Error('Failed to retrieve placement audio URL');
+    return data;
+  },
+
+  // Teacher Assignments API
+  getMyTeachingTracks: async (organizationId: number): Promise<TeacherTrack[]> => {
+    const { data } = await apiClient.GET('/api/curriculum/organizations/{organization_pk}/teachers/mine/', {
+      params: { path: { organization_pk: organizationId } },
+    });
+    return data ?? [];
+  },
+
+  getAcademyTeacherTracks: async (organizationId: number): Promise<TeacherTrack[]> => {
+    const { data } = await apiClient.GET('/api/curriculum/organizations/{organization_pk}/teachers/', {
+      params: { path: { organization_pk: organizationId } },
+    });
+    return data ?? [];
+  },
+
+  getTeacherTrackAssignment: async (organizationId: number, assignmentId: number): Promise<TeacherTrack> => {
+    const { data } = await apiClient.GET('/api/curriculum/organizations/{organization_pk}/teachers/{id}/', {
+      params: { path: { organization_pk: organizationId, id: assignmentId } },
+    });
+    if (!data) throw new Error('Failed to retrieve teacher track assignment');
+    return data;
+  },
+
+  assignTeacherTrack: async (organizationId: number, body: TeacherTrackCreate): Promise<TeacherTrack> => {
+    const { data } = await apiClient.POST('/api/curriculum/organizations/{organization_pk}/teachers/', {
+      params: { path: { organization_pk: organizationId } },
+      body,
+    });
+    if (!data) throw new Error('Failed to assign teacher to track');
+    return data;
   },
 };

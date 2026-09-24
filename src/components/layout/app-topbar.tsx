@@ -25,6 +25,11 @@ export function AppTopbar({ onMenuClick }: { onMenuClick: () => void }) {
             onChange={(e) => setActiveAcademy(Number(e.target.value))}
             aria-label="Select Academy"
           >
+            {!activeAcademy && (
+              <option value="" disabled>
+                Select an academy...
+              </option>
+            )}
             {academies.map((academy) => (
               <option key={academy.id} value={academy.id}>
                 {academy.name}

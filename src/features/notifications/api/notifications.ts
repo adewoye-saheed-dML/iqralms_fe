@@ -14,6 +14,16 @@ export const notificationsApi = {
     return data ?? [];
   },
 
+  getNotification: async (organizationId: number, notificationId: number): Promise<Notification> => {
+    const { data } = await apiClient.GET('/api/notifications/organizations/{organization_pk}/{id}/', {
+      params: { path: { organization_pk: organizationId, id: notificationId } },
+    });
+    if (!data) {
+      throw new Error('Notification not found');
+    }
+    return data;
+  },
+
   markAsRead: async (organizationId: number, notificationId: number): Promise<Notification> => {
     const { data } = await apiClient.POST('/api/notifications/organizations/{organization_pk}/{id}/read/', {
       params: { path: { organization_pk: organizationId, id: notificationId } },

@@ -62,7 +62,8 @@ describe('Navigation Policy per Role', () => {
     expect(labels).toContain('Teachers');
     expect(labels).toContain('Students');
     expect(labels).toContain('Curriculum');
-    expect(labels).toContain('Finance');
+    expect(labels).toContain('Pricing');
+    expect(labels).toContain('Payouts');
     expect(labels).toContain('Audit');
   });
 
@@ -157,6 +158,29 @@ describe('Direct Route Access Guards (canAccessRoute)', () => {
     expect(canAccessRoute('/app/payouts', context)).toBe(false);
     expect(canAccessRoute('/app/academy', context)).toBe(false);
     expect(canAccessRoute('/app/teachers', context)).toBe(false);
+    expect(canAccessRoute('/app/audit', context)).toBe(false);
+  });
+
+  it('allows lead teacher access to teaching, curriculum, pricing, and payouts, but blocks academy/audit', () => {
+    const context = { activeRole: 'teacher' as const, userRole: 'lead' as const };
+    expect(canAccessRoute('/app/dashboard', context)).toBe(true);
+    expect(canAccessRoute('/app/scheduling', context)).toBe(true);
+    expect(canAccessRoute('/app/curriculum', context)).toBe(true);
+    expect(canAccessRoute('/app/pricing', context)).toBe(true);
+    expect(canAccessRoute('/app/payouts', context)).toBe(true);
+
+    expect(canAccessRoute('/app/academy', context)).toBe(false);
+    expect(canAccessRoute('/app/audit', context)).toBe(false);
+    expect(canAccessRoute('/app/settings', context)).toBe(false);
+  });
+
+  it('strictly restricts staff role to personal surfaces', () => {
+    const context = { activeRole: 'staff' as const, userRole: null };
+    expect(canAccessRoute('/app/dashboard', context)).toBe(true);
+    expect(canAccessRoute('/app/academy', context)).toBe(false);
+    expect(canAccessRoute('/app/teachers', context)).toBe(false);
+    expect(canAccessRoute('/app/students', context)).toBe(false);
+    expect(canAccessRoute('/app/finance', context)).toBe(false);
     expect(canAccessRoute('/app/audit', context)).toBe(false);
   });
 });

@@ -17,60 +17,31 @@ import {
   CalendarCheck,
 } from 'lucide-react';
 import type { Capability } from '@/lib/permissions/capabilities';
+import {
+  resolveRoleExperience,
+  type GlobalAccountRole,
+  type AcademyMembershipRole,
+  type RoleExperience,
+  type UserRole,
+  type OrgRole,
+} from '@/lib/identity/roles';
 
-// Global user account roles vs academy membership roles
-export type UserRole = 'lead' | 'sub' | 'student' | 'parent';
-export type OrgRole = 'owner' | 'admin' | 'teacher' | 'parent' | 'student';
-export type RoleExperience = 'owner_admin' | 'teacher' | 'parent' | 'student';
+export {
+  resolveRoleExperience,
+  type GlobalAccountRole,
+  type AcademyMembershipRole,
+  type RoleExperience,
+  type UserRole,
+  type OrgRole,
+};
 
 export interface NavItem {
   label: string;
   href: string;
   icon: React.ElementType;
   requiredCapability?: Capability;
-  allowedOrgRoles?: OrgRole[];
-  allowedUserRoles?: UserRole[];
-}
-
-/**
- * Resolves the role experience for a user within an academy context.
- * The active academy membership role is prioritized.
- */
-export function resolveRoleExperience(context: {
-  activeRole?: OrgRole | string | null;
-  userRole?: UserRole | null;
-}): RoleExperience {
-  const { activeRole, userRole } = context;
-
-  // Active academy membership takes precedence
-  if (activeRole === 'owner' || activeRole === 'admin') {
-    return 'owner_admin';
-  }
-  if (activeRole === 'teacher') {
-    return 'teacher';
-  }
-  if (activeRole === 'parent') {
-    return 'parent';
-  }
-  if (activeRole === 'student') {
-    return 'student';
-  }
-
-  // Fallback to user global account role
-  if (userRole === 'lead') {
-    return 'owner_admin';
-  }
-  if (userRole === 'sub') {
-    return 'teacher';
-  }
-  if (userRole === 'parent') {
-    return 'parent';
-  }
-  if (userRole === 'student') {
-    return 'student';
-  }
-
-  return 'student';
+  allowedOrgRoles?: AcademyMembershipRole[];
+  allowedUserRoles?: GlobalAccountRole[];
 }
 
 /**
@@ -100,8 +71,6 @@ export const navigationConfig: NavItem[] = [
     label: 'Students',
     href: '/app/students',
     icon: Users,
-    requiredCapability: 'manage_students',
-    allowedOrgRoles: ['owner', 'admin'],
   },
   {
     label: 'Curriculum',
@@ -126,11 +95,10 @@ export const navigationConfig: NavItem[] = [
     icon: TrendingUp,
   },
   {
-    label: 'Finance',
-    href: '/app/finance',
+    label: 'Pricing',
+    href: '/app/pricing',
     icon: Wallet,
-    requiredCapability: 'manage_finance',
-    allowedOrgRoles: ['owner', 'admin'],
+    requiredCapability: 'manage_pricing',
   },
   {
     label: 'Payouts',
@@ -144,17 +112,17 @@ export const navigationConfig: NavItem[] = [
     icon: Bell,
   },
   {
-    label: 'Audit',
-    href: '/app/audit',
-    icon: Shield,
-    requiredCapability: 'view_audit',
-    allowedOrgRoles: ['owner', 'admin'],
-  },
-  {
     label: 'Imports',
     href: '/app/imports',
     icon: FileUp,
     requiredCapability: 'manage_imports',
+    allowedOrgRoles: ['owner', 'admin'],
+  },
+  {
+    label: 'Audit',
+    href: '/app/audit',
+    icon: Shield,
+    requiredCapability: 'view_audit',
     allowedOrgRoles: ['owner', 'admin'],
   },
   {
@@ -163,10 +131,15 @@ export const navigationConfig: NavItem[] = [
     icon: Settings,
     allowedOrgRoles: ['owner', 'admin'],
   },
+  {
+    label: 'Profile',
+    href: '/app/profile',
+    icon: User,
+  },
 ];
 
 /**
- * Returns the exact role-specific navigation items according to Section 28 of the Architecture Reset.
+ * Returns tailored navigation items for each role experience.
  */
 export function getNavigationForRole(experience: RoleExperience): NavItem[] {
   switch (experience) {
@@ -180,10 +153,27 @@ export function getNavigationForRole(experience: RoleExperience): NavItem[] {
         { label: 'Scheduling', href: '/app/scheduling', icon: Calendar },
         { label: 'Assessments', href: '/app/assessments', icon: CheckSquare },
         { label: 'Progress / Reports', href: '/app/progress', icon: TrendingUp },
-        { label: 'Finance', href: '/app/finance', icon: Wallet, requiredCapability: 'manage_finance' },
+        { label: 'Pricing', href: '/app/pricing', icon: Wallet, requiredCapability: 'manage_pricing' },
+        { label: 'Payouts', href: '/app/payouts', icon: Banknote, requiredCapability: 'manage_payouts' },
         { label: 'Notifications', href: '/app/notifications', icon: Bell },
         { label: 'Audit', href: '/app/audit', icon: Shield, requiredCapability: 'view_audit' },
         { label: 'Settings', href: '/app/settings', icon: Settings },
+      ];
+
+    case 'lead_teacher':
+      return [
+        { label: 'Dashboard', href: '/app/dashboard', icon: LayoutDashboard },
+        { label: 'My Classes', href: '/app/scheduling', icon: Calendar },
+        { label: 'My Schedule', href: '/app/scheduling?view=calendar', icon: Clock },
+        { label: 'Students', href: '/app/students', icon: Users },
+        { label: 'Assessments', href: '/app/assessments', icon: CheckSquare },
+        { label: 'Progress', href: '/app/progress', icon: TrendingUp },
+        { label: 'Curriculum & Placements', href: '/app/curriculum', icon: BookOpen },
+        { label: 'Pricing', href: '/app/pricing', icon: Wallet, requiredCapability: 'manage_pricing' },
+        { label: 'Payouts', href: '/app/payouts', icon: Banknote, requiredCapability: 'view_academy_payouts' },
+        { label: 'Availability', href: '/app/scheduling?tab=availability', icon: CalendarCheck },
+        { label: 'Notifications', href: '/app/notifications', icon: Bell },
+        { label: 'Profile', href: '/app/profile', icon: User },
       ];
 
     case 'teacher':
@@ -221,16 +211,29 @@ export function getNavigationForRole(experience: RoleExperience): NavItem[] {
         { label: 'Notifications', href: '/app/notifications', icon: Bell },
         { label: 'Profile', href: '/app/profile', icon: User },
       ];
+
+    case 'staff':
+      return [
+        { label: 'Dashboard', href: '/app/dashboard', icon: LayoutDashboard },
+        { label: 'Notifications', href: '/app/notifications', icon: Bell },
+        { label: 'Profile', href: '/app/profile', icon: User },
+      ];
+
+    case 'unscoped':
+      return [
+        { label: 'Dashboard', href: '/app/dashboard', icon: LayoutDashboard },
+        { label: 'Profile', href: '/app/profile', icon: User },
+      ];
   }
 }
 
 /**
- * Central route access guard policy (Section 12 of Architecture Reset).
+ * Central route access guard policy.
  * Enforces UX-level access control on direct URL navigation.
  */
 export function canAccessRoute(
   pathname: string,
-  context: { activeRole?: OrgRole | string | null; userRole?: UserRole | null }
+  context: { activeRole?: AcademyMembershipRole | OrgRole | string | null; userRole?: GlobalAccountRole | UserRole | string | null; academyId?: number | null }
 ): boolean {
   const experience = resolveRoleExperience(context);
 
@@ -249,13 +252,39 @@ export function canAccessRoute(
     return true;
   }
 
-  // Teacher route access
+  // Lead Teacher route access
+  if (experience === 'lead_teacher') {
+    // Strictly forbidden for lead teacher unless owner/admin
+    if (
+      pathname.startsWith('/app/audit') ||
+      (pathname.startsWith('/app/academy') && pathname !== '/app/academy/create') ||
+      pathname.startsWith('/app/imports') ||
+      pathname.startsWith('/app/settings')
+    ) {
+      return false;
+    }
+    // Permitted for lead teacher
+    return (
+      pathname.startsWith('/app/scheduling') ||
+      pathname.startsWith('/app/students') ||
+      pathname.startsWith('/app/assessments') ||
+      pathname.startsWith('/app/progress') ||
+      pathname.startsWith('/app/pricing') ||
+      pathname.startsWith('/app/payouts') ||
+      pathname.startsWith('/app/finance') ||
+      pathname.startsWith('/app/curriculum')
+    );
+  }
+
+  // Ordinary Teacher route access
   if (experience === 'teacher') {
-    // Strictly forbidden for teachers
+    // Strictly forbidden for ordinary teachers
     if (
       pathname.startsWith('/app/finance') ||
+      pathname.startsWith('/app/pricing') ||
       pathname.startsWith('/app/audit') ||
-      pathname.startsWith('/app/academy') ||
+      (pathname.startsWith('/app/academy') && pathname !== '/app/academy/create') ||
+      pathname.startsWith('/app/teachers') ||
       pathname.startsWith('/app/imports') ||
       pathname.startsWith('/app/settings')
     ) {
@@ -277,7 +306,8 @@ export function canAccessRoute(
     if (
       pathname.startsWith('/app/finance') ||
       pathname.startsWith('/app/payouts') ||
-      pathname.startsWith('/app/academy') ||
+      pathname.startsWith('/app/pricing') ||
+      (pathname.startsWith('/app/academy') && pathname !== '/app/academy/create') ||
       pathname.startsWith('/app/teachers') ||
       pathname.startsWith('/app/curriculum') ||
       pathname.startsWith('/app/imports') ||
@@ -300,22 +330,29 @@ export function canAccessRoute(
     if (
       pathname.startsWith('/app/finance') ||
       pathname.startsWith('/app/payouts') ||
-      pathname.startsWith('/app/academy') ||
+      (pathname.startsWith('/app/academy') && pathname !== '/app/academy/create') ||
       pathname.startsWith('/app/teachers') ||
       pathname.startsWith('/app/curriculum') ||
       pathname.startsWith('/app/imports') ||
       pathname.startsWith('/app/audit') ||
       pathname.startsWith('/app/settings') ||
       pathname === '/app/students/add' ||
-      pathname.startsWith('/app/students/add')
+      pathname.startsWith('/app/students/add') ||
+      pathname.startsWith('/app/students')
     ) {
       return false;
     }
     return (
       pathname.startsWith('/app/scheduling') ||
       pathname.startsWith('/app/progress') ||
-      pathname.startsWith('/app/assessments')
+      pathname.startsWith('/app/assessments') ||
+      pathname.startsWith('/app/pricing') // student may view own agreement/pricing
     );
+  }
+
+  // Staff route access
+  if (experience === 'staff') {
+    return false;
   }
 
   return false;

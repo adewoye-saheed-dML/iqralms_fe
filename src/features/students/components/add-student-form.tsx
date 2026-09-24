@@ -90,13 +90,19 @@ export function AddStudentForm() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Alert className="border-blue-200 bg-blue-50/50 text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="text-xs">
-              <span className="font-semibold">Direct Email Invitation: BACKEND CONTRACT REQUIRED.</span>{' '}
-              Parent and student invitation endpoints are pending backend contract delivery. Students currently enroll using their existing global User ID.
-            </AlertDescription>
-          </Alert>
+          <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/30">
+            <div className="text-xs text-muted-foreground">
+              Prefer inviting a new student via email? You can send an academy invitation directly.
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => router.push('/app/invitations')}
+            >
+              Invite by Email
+            </Button>
+          </div>
 
           {errorMessage && (
             <Alert variant="destructive">

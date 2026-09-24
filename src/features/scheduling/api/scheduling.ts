@@ -10,8 +10,37 @@ export type RouteRequest = components['schemas']['RouteRequest'];
 export type Routed = components['schemas']['Routed'];
 export type WaitlistEntry = components['schemas']['WaitlistEntry'];
 export type WaitlistPromote = components['schemas']['WaitlistPromote'];
+export type BookingMeeting = components['schemas']['BookingMeeting'];
 
 export const schedulingApi = {
+  getMeeting: async (organizationId: number, bookingId: number): Promise<BookingMeeting> => {
+    const { data } = await apiClient.GET(
+      '/api/scheduling/organizations/{organization_pk}/bookings/{id}/meeting/',
+      {
+        params: { path: { organization_pk: organizationId, id: bookingId } },
+      }
+    );
+    if (!data) {
+      throw new Error('Failed to retrieve meeting details');
+    }
+    return data;
+  },
+
+  getAcademyBookings: async (
+    organizationId: number,
+    queryParams?: { teacher_id?: number; student_id?: number; status?: string; date?: string }
+  ): Promise<Booking[]> => {
+    const { data } = await apiClient.GET(
+      '/api/scheduling/organizations/{organization_pk}/bookings/academy/',
+      {
+        params: {
+          path: { organization_pk: organizationId },
+          query: queryParams,
+        },
+      }
+    );
+    return data ?? [];
+  },
   getAvailability: async (organizationId: number, teacherId: number): Promise<AvailabilityBlock[]> => {
     const { data } = await apiClient.GET('/api/scheduling/organizations/{organization_pk}/availability/', {
       params: { 

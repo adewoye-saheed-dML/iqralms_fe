@@ -128,18 +128,19 @@ describe('AcademyProvider', () => {
     expect(screen.getByTestId('active-role')).toHaveTextContent('teacher');
   });
 
-  it('rejects invalid persisted selection and falls back to first academy', async () => {
+  it('requires explicit selection when multiple academies exist and persisted selection is invalid', async () => {
     localStorage.setItem('quran_fe_selected_academy_id', '99'); // Invalid ID
     mockApiClient.GET.mockResolvedValue({ data: [
       createMockMembership(1, 'Academy A', 'admin'),
       createMockMembership(2, 'Academy B', 'teacher'),
     ] });
     renderProvider();
-    expect(await screen.findByTestId('active-academy')).toHaveTextContent('Academy A');
-    expect(screen.getByTestId('active-role')).toHaveTextContent('admin');
+    expect(await screen.findByTestId('active-academy')).toHaveTextContent('none');
+    expect(screen.getByTestId('active-role')).toHaveTextContent('none');
   });
 
   it('allows switching academies and correctly applies role changes', async () => {
+    localStorage.setItem('quran_fe_selected_academy_id', '1');
     const removeSpy = vi.spyOn(queryClient, 'removeQueries');
 
     mockApiClient.GET.mockResolvedValue({ data: [

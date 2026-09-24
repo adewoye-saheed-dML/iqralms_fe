@@ -16,12 +16,18 @@ import { Button } from '@/components/ui/button';
 import { Wallet } from 'lucide-react';
 import { ApiError } from '@/lib/api/errors';
 import { can } from '@/lib/permissions/capabilities';
+import { useAuth } from '@/lib/auth/auth-provider';
 
 export function LeadPayoutsView() {
   const { activeAcademy, activeRole } = useAcademy();
+  const auth = useAuth?.();
+  const user = auth?.user;
   const queryClient = useQueryClient();
 
-  const canViewAcademyPayouts = can('view_academy_payouts', { activeRole });
+  const canViewAcademyPayouts = can('view_academy_payouts', {
+    activeRole,
+    userRole: user?.role,
+  });
   const queryKey = payoutsKeys.lead(activeAcademy?.id);
 
   const { data: payouts, isLoading, error, refetch } = useQuery({

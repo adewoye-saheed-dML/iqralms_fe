@@ -8,11 +8,22 @@ export type PatchedStudentEnrollmentUpdate =
   components['schemas']['PatchedStudentEnrollmentUpdate'];
 
 export const studentsApi = {
-  getStudents: async (organizationId: number): Promise<StudentList[]> => {
+  getAcademyStudents: async (organizationId: number): Promise<StudentList[]> => {
     const { data } = await apiClient.GET('/api/organizations/{organization_pk}/students/', {
       params: { path: { organization_pk: organizationId } },
     });
     return data ?? [];
+  },
+
+  getMyStudents: async (organizationId: number): Promise<StudentList[]> => {
+    const { data } = await apiClient.GET('/api/organizations/{organization_pk}/students/mine/', {
+      params: { path: { organization_pk: organizationId } },
+    });
+    return data ?? [];
+  },
+
+  getStudents: async (organizationId: number): Promise<StudentList[]> => {
+    return studentsApi.getAcademyStudents(organizationId);
   },
 
   getStudent: async (organizationId: number, enrollmentId: number): Promise<StudentDetail> => {

@@ -14,11 +14,21 @@ import Link from 'next/link';
 import { Users, Plus } from 'lucide-react';
 
 export function StudentDirectory() {
-  const { activeAcademy } = useAcademy();
+  const { activeAcademy, activeRole } = useAcademy();
+
+  const isOwnerAdmin = activeRole === 'owner' || activeRole === 'admin';
+  const canManage = isOwnerAdmin;
+
+  const queryKey = isOwnerAdmin
+    ? studentKeys.list(activeAcademy?.id)
+    : studentKeys.mine(activeAcademy?.id);
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: studentKeys.all(activeAcademy?.id),
-    queryFn: () => studentsApi.getStudents(activeAcademy!.id),
+    queryKey,
+    queryFn: () =>
+      isOwnerAdmin
+        ? studentsApi.getStudents(activeAcademy!.id)
+        : studentsApi.getMyStudents(activeAcademy!.id),
     enabled: !!activeAcademy,
   });
 
@@ -49,15 +59,21 @@ export function StudentDirectory() {
     return (
       <EmptyState
         icon={<Users className="text-muted-foreground h-10 w-10" />}
-        title="No students enrolled yet."
-        description="Enroll a student in this academy to get started."
+        title={isOwnerAdmin ? 'No students enrolled yet.' : 'No assigned students.'}
+        description={
+          isOwnerAdmin
+            ? 'Enroll a student in this academy to get started.'
+            : 'You currently have no students assigned to you in this academy.'
+        }
         action={
-          <Button asChild>
-            <Link href="/app/students/add">
-              <Plus className="mr-2 h-4 w-4" />
-              Enroll Student
-            </Link>
-          </Button>
+          canManage ? (
+            <Button asChild>
+              <Link href="/app/students/add">
+                <Plus className="mr-2 h-4 w-4" />
+                Enroll Student
+              </Link>
+            </Button>
+          ) : undefined
         }
       />
     );
@@ -65,14 +81,16 @@ export function StudentDirectory() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button asChild>
-          <Link href="/app/students/add">
-            <Plus className="mr-2 h-4 w-4" />
-            Enroll Student
-          </Link>
-        </Button>
-      </div>
+      {canManage && (
+        <div className="flex justify-end">
+          <Button asChild>
+            <Link href="/app/students/add">
+              <Plus className="mr-2 h-4 w-4" />
+              Enroll Student
+            </Link>
+          </Button>
+        </div>
+      )}
 
       <div className="rounded-md border">
         <table className="w-full text-sm">

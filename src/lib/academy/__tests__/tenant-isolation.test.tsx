@@ -104,6 +104,7 @@ describe('Tenant Isolation', () => {
     );
 
   it('proves academy A data cannot appear as academy B after switching context', async () => {
+    localStorage.setItem('quran_fe_selected_academy_id', '1');
     mockApiClient.GET.mockResolvedValue({
       data: [
         createMockMembership(1, 'Academy A', 'admin'),

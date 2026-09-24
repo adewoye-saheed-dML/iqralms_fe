@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 import { Calendar as CalendarIcon, Clock, User, X } from 'lucide-react';
 import { ApiError } from '@/lib/api/errors';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -130,11 +131,23 @@ export function BookingList({ type }: BookingListProps) {
                 </span>
               </div>
 
-              {(booking.video_join_url || (booking as unknown as { join_url?: string }).join_url) && booking.status !== 'cancelled' && (
-                <div className="pt-2">
-                  <a href={booking.video_join_url || (booking as unknown as { join_url?: string }).join_url} target="_blank" rel="noreferrer" className="text-primary hover:underline">
-                    Join Session
-                  </a>
+              {booking.status !== 'cancelled' && (
+                <div className="pt-2 flex flex-col gap-2">
+                  <Button asChild size="sm" className="w-full">
+                    <Link href={`/app/scheduling/${booking.id}`}>
+                      Enter Class Session
+                    </Link>
+                  </Button>
+                  {(booking.video_join_url || (booking as unknown as { join_url?: string }).join_url) && (
+                    <a
+                      href={booking.video_join_url || (booking as unknown as { join_url?: string }).join_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs text-center text-primary hover:underline"
+                    >
+                      Join Session
+                    </a>
+                  )}
                 </div>
               )}
 

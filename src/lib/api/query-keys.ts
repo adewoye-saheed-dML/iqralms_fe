@@ -22,6 +22,8 @@ export const invitationKeys = {
 
 export const studentKeys = {
   all: (academyId: AcademyId) => [...academyKeys.tenant(academyId), 'students'] as const,
+  list: (academyId: AcademyId) => [...studentKeys.all(academyId), 'list'] as const,
+  mine: (academyId: AcademyId) => [...studentKeys.all(academyId), 'mine'] as const,
   detail: (academyId: AcademyId, enrollmentId: number | string) =>
     [...studentKeys.all(academyId), enrollmentId] as const,
 };
@@ -33,6 +35,10 @@ export const curriculumKeys = {
     [...curriculumKeys.all(academyId), 'track', trackId] as const,
   levels: (academyId: AcademyId, trackId?: number | string) =>
     [...curriculumKeys.all(academyId), 'levels', trackId] as const,
+  placements: (academyId: AcademyId, filter?: string) =>
+    [...curriculumKeys.all(academyId), 'placements', filter] as const,
+  teachingTracks: (academyId: AcademyId) =>
+    [...curriculumKeys.all(academyId), 'teachers', 'mine'] as const,
 };
 
 export const schedulingKeys = {
@@ -79,4 +85,18 @@ export const teacherKeys = {
   all: (academyId?: number) => [...academyKeys.tenant(academyId), 'teachers'] as const,
   detail: (academyId?: number, id?: number) => [...teacherKeys.all(academyId), 'detail', id] as const,
   tracks: (academyId?: number) => [...teacherKeys.all(academyId), 'tracks'] as const,
+};
+
+export const familyKeys = {
+  all: ['family'] as const,
+  mine: () => [...familyKeys.all, 'mine'] as const,
+  academy: (academyId: AcademyId) => [...academyKeys.tenant(academyId), 'children'] as const,
+};
+
+export const auditKeys = {
+  all: (academyId: AcademyId) => [...academyKeys.tenant(academyId), 'audit'] as const,
+  list: (academyId: AcademyId, filters?: unknown) =>
+    [...auditKeys.all(academyId), 'list', filters] as const,
+  detail: (academyId: AcademyId, id: number | string) =>
+    [...auditKeys.all(academyId), 'detail', id] as const,
 };

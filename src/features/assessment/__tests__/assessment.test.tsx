@@ -17,7 +17,9 @@ vi.mock('@/lib/auth/auth-provider', () => ({
 vi.mock('../api/assessment', () => ({
   assessmentApi: {
     getMyAssessments: vi.fn(),
+    getStudentAssessments: vi.fn(),
     getTeacherAssessments: vi.fn(),
+    getChildAssessments: vi.fn(),
     getReviewQueue: vi.fn(),
     reviewAssessment: vi.fn(),
   },
@@ -40,6 +42,7 @@ describe('Assessment Feature', () => {
   });
 
   it('renders empty assessments state', async () => {
+    vi.mocked(assessmentApi.getStudentAssessments).mockResolvedValue([]);
     vi.mocked(assessmentApi.getMyAssessments).mockResolvedValue([]);
     
     renderWithProviders(<AssessmentDashboard />);
@@ -50,14 +53,16 @@ describe('Assessment Feature', () => {
   });
 
   it('renders assessment history', async () => {
-    vi.mocked(assessmentApi.getMyAssessments).mockResolvedValue([
+    const mockData = [
       {
         id: 301,
         overall_score: '9.50',
         teacher_summary: 'Excellent work today',
         lead_reviewed: true
       } as any
-    ]);
+    ];
+    vi.mocked(assessmentApi.getStudentAssessments).mockResolvedValue(mockData);
+    vi.mocked(assessmentApi.getMyAssessments).mockResolvedValue(mockData);
     
     renderWithProviders(<AssessmentDashboard />);
     
@@ -69,6 +74,7 @@ describe('Assessment Feature', () => {
   });
 
   it('handles 403 Forbidden state', async () => {
+    vi.mocked(assessmentApi.getStudentAssessments).mockRejectedValue(new ApiError(403, 'Forbidden'));
     vi.mocked(assessmentApi.getMyAssessments).mockRejectedValue(new ApiError(403, 'Forbidden'));
     
     renderWithProviders(<AssessmentDashboard />);

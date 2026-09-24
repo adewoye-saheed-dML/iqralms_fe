@@ -14,22 +14,35 @@ import { Badge } from '@/components/ui/badge';
 import { CheckSquare } from 'lucide-react';
 import { ApiError } from '@/lib/api/errors';
 
+import type { FamilyAssessment, TeacherAssessment } from '../api/assessment';
+
 interface AssessmentListProps {
   type: 'family' | 'teacher';
+  studentId?: number;
 }
 
-export function AssessmentList({ type }: AssessmentListProps) {
+type AnyAssessment = (FamilyAssessment | TeacherAssessment) & {
+  lead_reviewed?: boolean;
+  overall_score?: string;
+};
+
+export function AssessmentList({ type, studentId }: AssessmentListProps) {
   const { activeAcademy } = useAcademy();
 
-  const queryKey = assessmentKeys.list(activeAcademy?.id, type);
+  const queryKey = assessmentKeys.list(activeAcademy?.id, studentId ? `${type}-${studentId}` : type);
 
-  const { data: assessments, isLoading, error, refetch } = useQuery({
+  const { data: assessments, isLoading, error, refetch } = useQuery<AnyAssessment[]>({
     queryKey,
-    queryFn: () => {
+    queryFn: async (): Promise<AnyAssessment[]> => {
       if (!activeAcademy?.id) throw new Error('No active academy');
-      return type === 'family'
-        ? assessmentApi.getMyAssessments(activeAcademy.id)
-        : assessmentApi.getMyAssessments(activeAcademy.id);
+      if (type === 'family') {
+        const data = studentId
+          ? await assessmentApi.getChildAssessments(activeAcademy.id, studentId)
+          : await assessmentApi.getStudentAssessments(activeAcademy.id);
+        return data as AnyAssessment[];
+      }
+      const data = await assessmentApi.getTeacherAssessments(activeAcademy.id);
+      return data as AnyAssessment[];
     },
     enabled: !!activeAcademy?.id,
   });
@@ -55,26 +68,32 @@ export function AssessmentList({ type }: AssessmentListProps) {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {assessments.map((assessment: { id: number; lead_reviewed?: boolean; overall_score?: string; teacher_summary?: string }) => (
-        <Card key={assessment.id}>
-          <CardHeader className="pb-2">
-            <div className="flex justify-between items-start">
-              <CardTitle className="text-lg">Assessment #{assessment.id}</CardTitle>
-              {assessment.lead_reviewed && (
-                <Badge variant="secondary">Reviewed</Badge>
+      {assessments.map((assessment) => {
+        const isReviewed = assessment.lead_reviewed || ('lead_reviewed_at' in assessment && !!assessment.lead_reviewed_at);
+        const score = assessment.overall_score || assessment.overall_average;
+        return (
+          <Card key={assessment.id}>
+            <CardHeader className="pb-2">
+              <div className="flex justify-between items-start">
+                <CardTitle className="text-lg">Assessment #{assessment.id}</CardTitle>
+                {isReviewed && (
+                  <Badge variant="secondary">Reviewed</Badge>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              {score && (
+                <div className="text-muted-foreground">
+                  Score: {score}
+                </div>
               )}
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div className="text-muted-foreground">
-              Score: {assessment.overall_score}
-            </div>
-            {assessment.teacher_summary && (
-              <p className="italic">&ldquo;{assessment.teacher_summary}&rdquo;</p>
-            )}
-          </CardContent>
-        </Card>
-      ))}
+              {assessment.teacher_summary && (
+                <p className="italic">&ldquo;{assessment.teacher_summary}&rdquo;</p>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }

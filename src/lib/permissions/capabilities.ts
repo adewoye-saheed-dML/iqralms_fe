@@ -1,4 +1,9 @@
-import type { UserRole, OrgRole } from '@/lib/navigation/config';
+import type {
+  GlobalAccountRole,
+  AcademyMembershipRole,
+  UserRole,
+  OrgRole,
+} from '@/lib/identity/roles';
 
 export type Capability =
   | 'manage_academy'
@@ -11,9 +16,12 @@ export type Capability =
   | 'view_audit'
   | 'view_own_payouts'
   | 'view_academy_payouts'
+  | 'manage_payouts'
   | 'manage_notifications'
   | 'manage_imports'
   | 'manage_pricing'
+  | 'review_assessments'
+  | 'review_placements'
   | 'view_own_progress'
   | 'manage_progress'
   | 'view_own_assessments'
@@ -23,8 +31,35 @@ export type Capability =
   | 'manage_own_waitlist';
 
 export interface PermissionContext {
-  userRole?: UserRole | null;
-  activeRole?: OrgRole | string | null;
+  userRole?: GlobalAccountRole | UserRole | string | null;
+  activeRole?: AcademyMembershipRole | OrgRole | string | null;
+}
+
+/**
+ * Backend authorization is authoritative.
+ * These helpers mirror backend permission classes:
+ * - is_owner_or_admin
+ * - is_lead_teacher (active membership = teacher AND global user role = lead)
+ * - is_owner_admin_or_lead_teacher
+ */
+export function isOwnerOrAdmin(context: PermissionContext): boolean {
+  return context.activeRole === 'owner' || context.activeRole === 'admin';
+}
+
+export function isLeadTeacher(context: PermissionContext): boolean {
+  return context.userRole === 'lead' && context.activeRole === 'teacher';
+}
+
+export function isOwnerAdminOrLead(context: PermissionContext): boolean {
+  return isOwnerOrAdmin(context) || isLeadTeacher(context);
+}
+
+export function isTeacher(context: PermissionContext): boolean {
+  return (
+    context.activeRole === 'teacher' ||
+    context.userRole === 'lead' ||
+    context.userRole === 'sub'
+  );
 }
 
 /**
@@ -41,11 +76,16 @@ export function can(capability: Capability, context: PermissionContext): boolean
     case 'manage_curriculum':
     case 'manage_finance':
     case 'view_audit':
-    case 'view_academy_payouts':
     case 'manage_notifications':
     case 'manage_imports':
-    case 'manage_pricing':
       return activeRole === 'admin' || activeRole === 'owner';
+
+    case 'view_academy_payouts':
+    case 'manage_payouts':
+    case 'manage_pricing':
+    case 'review_assessments':
+    case 'review_placements':
+      return isOwnerAdminOrLead(context);
 
     case 'manage_scheduling':
     case 'manage_progress':
@@ -69,11 +109,13 @@ export function can(capability: Capability, context: PermissionContext): boolean
     case 'view_own_progress':
     case 'view_own_assessments':
     case 'manage_own_waitlist':
+      return userRole === 'student' || userRole === 'parent' || activeRole === 'student' || activeRole === 'parent';
+
     case 'view_own_schedule':
-      return userRole === 'student' || userRole === 'parent';
+      return userRole === 'student' || userRole === 'parent' || activeRole === 'student' || activeRole === 'parent';
 
     case 'view_own_pricing':
-      return userRole === 'student';
+      return userRole === 'student' || activeRole === 'student';
 
     default:
       return false;

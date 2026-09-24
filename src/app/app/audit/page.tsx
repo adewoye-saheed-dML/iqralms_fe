@@ -5,30 +5,21 @@ import { useQuery } from '@tanstack/react-query';
 import { Shield, Clock, User } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAcademy } from '@/lib/academy/academy-provider';
-import { apiClient } from '@/lib/api/client';
 import { LoadingState } from '@/components/ui/loading';
 import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
+import { useAcademy } from '@/lib/academy/academy-provider';
+import { auditApi, type AuditLog } from '@/features/audit/api/audit';
+import { auditKeys } from '@/lib/api/query-keys';
 
 export default function AuditPage() {
   const { activeAcademy } = useAcademy();
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['academy', activeAcademy?.id, 'audit-logs'],
+  const { data, isLoading, error } = useQuery<AuditLog[]>({
+    queryKey: auditKeys.list(activeAcademy?.id),
     queryFn: async () => {
-      if (!activeAcademy) return [];
-      const { data: response } = await apiClient.GET(
-        '/api/organizations/{organization_pk}/audit-logs/',
-        {
-          params: { path: { organization_pk: activeAcademy.id } },
-        }
-      );
-      if (!response) return [];
-      if ('results' in response && Array.isArray(response.results)) {
-        return response.results;
-      }
-      return [];
+      if (!activeAcademy?.id) return [];
+      return auditApi.getAuditLogs(activeAcademy.id);
     },
     enabled: !!activeAcademy?.id,
   });

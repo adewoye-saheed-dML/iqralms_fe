@@ -51,18 +51,43 @@ export const assessmentApi = {
     return data;
   },
 
-  getFamilyAssessments: async (organizationId: number, studentId: number): Promise<FamilyAssessment[]> => {
+  getStudentAssessments: async (organizationId: number): Promise<FamilyAssessment[]> => {
+    const { data } = await apiClient.GET('/api/assessment/organizations/{organization_pk}/mine/', {
+      params: { path: { organization_pk: organizationId } },
+    });
+    return data ?? [];
+  },
+
+  getTeacherAssessments: async (organizationId: number): Promise<TeacherAssessment[]> => {
+    const { data } = await apiClient.GET('/api/assessment/organizations/{organization_pk}/teacher/mine/', {
+      params: { path: { organization_pk: organizationId } },
+    });
+    return data ?? [];
+  },
+
+  getChildAssessments: async (organizationId: number, studentId: number): Promise<FamilyAssessment[]> => {
     const { data } = await apiClient.GET('/api/assessment/organizations/{organization_pk}/child/', {
       params: { path: { organization_pk: organizationId }, query: { student_id: studentId } },
     });
     return data ?? [];
   },
 
-  getMyAssessments: async (organizationId: number): Promise<TeacherAssessment[]> => {
-    const { data } = await apiClient.GET('/api/assessment/organizations/{organization_pk}/teacher/mine/', {
-      params: { path: { organization_pk: organizationId } },
+  getAssessmentDetail: async (organizationId: number, assessmentId: number): Promise<TeacherAssessment> => {
+    const { data } = await apiClient.GET('/api/assessment/organizations/{organization_pk}/{id}/', {
+      params: { path: { organization_pk: organizationId, id: assessmentId } },
     });
-    return data ?? [];
+    if (!data) {
+      throw new Error('Assessment not found');
+    }
+    return data;
+  },
+
+  getFamilyAssessments: async (organizationId: number, studentId: number): Promise<FamilyAssessment[]> => {
+    return assessmentApi.getChildAssessments(organizationId, studentId);
+  },
+
+  getMyAssessments: async (organizationId: number): Promise<TeacherAssessment[]> => {
+    return assessmentApi.getTeacherAssessments(organizationId);
   },
 
   getRubrics: async (organizationId: number): Promise<AssessmentRubric[]> => {

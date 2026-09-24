@@ -1,14 +1,14 @@
 import { PageHeader } from '@/components/ui/page-header';
-import { MyStatementView } from '@/features/payouts/components/my-statement-view';
+import { PayoutsDashboard } from '@/features/payouts/components/payouts-dashboard';
 
 export default function PayoutsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="My Earnings"
-        description="View your personal payout statements and earnings."
+        title="Payouts & Earnings"
+        description="Manage academy payouts, generation, and teacher statements."
       />
-      <MyStatementView />
+      <PayoutsDashboard />
     </div>
   );
 }

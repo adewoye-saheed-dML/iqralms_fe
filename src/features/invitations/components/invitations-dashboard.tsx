@@ -17,13 +17,15 @@ export function InvitationsDashboard() {
     ? (requestedRole as InvitationRole)
     : 'teacher';
 
-  const [role, setRole] = React.useState<InvitationRole>(initialRole);
+  const [selectedRole, setSelectedRole] = React.useState<InvitationRole | null>(null);
+  const [prevRequestedRole, setPrevRequestedRole] = React.useState(requestedRole);
 
-  React.useEffect(() => {
-    if (requestedRole && invitationRoles.includes(requestedRole)) {
-      setRole(requestedRole);
-    }
-  }, [requestedRole]);
+  if (requestedRole !== prevRequestedRole) {
+    setPrevRequestedRole(requestedRole);
+    setSelectedRole(null);
+  }
+
+  const role = selectedRole ?? initialRole;
 
   return (
     <div className="space-y-6">
@@ -35,7 +37,7 @@ export function InvitationsDashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={role} onValueChange={(value) => setRole(value as InvitationRole)}>
+          <Tabs value={role} onValueChange={(value) => setSelectedRole(value as InvitationRole)}>
             <TabsList>
               <TabsTrigger value="teacher">Teacher</TabsTrigger>
               <TabsTrigger value="parent">Parent</TabsTrigger>
