@@ -65,3 +65,9 @@ Do not silently replace important decisions. Add a new decision entry with the r
 Status: Accepted
 
 Auth token is stored in `localStorage`. The backend uses DRF TokenAuthentication (returning a token key in the response payload instead of an HTTP-only cookie). Therefore, the token must be stored client-side to be appended to the `Authorization` header of subsequent API requests. Since Next.js is primarily acting as a static SPA for the dashboard rendering, `localStorage` is the optimal approach without complicating SSR passing.
+
+## D-007 — Resync `spec/FRONTEND_MASTER_SSoT.md` with the canonical v1.0 spec
+
+Status: Accepted
+
+Reason: the committed `spec/FRONTEND_MASTER_SSoT.md` was a pre-Phase-13 draft (34 loosely-numbered sections, no route map, no Phase 13.0–13.11 sequence, no D/O decision ledger) that no longer matched the owner's actual v1.0 "Frontend Master Specification" (13 Sep 2026). Any agent following `CLAUDE.md`'s instruction to treat that file as the SoT was building against an outdated plan. Replaced the file's content with the v1.0 spec verbatim; no application code was changed by this decision. `IQRA_LMS_FRONTEND_BACKEND_SSoT_REMEDIATION_AUDIT.md` is now explicitly named in `CLAUDE.md` as a subordinate, closeable punch-list rather than a competing source of truth.

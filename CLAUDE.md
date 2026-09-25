@@ -2,8 +2,14 @@
 
 ## Source of Truth
 
-- `spec/FRONTEND_MASTER_SSoT.md` — product UX and frontend architecture SSoT
-- `openapi/schema.yml` — backend API contract
+`spec/FRONTEND_MASTER_SSoT.md` is the one product/UX/architecture reference.
+It was resynced on 2026-09-24 against the owner's canonical v1.0 spec — do
+not let it drift from that source again by editing around it in a separate
+roadmap file. If a change is needed, edit this file directly (see rule 14).
+
+- `spec/FRONTEND_MASTER_SSoT.md` — product UX and frontend architecture SSoT (v1.0, 13 Sep 2026)
+- `openapi/schema.yml` — backend API contract (schema version 0.6.0)
+- `IQRA_LMS_FRONTEND_BACKEND_SSoT_REMEDIATION_AUDIT.md` — active, subordinate punch-list of gaps between this repo and the SSoT/backend contract above. Treat it as a checklist to close, not as a second SSoT. When it conflicts with `spec/FRONTEND_MASTER_SSoT.md`, the SSoT wins and this file should be corrected or trimmed.
 - `decisions.md` — accepted architecture decisions
 - `learnings.md` — implementation lessons
 - `spec/tech-debt.md` — known technical debt
