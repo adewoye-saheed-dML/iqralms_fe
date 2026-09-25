@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { BookOpen, Plus } from 'lucide-react';
 import { ApiError } from '@/lib/api/errors';
+import { PlacementsPanel } from './placements-panel';
 
 export function CurriculumDirectory() {
   const { activeAcademy, activeRole } = useAcademy();
@@ -63,21 +64,24 @@ export function CurriculumDirectory() {
 
   if (tracks.length === 0) {
     return (
-      <EmptyState
-        icon={<BookOpen className="text-muted-foreground h-10 w-10" />}
-        title="No tracks defined"
-        description="Get started by creating the first track for your academy."
-        action={
-          canManageCurriculum ? (
-            <Button asChild>
-              <Link href="/app/curriculum/tracks/add">
-                <Plus className="mr-2 h-4 w-4" />
-                Create First Track
-              </Link>
-            </Button>
-          ) : undefined
-        }
-      />
+      <div className="space-y-6">
+        <EmptyState
+          icon={<BookOpen className="text-muted-foreground h-10 w-10" />}
+          title="No tracks defined"
+          description="Get started by creating the first track for your academy."
+          action={
+            canManageCurriculum ? (
+              <Button asChild>
+                <Link href="/app/curriculum/tracks/add">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create First Track
+                </Link>
+              </Button>
+            ) : undefined
+          }
+        />
+        <PlacementsPanel />
+      </div>
     );
   }
 
@@ -135,6 +139,8 @@ export function CurriculumDirectory() {
           );
         })}
       </div>
+
+      <PlacementsPanel />
     </div>
   );
 }

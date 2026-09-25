@@ -8,6 +8,7 @@ import { TrackForm } from '../components/track-form';
 import { TrackDetail } from '../components/track-detail';
 import { LevelForm } from '../components/level-form';
 import * as AcademyProvider from '@/lib/academy/academy-provider';
+import * as AuthProvider from '@/lib/auth/auth-provider';
 import { curriculumApi } from '../api/curriculum';
 import { ApiError } from '@/lib/api/errors';
 import { act } from 'react';
@@ -34,6 +35,12 @@ vi.mock('../api/curriculum', () => ({
     updateTrack: vi.fn(),
     createLevel: vi.fn(),
     updateLevel: vi.fn(),
+    getMyPlacements: vi.fn(),
+    getChildPlacements: vi.fn(),
+    getPendingPlacements: vi.fn(),
+    submitPlacement: vi.fn(),
+    reviewPlacement: vi.fn(),
+    getPlacementAudioUrl: vi.fn(),
   },
 }));
 
@@ -50,9 +57,15 @@ describe('Curriculum Feature', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     vi.mocked(curriculumApi.getLevels).mockResolvedValue([]);
+    vi.mocked(curriculumApi.getMyPlacements).mockResolvedValue([]);
+    vi.mocked(curriculumApi.getChildPlacements).mockResolvedValue([]);
+    vi.mocked(curriculumApi.getPendingPlacements).mockResolvedValue([]);
     vi.spyOn(AcademyProvider, 'useAcademy').mockReturnValue({
       activeAcademy: mockAcademy,
       activeRole: 'admin',
+    } as any);
+    vi.spyOn(AuthProvider, 'useAuth').mockReturnValue({
+      user: { role: 'owner' },
     } as any);
   });
 

@@ -22,6 +22,7 @@ export type Capability =
   | 'manage_pricing'
   | 'review_assessments'
   | 'review_placements'
+  | 'submit_placement'
   | 'view_own_progress'
   | 'manage_progress'
   | 'view_own_assessments'
@@ -110,6 +111,11 @@ export function can(capability: Capability, context: PermissionContext): boolean
     case 'view_own_assessments':
     case 'manage_own_waitlist':
       return userRole === 'student' || userRole === 'parent' || activeRole === 'student' || activeRole === 'parent';
+
+    // SSoT placement-review table: Student is "Submit only" — Parent can see the
+    // outcome (via the /placements/children/ endpoint) but does not submit.
+    case 'submit_placement':
+      return userRole === 'student' || activeRole === 'student';
 
     case 'view_own_schedule':
       return userRole === 'student' || userRole === 'parent' || activeRole === 'student' || activeRole === 'parent';

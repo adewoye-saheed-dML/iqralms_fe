@@ -1,0 +1,712 @@
+diff --git a/src/app/app/curriculum/page.tsx b/src/app/app/curriculum/page.tsx
+index 44a2867..1f96fd9 100644
+--- a/src/app/app/curriculum/page.tsx
++++ b/src/app/app/curriculum/page.tsx
+@@ -11,7 +11,7 @@ export default function CurriculumPage() {
+     <div className="space-y-6">
+       <PageHeader
+         title="Curriculum"
+-        description="Manage learning tracks and their progressing levels."
++        description="Manage learning tracks, levels, and placement submissions and reviews."
+       />
+       <CurriculumDirectory />
+     </div>
+diff --git a/src/features/curriculum/__tests__/curriculum.test.tsx b/src/features/curriculum/__tests__/curriculum.test.tsx
+index 58239ad..46a64d2 100644
+--- a/src/features/curriculum/__tests__/curriculum.test.tsx
++++ b/src/features/curriculum/__tests__/curriculum.test.tsx
+@@ -8,6 +8,7 @@ import { TrackForm } from '../components/track-form';
+ import { TrackDetail } from '../components/track-detail';
+ import { LevelForm } from '../components/level-form';
+ import * as AcademyProvider from '@/lib/academy/academy-provider';
++import * as AuthProvider from '@/lib/auth/auth-provider';
+ import { curriculumApi } from '../api/curriculum';
+ import { ApiError } from '@/lib/api/errors';
+ import { act } from 'react';
+@@ -34,6 +35,12 @@ vi.mock('../api/curriculum', () => ({
+     updateTrack: vi.fn(),
+     createLevel: vi.fn(),
+     updateLevel: vi.fn(),
++    getMyPlacements: vi.fn(),
++    getChildPlacements: vi.fn(),
++    getPendingPlacements: vi.fn(),
++    submitPlacement: vi.fn(),
++    reviewPlacement: vi.fn(),
++    getPlacementAudioUrl: vi.fn(),
+   },
+ }));
+ 
+@@ -50,10 +57,16 @@ describe('Curriculum Feature', () => {
+   beforeEach(() => {
+     vi.resetAllMocks();
+     vi.mocked(curriculumApi.getLevels).mockResolvedValue([]);
++    vi.mocked(curriculumApi.getMyPlacements).mockResolvedValue([]);
++    vi.mocked(curriculumApi.getChildPlacements).mockResolvedValue([]);
++    vi.mocked(curriculumApi.getPendingPlacements).mockResolvedValue([]);
+     vi.spyOn(AcademyProvider, 'useAcademy').mockReturnValue({
+       activeAcademy: mockAcademy,
+       activeRole: 'admin',
+     } as any);
++    vi.spyOn(AuthProvider, 'useAuth').mockReturnValue({
++      user: { role: 'owner' },
++    } as any);
+   });
+ 
+   describe('CurriculumDirectory', () => {
+diff --git a/src/features/curriculum/components/curriculum-directory.tsx b/src/features/curriculum/components/curriculum-directory.tsx
+index 9146b5e..282f83b 100644
+--- a/src/features/curriculum/components/curriculum-directory.tsx
++++ b/src/features/curriculum/components/curriculum-directory.tsx
+@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
+ import Link from 'next/link';
+ import { BookOpen, Plus } from 'lucide-react';
+ import { ApiError } from '@/lib/api/errors';
++import { PlacementsPanel } from './placements-panel';
+ 
+ export function CurriculumDirectory() {
+   const { activeAcademy, activeRole } = useAcademy();
+@@ -63,21 +64,24 @@ export function CurriculumDirectory() {
+ 
+   if (tracks.length === 0) {
+     return (
+-      <EmptyState
+-        icon={<BookOpen className="text-muted-foreground h-10 w-10" />}
+-        title="No tracks defined"
+-        description="Get started by creating the first track for your academy."
+-        action={
+-          canManageCurriculum ? (
+-            <Button asChild>
+-              <Link href="/app/curriculum/tracks/add">
+-                <Plus className="mr-2 h-4 w-4" />
+-                Create First Track
+-              </Link>
+-            </Button>
+-          ) : undefined
+-        }
+-      />
++      <div className="space-y-6">
++        <EmptyState
++          icon={<BookOpen className="text-muted-foreground h-10 w-10" />}
++          title="No tracks defined"
++          description="Get started by creating the first track for your academy."
++          action={
++            canManageCurriculum ? (
++              <Button asChild>
++                <Link href="/app/curriculum/tracks/add">
++                  <Plus className="mr-2 h-4 w-4" />
++                  Create First Track
++                </Link>
++              </Button>
++            ) : undefined
++          }
++        />
++        <PlacementsPanel />
++      </div>
+     );
+   }
+ 
+@@ -135,6 +139,8 @@ export function CurriculumDirectory() {
+           );
+         })}
+       </div>
++
++      <PlacementsPanel />
+     </div>
+   );
+ }
+diff --git a/src/features/curriculum/components/placement-outcome-list.tsx b/src/features/curriculum/components/placement-outcome-list.tsx
+new file mode 100644
+index 0000000..237dac4
+--- /dev/null
++++ b/src/features/curriculum/components/placement-outcome-list.tsx
+@@ -0,0 +1,87 @@
++'use client';
++
++import { curriculumKeys } from '@/lib/api/query-keys';
++
++import * as React from 'react';
++import { useQuery } from '@tanstack/react-query';
++import { useAcademy } from '@/lib/academy/academy-provider';
++import { curriculumApi } from '../api/curriculum';
++import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
++import { Badge } from '@/components/ui/badge';
++import { LoadingState } from '@/components/ui/loading';
++import { EmptyState } from '@/components/ui/empty-state';
++import { ClipboardList } from 'lucide-react';
++
++interface PlacementOutcomeListProps {
++  scope: 'mine' | 'children';
++  title?: string;
++}
++
++export function PlacementOutcomeList({ scope, title = 'Your placements' }: PlacementOutcomeListProps) {
++  const { activeAcademy } = useAcademy();
++
++  const { data: placements = [], isLoading } = useQuery({
++    queryKey: curriculumKeys.placements(activeAcademy?.id, scope),
++    queryFn: () =>
++      scope === 'mine'
++        ? curriculumApi.getMyPlacements(activeAcademy!.id)
++        : curriculumApi.getChildPlacements(activeAcademy!.id),
++    enabled: !!activeAcademy,
++  });
++
++  if (!activeAcademy) return null;
++  if (isLoading) return <LoadingState />;
++
++  if (placements.length === 0) {
++    return (
++      <EmptyState
++        icon={<ClipboardList className="text-muted-foreground h-10 w-10" />}
++        title="No placements yet"
++        description={
++          scope === 'mine'
++            ? 'Submit a placement above to get a starting level.'
++            : "Your children's placement submissions will show up here."
++        }
++      />
++    );
++  }
++
++  return (
++    <Card>
++      <CardHeader>
++        <CardTitle className="text-base">{title}</CardTitle>
++      </CardHeader>
++      <CardContent className="space-y-3">
++        {placements.map((placement) => (
++          <div
++            key={placement.id}
++            className="flex items-center justify-between gap-3 rounded-md border p-3"
++          >
++            <div>
++              <p className="font-medium">
++                {scope === 'children'
++                  ? `${placement.student.first_name} ${placement.student.last_name} — ${placement.track}`
++                  : placement.track}
++              </p>
++              <p className="text-muted-foreground text-sm">
++                {placement.skipped_as_beginner
++                  ? 'Submitted as a complete beginner'
++                  : placement.has_audio_sample
++                    ? `Recitation sample: ${placement.audio_filename ?? 'uploaded'}`
++                    : 'Awaiting review'}
++              </p>
++            </div>
++            <div className="flex flex-col items-end gap-1">
++              <Badge variant={placement.status === 'reviewed' ? 'default' : 'secondary'}>
++                {placement.status === 'reviewed' ? 'Reviewed' : 'Pending'}
++              </Badge>
++              {placement.status === 'reviewed' && (
++                <span className="text-sm">{placement.recommended_level.name}</span>
++              )}
++            </div>
++          </div>
++        ))}
++      </CardContent>
++    </Card>
++  );
++}
+diff --git a/src/features/curriculum/components/placement-review-queue.tsx b/src/features/curriculum/components/placement-review-queue.tsx
+new file mode 100644
+index 0000000..366b496
+--- /dev/null
++++ b/src/features/curriculum/components/placement-review-queue.tsx
+@@ -0,0 +1,222 @@
++'use client';
++
++import { curriculumKeys } from '@/lib/api/query-keys';
++
++import * as React from 'react';
++import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
++import { useAcademy } from '@/lib/academy/academy-provider';
++import { curriculumApi, Level, PlacementResult } from '../api/curriculum';
++import { ApiError } from '@/lib/api/errors';
++import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
++import { Badge } from '@/components/ui/badge';
++import { Button } from '@/components/ui/button';
++import { LoadingState } from '@/components/ui/loading';
++import { EmptyState } from '@/components/ui/empty-state';
++import { Alert, AlertDescription } from '@/components/ui/alert';
++import {
++  Dialog,
++  DialogContent,
++  DialogFooter,
++  DialogHeader,
++  DialogTitle,
++} from '@/components/ui/dialog';
++import {
++  Select,
++  SelectContent,
++  SelectItem,
++  SelectTrigger,
++  SelectValue,
++} from '@/components/ui/select';
++import { Label } from '@/components/ui/label';
++import { AlertCircle, ClipboardCheck, Play } from 'lucide-react';
++
++export function PlacementReviewQueue() {
++  const { activeAcademy } = useAcademy();
++  const [reviewing, setReviewing] = React.useState<PlacementResult | null>(null);
++
++  const { data: pending = [], isLoading } = useQuery({
++    queryKey: curriculumKeys.placements(activeAcademy?.id, 'pending'),
++    queryFn: () => curriculumApi.getPendingPlacements(activeAcademy!.id),
++    enabled: !!activeAcademy,
++  });
++
++  if (!activeAcademy) return null;
++  if (isLoading) return <LoadingState />;
++
++  return (
++    <Card>
++      <CardHeader className="flex flex-row items-center justify-between">
++        <CardTitle className="flex items-center gap-2 text-base">
++          <ClipboardCheck className="h-4 w-4" /> Placement review queue
++        </CardTitle>
++        <Badge variant={pending.length > 0 ? 'default' : 'secondary'}>{pending.length} pending</Badge>
++      </CardHeader>
++      <CardContent>
++        {pending.length === 0 ? (
++          <EmptyState
++            icon={<ClipboardCheck className="text-muted-foreground h-10 w-10" />}
++            title="Nothing to review"
++            description="All submitted placements have been reviewed."
++          />
++        ) : (
++          <div className="space-y-3">
++            {pending.map((placement) => (
++              <div
++                key={placement.id}
++                className="flex items-center justify-between gap-3 rounded-md border p-3"
++              >
++                <div>
++                  <p className="font-medium">
++                    {placement.student.first_name} {placement.student.last_name} — {placement.track}
++                  </p>
++                  <p className="text-muted-foreground text-sm">
++                    {placement.skipped_as_beginner
++                      ? 'Declared as a complete beginner'
++                      : placement.has_audio_sample
++                        ? placement.audio_filename ?? 'Recitation sample attached'
++                        : 'No sample attached'}
++                  </p>
++                </div>
++                <Button size="sm" onClick={() => setReviewing(placement)}>
++                  Review
++                </Button>
++              </div>
++            ))}
++          </div>
++        )}
++      </CardContent>
++
++      {reviewing && (
++        <PlacementReviewDialog placement={reviewing} onClose={() => setReviewing(null)} />
++      )}
++    </Card>
++  );
++}
++
++interface PlacementReviewDialogProps {
++  placement: PlacementResult;
++  onClose: () => void;
++}
++
++function PlacementReviewDialog({ placement, onClose }: PlacementReviewDialogProps) {
++  const queryClient = useQueryClient();
++  const { activeAcademy } = useAcademy();
++  const [levelId, setLevelId] = React.useState<string>(String(placement.recommended_level.id));
++  const [audioUrl, setAudioUrl] = React.useState<string | null>(null);
++  const [loadingAudio, setLoadingAudio] = React.useState(false);
++
++  // Placements carry the track's *name*, not its id — resolve it against the
++  // academy's tracks so we can fetch that track's levels for the dropdown.
++  const { data: tracks = [] } = useQuery({
++    queryKey: curriculumKeys.tracks(activeAcademy?.id),
++    queryFn: () => curriculumApi.getTracks(activeAcademy!.id),
++    enabled: !!activeAcademy,
++  });
++  const track = tracks.find((t) => t.name === placement.track);
++
++  const { data: levels = [] } = useQuery<Level[]>({
++    queryKey: curriculumKeys.levels(activeAcademy?.id, track?.id),
++    queryFn: () => curriculumApi.getLevels(activeAcademy!.id, track!.id),
++    enabled: !!activeAcademy && !!track,
++  });
++
++  const playSample = async () => {
++    if (!activeAcademy) return;
++    setLoadingAudio(true);
++    try {
++      const access = await curriculumApi.getPlacementAudioUrl(activeAcademy.id, placement.id);
++      setAudioUrl(access.url);
++    } finally {
++      setLoadingAudio(false);
++    }
++  };
++
++  const mutation = useMutation({
++    mutationFn: () => {
++      if (!activeAcademy) throw new Error('No academy context');
++      return curriculumApi.reviewPlacement(activeAcademy.id, placement.id, {
++        recommended_level: Number(levelId),
++      });
++    },
++    onSuccess: () => {
++      queryClient.invalidateQueries({
++        queryKey: curriculumKeys.placements(activeAcademy?.id, 'pending'),
++      });
++      onClose();
++    },
++  });
++
++  let errorMessage = '';
++  if (mutation.isError) {
++    if (mutation.error instanceof ApiError && mutation.error.status === 403) {
++      errorMessage = 'You do not have permission to review placements.';
++    } else {
++      errorMessage = mutation.error.message || 'Failed to save the review.';
++    }
++  }
++
++  return (
++    <Dialog open onOpenChange={(open) => !open && onClose()}>
++      <DialogContent>
++        <DialogHeader>
++          <DialogTitle>
++            Review {placement.student.first_name} {placement.student.last_name}
++          </DialogTitle>
++        </DialogHeader>
++
++        <div className="space-y-4">
++          {errorMessage && (
++            <Alert variant="destructive">
++              <AlertCircle className="h-4 w-4" />
++              <AlertDescription>{errorMessage}</AlertDescription>
++            </Alert>
++          )}
++
++          {placement.skipped_as_beginner ? (
++            <p className="text-muted-foreground text-sm">
++              This student declared themselves a complete beginner and submitted no sample.
++            </p>
++          ) : placement.has_audio_sample ? (
++            <div className="space-y-2">
++              {audioUrl ? (
++                <audio controls src={audioUrl} className="w-full" />
++              ) : (
++                <Button variant="outline" size="sm" onClick={playSample} disabled={loadingAudio}>
++                  <Play className="mr-1.5 h-4 w-4" />
++                  {loadingAudio ? 'Loading...' : 'Load sample to listen'}
++                </Button>
++              )}
++            </div>
++          ) : (
++            <p className="text-muted-foreground text-sm">No sample was attached.</p>
++          )}
++
++          <div className="space-y-2">
++            <Label htmlFor="review-level">Recommended level</Label>
++            <Select value={levelId} onValueChange={setLevelId} disabled={mutation.isPending}>
++              <SelectTrigger id="review-level">
++                <SelectValue placeholder="Choose a level" />
++              </SelectTrigger>
++              <SelectContent>
++                {levels.map((level) => (
++                  <SelectItem key={level.id} value={String(level.id)}>
++                    {level.name}
++                  </SelectItem>
++                ))}
++              </SelectContent>
++            </Select>
++          </div>
++        </div>
++
++        <DialogFooter>
++          <Button variant="outline" onClick={onClose} disabled={mutation.isPending}>
++            Cancel
++          </Button>
++          <Button onClick={() => mutation.mutate()} disabled={!levelId || mutation.isPending}>
++            {mutation.isPending ? 'Saving...' : 'Confirm level'}
++          </Button>
++        </DialogFooter>
++      </DialogContent>
++    </Dialog>
++  );
++}
+diff --git a/src/features/curriculum/components/placement-submit-form.tsx b/src/features/curriculum/components/placement-submit-form.tsx
+new file mode 100644
+index 0000000..46770c5
+--- /dev/null
++++ b/src/features/curriculum/components/placement-submit-form.tsx
+@@ -0,0 +1,194 @@
++'use client';
++
++import { curriculumKeys } from '@/lib/api/query-keys';
++
++import * as React from 'react';
++import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
++import { useAcademy } from '@/lib/academy/academy-provider';
++import { curriculumApi, PlacementSubmit } from '../api/curriculum';
++import { ApiError } from '@/lib/api/errors';
++import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
++import { Label } from '@/components/ui/label';
++import { Input } from '@/components/ui/input';
++import { Button } from '@/components/ui/button';
++import { Alert, AlertDescription } from '@/components/ui/alert';
++import {
++  Select,
++  SelectContent,
++  SelectItem,
++  SelectTrigger,
++  SelectValue,
++} from '@/components/ui/select';
++import { AlertCircle, CheckCircle2, Mic, Upload } from 'lucide-react';
++
++const ACCEPTED_TYPES = '.flac,.m4a,.mp3,.mp4,.oga,.ogg,.opus,.wav,.webm';
++const MAX_BYTES = 15 * 1024 * 1024; // 15 MB, per the SSoT API contract
++
++export function PlacementSubmitForm() {
++  const queryClient = useQueryClient();
++  const { activeAcademy } = useAcademy();
++
++  const [trackId, setTrackId] = React.useState<string>('');
++  const [audioFile, setAudioFile] = React.useState<File | null>(null);
++  const [skippedAsBeginner, setSkippedAsBeginner] = React.useState(false);
++  const [fileError, setFileError] = React.useState('');
++
++  const { data: tracks = [] } = useQuery({
++    queryKey: curriculumKeys.tracks(activeAcademy?.id),
++    queryFn: () => curriculumApi.getTracks(activeAcademy!.id),
++    enabled: !!activeAcademy,
++  });
++
++  const mutation = useMutation({
++    mutationFn: async () => {
++      if (!activeAcademy) throw new Error('No academy context');
++      const formData = new FormData();
++      formData.append('track', trackId);
++      formData.append('skipped_as_beginner', String(skippedAsBeginner));
++      if (audioFile) {
++        formData.append('audio_sample', audioFile);
++      }
++      return curriculumApi.submitPlacement(
++        activeAcademy.id,
++        formData as unknown as PlacementSubmit
++      );
++    },
++    onSuccess: () => {
++      queryClient.invalidateQueries({
++        queryKey: curriculumKeys.placements(activeAcademy?.id, 'mine'),
++      });
++      setAudioFile(null);
++      setSkippedAsBeginner(false);
++    },
++  });
++
++  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
++    setFileError('');
++    const file = e.target.files?.[0] ?? null;
++    if (file && file.size > MAX_BYTES) {
++      setFileError('That file is over the 15 MB limit.');
++      setAudioFile(null);
++      return;
++    }
++    setAudioFile(file);
++    if (file) setSkippedAsBeginner(false);
++  };
++
++  let errorMessage = '';
++  if (mutation.isError) {
++    if (mutation.error instanceof ApiError) {
++      if (mutation.error.status === 400) {
++        errorMessage =
++          'Submit either a recitation sample or "I\'m a complete beginner" — not both, and not neither.';
++      } else if (mutation.error.status === 403) {
++        errorMessage = 'Only students can submit a placement assessment.';
++      } else {
++        errorMessage = mutation.error.message || 'Something went wrong submitting your placement.';
++      }
++    } else {
++      errorMessage = mutation.error.message;
++    }
++  }
++
++  const canSubmit = !!trackId && (!!audioFile || skippedAsBeginner) && !(audioFile && skippedAsBeginner);
++
++  if (mutation.isSuccess) {
++    return (
++      <Card>
++        <CardContent className="flex items-center gap-3 pt-6">
++          <CheckCircle2 className="text-success h-5 w-5 shrink-0" />
++          <div>
++            <p className="font-medium">Placement submitted</p>
++            <p className="text-muted-foreground text-sm">
++              A teacher will review it and set your starting level.
++            </p>
++          </div>
++          <Button variant="outline" size="sm" className="ml-auto" onClick={() => mutation.reset()}>
++            Submit another
++          </Button>
++        </CardContent>
++      </Card>
++    );
++  }
++
++  return (
++    <Card>
++      <CardHeader>
++        <CardTitle className="flex items-center gap-2 text-base">
++          <Mic className="h-4 w-4" /> Submit a placement
++        </CardTitle>
++        <CardDescription>
++          Record yourself reciting for the track you want to join, or tell us you&apos;re starting
++          from scratch.
++        </CardDescription>
++      </CardHeader>
++      <CardContent className="space-y-4">
++        {errorMessage && (
++          <Alert variant="destructive">
++            <AlertCircle className="h-4 w-4" />
++            <AlertDescription>{errorMessage}</AlertDescription>
++          </Alert>
++        )}
++        {fileError && (
++          <Alert variant="destructive">
++            <AlertCircle className="h-4 w-4" />
++            <AlertDescription>{fileError}</AlertDescription>
++          </Alert>
++        )}
++
++        <div className="space-y-2">
++          <Label htmlFor="placement-track">Track</Label>
++          <Select value={trackId} onValueChange={setTrackId} disabled={mutation.isPending}>
++            <SelectTrigger id="placement-track">
++              <SelectValue placeholder="Choose a track" />
++            </SelectTrigger>
++            <SelectContent>
++              {tracks.map((track) => (
++                <SelectItem key={track.id} value={String(track.id)}>
++                  {track.name}
++                </SelectItem>
++              ))}
++            </SelectContent>
++          </Select>
++        </div>
++
++        <div className="space-y-2">
++          <Label htmlFor="placement-audio">Recitation sample</Label>
++          <Input
++            id="placement-audio"
++            type="file"
++            accept={ACCEPTED_TYPES}
++            onChange={handleFileChange}
++            disabled={mutation.isPending || skippedAsBeginner}
++          />
++          <p className="text-muted-foreground text-sm">
++            Up to 15 MB — mp3, m4a, wav, ogg, opus, flac, webm or mp4 audio.
++          </p>
++        </div>
++
++        <label className="flex items-center gap-2 text-sm">
++          <input
++            type="checkbox"
++            checked={skippedAsBeginner}
++            onChange={(e) => {
++              setSkippedAsBeginner(e.target.checked);
++              if (e.target.checked) setAudioFile(null);
++            }}
++            disabled={mutation.isPending}
++            className="h-4 w-4"
++          />
++          I&apos;m a complete beginner — skip the recitation sample
++        </label>
++      </CardContent>
++      <CardFooter className="flex justify-end">
++        <Button
++          onClick={() => mutation.mutate()}
++          disabled={!canSubmit || mutation.isPending || !activeAcademy}
++        >
++          <Upload className="mr-1.5 h-4 w-4" />
++          {mutation.isPending ? 'Submitting...' : 'Submit placement'}
++        </Button>
++      </CardFooter>
++    </Card>
++  );
++}
+diff --git a/src/features/curriculum/components/placements-panel.tsx b/src/features/curriculum/components/placements-panel.tsx
+new file mode 100644
+index 0000000..908ded3
+--- /dev/null
++++ b/src/features/curriculum/components/placements-panel.tsx
+@@ -0,0 +1,45 @@
++'use client';
++
++import * as React from 'react';
++import { useAuth } from '@/lib/auth/auth-provider';
++import { useAcademy } from '@/lib/academy/academy-provider';
++import { can } from '@/lib/permissions/capabilities';
++import { PlacementSubmitForm } from './placement-submit-form';
++import { PlacementOutcomeList } from './placement-outcome-list';
++import { PlacementReviewQueue } from './placement-review-queue';
++
++/**
++ * Journey B (SSoT ssot.md#L526): submit -> teacher/lead reviews -> student/parent
++ * sees the outcome. A given login only ever needs one side of that — the
++ * capability checks below pick which.
++ */
++export function PlacementsPanel() {
++  const { user } = useAuth();
++  const { activeRole } = useAcademy();
++  const context = { userRole: user?.role, activeRole };
++
++  const canSubmit = can('submit_placement', context);
++  const canReview = can('review_placements', context);
++  const isParent = context.userRole === 'parent' || context.activeRole === 'parent';
++
++  if (!canSubmit && !canReview && !isParent) {
++    return null;
++  }
++
++  return (
++    <div className="space-y-4">
++      <h2 className="text-lg font-semibold">Placements</h2>
++
++      {canSubmit && (
++        <>
++          <PlacementSubmitForm />
++          <PlacementOutcomeList scope="mine" title="Your placements" />
++        </>
++      )}
++
++      {isParent && <PlacementOutcomeList scope="children" title="Your children's placements" />}
++
++      {canReview && <PlacementReviewQueue />}
++    </div>
++  );
++}
+diff --git a/src/lib/permissions/capabilities.ts b/src/lib/permissions/capabilities.ts
+index 8b489f9..0ad4e1a 100644
+--- a/src/lib/permissions/capabilities.ts
++++ b/src/lib/permissions/capabilities.ts
+@@ -22,6 +22,7 @@ export type Capability =
+   | 'manage_pricing'
+   | 'review_assessments'
+   | 'review_placements'
++  | 'submit_placement'
+   | 'view_own_progress'
+   | 'manage_progress'
+   | 'view_own_assessments'
+@@ -111,6 +112,11 @@ export function can(capability: Capability, context: PermissionContext): boolean
+     case 'manage_own_waitlist':
+       return userRole === 'student' || userRole === 'parent' || activeRole === 'student' || activeRole === 'parent';
+ 
++    // SSoT placement-review table: Student is "Submit only" — Parent can see the
++    // outcome (via the /placements/children/ endpoint) but does not submit.
++    case 'submit_placement':
++      return userRole === 'student' || activeRole === 'student';
++
+     case 'view_own_schedule':
+       return userRole === 'student' || userRole === 'parent' || activeRole === 'student' || activeRole === 'parent';
+ 
