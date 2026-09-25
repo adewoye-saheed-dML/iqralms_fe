@@ -28,6 +28,7 @@ vi.mock('../api/scheduling', () => ({
 vi.mock('@/features/students/api/students', () => ({
   studentsApi: {
     getStudents: vi.fn(() => Promise.resolve([{ id: 10, user: 100, first_name: 'Test Student' }])),
+    getMyStudents: vi.fn(() => Promise.resolve([{ id: 10, user: 100, first_name: 'Test Student' }])),
   },
 }));
 vi.mock('@/features/curriculum/api/curriculum', () => ({

@@ -13,6 +13,7 @@ import {
   ArrowRight,
   CalendarCheck,
   CheckCircle,
+  Video,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -21,12 +22,15 @@ import { useAuth } from '@/lib/auth/auth-provider';
 import { useAcademy } from '@/lib/academy/academy-provider';
 import { schedulingKeys, assessmentKeys, payoutsKeys } from '@/lib/api/query-keys';
 import { schedulingApi, type Booking } from '@/features/scheduling/api/scheduling';
-import { assessmentApi, type LeadAssessment } from '@/features/assessment/api/assessment';
-import { payoutsApi } from '@/features/payouts/api/payouts';
+import { assessmentApi, type LeadAssessment, type TeacherAssessment } from '@/features/assessment/api/assessment';
+import { payoutsApi, type MyTeacherPayout } from '@/features/payouts/api/payouts';
+import { can } from '@/lib/permissions/capabilities';
 
 export function TeacherDashboard() {
   const { user } = useAuth();
-  const { activeAcademy } = useAcademy();
+  const { activeAcademy, activeRole } = useAcademy();
+
+  const isLead = can('review_assessments', { activeRole, userRole: user?.role });
 
   // Load teacher's upcoming classes
   const { data: upcomingBookings = [] } = useQuery<Booking[]>({
@@ -35,17 +39,24 @@ export function TeacherDashboard() {
     enabled: !!activeAcademy?.id,
   });
 
-  // Load pending assessment review queue
+  // Load pending assessment review queue (ONLY for lead teachers / admins who have review permissions)
   const { data: reviewQueue = [] } = useQuery<LeadAssessment[]>({
     queryKey: assessmentKeys.reviewQueue(activeAcademy?.id),
     queryFn: () => assessmentApi.getQueue(activeAcademy!.id),
-    enabled: !!activeAcademy?.id,
+    enabled: !!activeAcademy?.id && isLead,
   });
 
-  // Load teacher statement summary
-  const { data: myStatement } = useQuery({
-    queryKey: payoutsKeys.myStatement(activeAcademy?.id),
-    queryFn: () => payoutsApi.getMyStatement(activeAcademy!.id),
+  // Load regular teacher's own submitted assessments
+  const { data: mySubmissions = [] } = useQuery<TeacherAssessment[]>({
+    queryKey: assessmentKeys.list(activeAcademy?.id, 'teacher-mine'),
+    queryFn: () => assessmentApi.getTeacherAssessments(activeAcademy!.id),
+    enabled: !!activeAcademy?.id && !isLead,
+  });
+
+  // Load teacher's own payouts
+  const { data: myPayouts = [] } = useQuery<MyTeacherPayout[]>({
+    queryKey: payoutsKeys.all(activeAcademy?.id),
+    queryFn: () => payoutsApi.getMyPayouts(activeAcademy!.id),
     enabled: !!activeAcademy?.id,
   });
 
@@ -116,9 +127,18 @@ export function TeacherDashboard() {
                             })}
                         </p>
                       </div>
-                      <span className="capitalize px-2 py-0.5 bg-muted rounded text-[10px] font-medium">
-                        {booking.status}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="capitalize px-2 py-0.5 bg-muted rounded text-[10px] font-medium">
+                          {booking.status}
+                        </span>
+                        {booking.status !== 'cancelled' && (
+                          <Button size="sm" variant="outline" className="text-xs h-7 px-2" asChild>
+                            <Link href={`/app/scheduling/${booking.id}`}>
+                              <Video className="mr-1 h-3 w-3" /> Join Class
+                            </Link>
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -133,56 +153,108 @@ export function TeacherDashboard() {
         </Card>
 
         {/* Question 2: What assessment or progress action is due next? */}
-        <Card className="flex flex-col justify-between">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CheckSquare className="h-5 w-5 text-primary" />
-                <CardTitle className="text-base">Assessments & Review Queue</CardTitle>
+        {isLead ? (
+          <Card className="flex flex-col justify-between">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckSquare className="h-5 w-5 text-primary" />
+                  <CardTitle className="text-base">Assessments & Review Queue</CardTitle>
+                </div>
+                <span className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 px-2.5 py-0.5 rounded-full font-medium">
+                  {reviewQueue.length} pending
+                </span>
               </div>
-              <span className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 px-2.5 py-0.5 rounded-full font-medium">
-                {reviewQueue.length} pending
-              </span>
-            </div>
-            <CardDescription className="text-xs">
-              Student submissions awaiting Tajweed evaluation and level grading.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {reviewQueue.length === 0 ? (
-              <div className="rounded-lg border border-dashed p-6 text-center text-xs text-muted-foreground">
-                <CheckCircle className="h-6 w-6 text-emerald-500 mx-auto mb-2" />
-                All assessment reviews are up to date!
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {reviewQueue.slice(0, 3).map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between rounded-lg border p-3 text-xs"
-                  >
-                    <div>
-                      <span className="font-semibold text-foreground">
-                        Level: {item.booking?.level?.name || 'Recitation Level'}
-                      </span>
-                      <p className="text-muted-foreground text-[11px] mt-0.5">
-                        Time: {new Date(item.booking?.start_time_utc).toLocaleDateString()}
-                      </p>
+              <CardDescription className="text-xs">
+                Student submissions awaiting Tajweed evaluation and level grading.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {reviewQueue.length === 0 ? (
+                <div className="rounded-lg border border-dashed p-6 text-center text-xs text-muted-foreground">
+                  <CheckCircle className="h-6 w-6 text-emerald-500 mx-auto mb-2" />
+                  All assessment reviews are up to date!
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {reviewQueue.slice(0, 3).map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between rounded-lg border p-3 text-xs"
+                    >
+                      <div>
+                        <span className="font-semibold text-foreground">
+                          Level: {item.booking?.level?.name || 'Recitation Level'}
+                        </span>
+                        <p className="text-muted-foreground text-[11px] mt-0.5">
+                          Time: {new Date(item.booking?.start_time_utc).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <Button size="sm" variant="outline" className="text-xs h-7" asChild>
+                        <Link href="/app/assessments">Review</Link>
+                      </Button>
                     </div>
-                    <Button size="sm" variant="outline" className="text-xs h-7" asChild>
-                      <Link href="/app/assessments">Review</Link>
-                    </Button>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              )}
+            </CardContent>
+            <CardFooter className="pt-0 border-t">
+              <Button variant="ghost" size="sm" asChild className="w-full justify-between mt-3">
+                <Link href="/app/assessments">Go to Review Queue <ArrowRight className="h-4 w-4" /></Link>
+              </Button>
+            </CardFooter>
+          </Card>
+        ) : (
+          <Card className="flex flex-col justify-between">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckSquare className="h-5 w-5 text-primary" />
+                  <CardTitle className="text-base">Assessments & Submissions</CardTitle>
+                </div>
+                <span className="text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-medium">
+                  {mySubmissions.length} recorded
+                </span>
               </div>
-            )}
-          </CardContent>
-          <CardFooter className="pt-0 border-t">
-            <Button variant="ghost" size="sm" asChild className="w-full justify-between mt-3">
-              <Link href="/app/assessments">Go to Review Queue <ArrowRight className="h-4 w-4" /></Link>
-            </Button>
-          </CardFooter>
-        </Card>
+              <CardDescription className="text-xs">
+                Recitation scores and lesson notes submitted for your assigned students.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {mySubmissions.length === 0 ? (
+                <div className="rounded-lg border border-dashed p-6 text-center text-xs text-muted-foreground">
+                  No session assessments submitted yet. Assessments are submitted after completing lessons.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {mySubmissions.slice(0, 3).map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between rounded-lg border p-3 text-xs"
+                    >
+                      <div>
+                        <span className="font-semibold text-foreground">
+                          Level: {item.booking?.level?.name || 'Recitation Session'}
+                        </span>
+                        <p className="text-muted-foreground text-[11px] mt-0.5">
+                          Date: {new Date(item.booking?.start_time_utc).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <span className="text-[10px] px-2 py-0.5 bg-muted rounded font-medium">
+                        Score: {item.overall_average || 'Submitted'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+            <CardFooter className="pt-0 border-t">
+              <Button variant="ghost" size="sm" asChild className="w-full justify-between mt-3">
+                <Link href="/app/assessments">View Submissions <ArrowRight className="h-4 w-4" /></Link>
+              </Button>
+            </CardFooter>
+          </Card>
+        )}
       </div>
 
       {/* Secondary Teaching Operations & Earnings */}
@@ -228,8 +300,8 @@ export function TeacherDashboard() {
               <CardTitle className="text-base">My Earnings</CardTitle>
             </div>
             <CardDescription className="text-xs">
-              {myStatement?.total_amount
-                ? `Total Earnings: ${myStatement.currency} ${myStatement.total_amount}`
+              {myPayouts.length > 0
+                ? `${myPayouts.length} payout record${myPayouts.length === 1 ? '' : 's'} recorded.`
                 : 'Inspect your verified hours taught and payout statements.'}
             </CardDescription>
           </CardHeader>

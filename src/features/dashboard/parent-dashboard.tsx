@@ -9,16 +9,18 @@ import {
   CheckSquare,
   TrendingUp,
   ArrowRight,
+  Video,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth/auth-provider';
 import { useAcademy } from '@/lib/academy/academy-provider';
-import { schedulingKeys, progressKeys, assessmentKeys } from '@/lib/api/query-keys';
+import { schedulingKeys, progressKeys, assessmentKeys, studentKeys } from '@/lib/api/query-keys';
 import { schedulingApi, type Booking } from '@/features/scheduling/api/scheduling';
 import { progressApi, type ProgressSnapshot } from '@/features/progress/api/progress';
-import { assessmentApi, type TeacherAssessment } from '@/features/assessment/api/assessment';
+import { assessmentApi, type FamilyAssessment } from '@/features/assessment/api/assessment';
+import { studentsApi } from '@/features/students/api/students';
 
 export function ParentDashboard() {
   const { user } = useAuth();
@@ -31,6 +33,13 @@ export function ParentDashboard() {
     enabled: !!activeAcademy?.id,
   });
 
+  // Load parent's linked children
+  const { data: children = [] } = useQuery({
+    queryKey: studentKeys.mine(activeAcademy?.id),
+    queryFn: () => studentsApi.getMyStudents(activeAcademy!.id),
+    enabled: !!activeAcademy?.id,
+  });
+
   // Load progress snapshots
   const { data: progressSnapshots = [] } = useQuery<ProgressSnapshot[]>({
     queryKey: progressKeys.snapshots(activeAcademy?.id),
@@ -38,11 +47,12 @@ export function ParentDashboard() {
     enabled: !!activeAcademy?.id,
   });
 
-  // Load assessment results
-  const { data: assessments = [] } = useQuery<TeacherAssessment[]>({
-    queryKey: assessmentKeys.list(activeAcademy?.id, 'placement'),
-    queryFn: () => assessmentApi.getMyAssessments(activeAcademy!.id),
-    enabled: !!activeAcademy?.id,
+  // Load assessment results for linked children
+  const firstChild = children[0];
+  const { data: assessments = [] } = useQuery<FamilyAssessment[]>({
+    queryKey: assessmentKeys.list(activeAcademy?.id, firstChild ? `child-${firstChild.id}` : 'parent-children'),
+    queryFn: () => (firstChild ? assessmentApi.getChildAssessments(activeAcademy!.id, firstChild.id) : Promise.resolve([])),
+    enabled: !!activeAcademy?.id && !!firstChild,
   });
 
   return (
@@ -91,9 +101,18 @@ export function ParentDashboard() {
                           })}
                       </p>
                     </div>
-                    <span className="capitalize px-2 py-0.5 bg-muted rounded text-[10px]">
-                      {booking.status}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="capitalize px-2 py-0.5 bg-muted rounded text-[10px]">
+                        {booking.status}
+                      </span>
+                      {booking.status !== 'cancelled' && (
+                        <Button size="sm" variant="outline" className="text-xs h-7 px-2" asChild>
+                          <Link href={`/app/scheduling/${booking.id}`}>
+                            <Video className="mr-1 h-3 w-3" /> Join Class
+                          </Link>
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

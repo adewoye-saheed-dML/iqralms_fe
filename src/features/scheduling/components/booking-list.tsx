@@ -18,7 +18,7 @@ import { ApiError } from '@/lib/api/errors';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface BookingListProps {
-  type: 'mine' | 'teaching';
+  type: 'mine' | 'teaching' | 'academy';
 }
 
 export function BookingList({ type }: BookingListProps) {
@@ -32,9 +32,13 @@ export function BookingList({ type }: BookingListProps) {
     queryKey,
     queryFn: () => {
       if (!activeAcademy?.id) throw new Error('No active academy');
-      return type === 'mine'
-        ? schedulingApi.getMyBookings(activeAcademy.id)
-        : schedulingApi.getTeachingBookings(activeAcademy.id);
+      if (type === 'mine') {
+        return schedulingApi.getMyBookings(activeAcademy.id);
+      }
+      if (type === 'teaching') {
+        return schedulingApi.getTeachingBookings(activeAcademy.id);
+      }
+      return schedulingApi.getAcademyBookings(activeAcademy.id);
     },
     enabled: !!activeAcademy?.id,
   });
@@ -127,7 +131,9 @@ export function BookingList({ type }: BookingListProps) {
                 <span>
                   {type === 'mine' 
                     ? `Teacher: ${booking.teacher?.first_name || (booking as unknown as { teacher_details?: { user?: { first_name?: string } } }).teacher_details?.user?.first_name || booking.teacher?.username || 'Unassigned'}`
-                    : `Student: ${booking.student?.first_name || (booking as unknown as { student_details?: { user?: { first_name?: string } } }).student_details?.user?.first_name || booking.student?.username || 'Unknown'}`}
+                    : type === 'teaching'
+                    ? `Student: ${booking.student?.first_name || (booking as unknown as { student_details?: { user?: { first_name?: string } } }).student_details?.user?.first_name || booking.student?.username || 'Unknown'}`
+                    : `Teacher: ${booking.teacher?.first_name || (booking as unknown as { teacher_details?: { user?: { first_name?: string } } }).teacher_details?.user?.first_name || booking.teacher?.username || 'Unassigned'} • Student: ${booking.student?.first_name || (booking as unknown as { student_details?: { user?: { first_name?: string } } }).student_details?.user?.first_name || booking.student?.username || 'Unknown'}`}
                 </span>
               </div>
 

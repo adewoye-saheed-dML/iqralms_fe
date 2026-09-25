@@ -39,8 +39,14 @@ function LoginForm() {
     setError(null);
     setIsSubmitting(true);
 
+    const trimmedIdentifier = username.trim();
+    const isEmail = trimmedIdentifier.includes('@');
+    const credentials = isEmail
+      ? { email: trimmedIdentifier, username: trimmedIdentifier, password }
+      : { username: trimmedIdentifier, password };
+
     try {
-      await login({ username, password });
+      await login(credentials);
     } catch (err: unknown) {
       if (err instanceof ApiError) {
         setError(err.message || 'Invalid credentials');

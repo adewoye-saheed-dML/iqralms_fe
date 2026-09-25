@@ -18,8 +18,20 @@ export function SchedulingDashboard() {
   const { user } = useAuth();
   const router = useRouter();
 
-  const isTeacherOrAdmin = can('manage_scheduling', { userRole: user?.role, activeRole });
+  const isOwnerOrAdminUser =
+    activeRole === 'owner' ||
+    activeRole === 'admin' ||
+    (user?.role as string) === 'owner' ||
+    (user?.role as string) === 'admin';
+  const isTeacherUser =
+    activeRole === 'teacher' || user?.role === 'lead' || user?.role === 'sub';
   const isStudentOrParent = can('view_own_schedule', { userRole: user?.role, activeRole });
+
+  const defaultTab = isOwnerOrAdminUser
+    ? 'academy-schedule'
+    : isTeacherUser
+    ? 'teaching'
+    : 'my-bookings';
 
   return (
     <div className="space-y-4">
@@ -31,23 +43,36 @@ export function SchedulingDashboard() {
         )}
       </div>
 
-      <Tabs defaultValue={isStudentOrParent ? "my-bookings" : "teaching"}>
+      <Tabs defaultValue={defaultTab}>
         <TabsList>
-          {isStudentOrParent && <TabsTrigger value="my-bookings">My Bookings</TabsTrigger>}
-          {isTeacherOrAdmin && <TabsTrigger value="teaching">Teaching Schedule</TabsTrigger>}
+          {isOwnerOrAdminUser && (
+            <TabsTrigger value="academy-schedule">Academy Schedule</TabsTrigger>
+          )}
+          {isTeacherUser && (
+            <TabsTrigger value="teaching">Teaching Schedule</TabsTrigger>
+          )}
+          {isStudentOrParent && (
+            <TabsTrigger value="my-bookings">My Bookings</TabsTrigger>
+          )}
           <TabsTrigger value="cohorts">Cohorts</TabsTrigger>
           <TabsTrigger value="waitlist">Waitlist</TabsTrigger>
         </TabsList>
 
+        {isOwnerOrAdminUser && (
+          <TabsContent value="academy-schedule" className="pt-4">
+            <BookingList type="academy" />
+          </TabsContent>
+        )}
+
+        {isTeacherUser && (
+          <TabsContent value="teaching" className="pt-4">
+            <BookingList type="teaching" />
+          </TabsContent>
+        )}
+
         {isStudentOrParent && (
           <TabsContent value="my-bookings" className="pt-4">
             <BookingList type="mine" />
-          </TabsContent>
-        )}
-        
-        {isTeacherOrAdmin && (
-          <TabsContent value="teaching" className="pt-4">
-            <BookingList type="teaching" />
           </TabsContent>
         )}
 

@@ -9,10 +9,13 @@ import { LeadPayoutsView } from './lead-payouts-view';
 import { GeneratePayoutsForm } from './generate-payouts-form';
 import { MyStatementView } from './my-statement-view';
 
+import { LoadingState } from '@/components/ui/loading';
+
 export function PayoutsDashboard() {
-  const { activeRole } = useAcademy();
+  const { activeRole, isLoading: isAcademyLoading } = useAcademy();
   const auth = useAuth?.();
   const user = auth?.user;
+  const isAuthLoading = auth?.isLoading;
 
   const canManageAcademyPayouts = can('view_academy_payouts', {
     activeRole,
@@ -23,6 +26,10 @@ export function PayoutsDashboard() {
     activeRole,
     userRole: user?.role,
   });
+
+  if (isAcademyLoading || isAuthLoading) {
+    return <LoadingState />;
+  }
 
   if (!canManageAcademyPayouts) {
     return <MyStatementView />;

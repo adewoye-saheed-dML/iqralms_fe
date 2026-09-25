@@ -125,7 +125,9 @@ export function StudentDirectory() {
                   </td>
                   <td className="p-4 text-right">
                     <Button asChild variant="outline" size="sm">
-                      <Link href={`/app/students/${student.id}`}>Manage</Link>
+                      <Link href={`/app/students/${student.id}`}>
+                        {canManage ? 'Manage' : 'View Details'}
+                      </Link>
                     </Button>
                   </td>
                 </tr>

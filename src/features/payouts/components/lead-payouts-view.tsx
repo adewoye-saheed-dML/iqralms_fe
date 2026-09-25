@@ -19,9 +19,10 @@ import { can } from '@/lib/permissions/capabilities';
 import { useAuth } from '@/lib/auth/auth-provider';
 
 export function LeadPayoutsView() {
-  const { activeAcademy, activeRole } = useAcademy();
+  const { activeAcademy, activeRole, isLoading: isAcademyLoading } = useAcademy();
   const auth = useAuth?.();
   const user = auth?.user;
+  const isAuthLoading = auth?.isLoading;
   const queryClient = useQueryClient();
 
   const canViewAcademyPayouts = can('view_academy_payouts', {
@@ -49,6 +50,10 @@ export function LeadPayoutsView() {
     }
   });
 
+  if (isAcademyLoading || isAuthLoading || isLoading) {
+    return <LoadingState />;
+  }
+
   if (!canViewAcademyPayouts) {
     return (
       <ErrorState
@@ -57,8 +62,6 @@ export function LeadPayoutsView() {
       />
     );
   }
-
-  if (isLoading) return <LoadingState />;
   
   if (error) {
     if (error instanceof ApiError && error.status === 403) {

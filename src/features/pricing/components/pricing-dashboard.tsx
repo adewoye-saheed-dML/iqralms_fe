@@ -12,16 +12,26 @@ import { useAuth } from '@/lib/auth/auth-provider';
 import { can } from '@/lib/permissions/capabilities';
 
 export function PricingDashboard() {
-  const { activeRole } = useAcademy();
-  const { user } = useAuth();
+  const { activeRole, isLoading: isAcademyLoading } = useAcademy();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [showForm, setShowForm] = React.useState(false);
 
-  const isLeadOrAdmin = can('manage_pricing', { activeRole });
-  const isStudent = can('view_own_pricing', { userRole: user?.role });
+  const isLeadOrAdmin = can('manage_pricing', { activeRole, userRole: user?.role });
+  const isStudentOrParent =
+    can('view_own_pricing', { userRole: user?.role, activeRole }) ||
+    activeRole === 'parent' ||
+    user?.role === 'parent';
 
-  if (!isLeadOrAdmin && !isStudent) {
-    // Other roles shouldn't see this unless specified
-    return null; 
+  if (isAcademyLoading || isAuthLoading) {
+    return null;
+  }
+
+  if (!isLeadOrAdmin && !isStudentOrParent) {
+    return (
+      <div className="rounded-lg border p-8 text-center text-muted-foreground">
+        Pricing agreements are managed by academy administrators or viewed by enrolled students.
+      </div>
+    );
   }
 
   return (

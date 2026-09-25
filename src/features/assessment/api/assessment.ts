@@ -9,6 +9,7 @@ export type AssessmentRubric = components['schemas']['AssessmentRubric'];
 export type AssessmentRubricCreate = components['schemas']['AssessmentRubricCreate'];
 export type PatchedAssessmentRubricUpdate = components['schemas']['PatchedAssessmentRubricUpdate'];
 export type LeadReview = components['schemas']['LeadReview'];
+export type TeacherReport = components['schemas']['TeacherReport'];
 
 export const assessmentApi = {
   getQueue: async (organizationId: number): Promise<LeadAssessment[]> => {
@@ -121,5 +122,21 @@ export const assessmentApi = {
       throw new Error('Failed to update rubric');
     }
     return data;
+  },
+
+  getTeacherReports: async (
+    organizationId: number,
+    params?: { from?: string; to?: string; track_id?: number }
+  ): Promise<TeacherReport[]> => {
+    const { data } = await apiClient.GET(
+      '/api/assessment/organizations/{organization_pk}/reports/teachers/',
+      {
+        params: {
+          path: { organization_pk: organizationId },
+          query: params,
+        },
+      }
+    );
+    return data ?? [];
   },
 };

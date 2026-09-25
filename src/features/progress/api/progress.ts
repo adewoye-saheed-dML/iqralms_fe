@@ -86,7 +86,7 @@ export const progressApi = {
     studentId?: number,
     trackId?: number
   ): Promise<ProgressSnapshot[]> => {
-    const { data } = await apiClient.GET('/api/assessment/organizations/{organization_pk}/snapshots/all/', {
+    const { data } = await apiClient.GET('/api/assessment/organizations/{organization_pk}/snapshots/', {
       params: {
         path: { organization_pk: organizationId },
         query: { student_id: studentId, track_id: trackId },

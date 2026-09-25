@@ -44,7 +44,12 @@ export interface PermissionContext {
  * - is_owner_admin_or_lead_teacher
  */
 export function isOwnerOrAdmin(context: PermissionContext): boolean {
-  return context.activeRole === 'owner' || context.activeRole === 'admin';
+  return (
+    context.activeRole === 'owner' ||
+    context.activeRole === 'admin' ||
+    context.userRole === 'owner' ||
+    context.userRole === 'admin'
+  );
 }
 
 export function isLeadTeacher(context: PermissionContext): boolean {
@@ -79,7 +84,7 @@ export function can(capability: Capability, context: PermissionContext): boolean
     case 'view_audit':
     case 'manage_notifications':
     case 'manage_imports':
-      return activeRole === 'admin' || activeRole === 'owner';
+      return isOwnerOrAdmin(context);
 
     case 'view_academy_payouts':
     case 'manage_payouts':

@@ -146,17 +146,39 @@ export function ProgressList({ type }: ProgressListProps) {
       {snapshots.map((snapshot) => (
         <Card key={snapshot.id}>
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Snapshot #{snapshot.id}</CardTitle>
+            <div className="flex justify-between items-start">
+              <CardTitle className="text-base font-semibold">
+                {snapshot.student
+                  ? `${snapshot.student.first_name || ''} ${snapshot.student.last_name || ''}`.trim() || snapshot.student.username
+                  : `Student #${snapshot.id}`}
+              </CardTitle>
+              <span
+                className={`text-xs px-2 py-0.5 rounded font-medium ${
+                  snapshot.visible_to_family
+                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200'
+                    : 'bg-muted text-muted-foreground'
+                }`}
+              >
+                {snapshot.visible_to_family ? 'Visible to Family' : 'Internal'}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Track: {snapshot.track?.name || 'Curriculum Track'}
+            </p>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Period End:</span>
-              <span className="font-medium">{new Date(snapshot.period_end).toLocaleDateString()}</span>
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Period:</span>
+              <span className="font-medium">
+                {new Date(snapshot.period_start).toLocaleDateString()} –{' '}
+                {new Date(snapshot.period_end).toLocaleDateString()}
+              </span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Status:</span>
-              <span className="font-medium">{snapshot.visible_to_family ? 'Visible to Family' : 'Internal'}</span>
-            </div>
+            {snapshot.summary && (
+              <p className="text-xs text-muted-foreground pt-1 border-t line-clamp-3">
+                {snapshot.summary}
+              </p>
+            )}
           </CardContent>
         </Card>
       ))}

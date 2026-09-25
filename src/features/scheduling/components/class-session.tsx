@@ -176,6 +176,30 @@ export function ClassSession({ bookingId }: ClassSessionProps) {
           </div>
         </CardHeader>
 
+        {!embedVideo && (
+          <CardContent className="pt-0">
+            <div className="rounded-lg border border-dashed p-6 text-center bg-muted/20">
+              <Video className="mx-auto h-10 w-10 text-primary mb-3" />
+              <h4 className="text-sm font-semibold text-foreground">Interactive Classroom Ready</h4>
+              <p className="text-xs text-muted-foreground max-w-md mx-auto mt-1 mb-4">
+                Connect directly inside the academy using the embedded video frame, or launch in an external window for a full-screen experience.
+              </p>
+              <div className="flex justify-center gap-3">
+                <Button onClick={() => setEmbedVideo(true)} size="sm">
+                  <Video className="mr-2 h-4 w-4" /> Start In-App Video
+                </Button>
+                {meeting?.join_url && (
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={meeting.join_url} target="_blank" rel="noreferrer">
+                      <ExternalLink className="mr-2 h-4 w-4" /> Launch in External Window
+                    </a>
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        )}
+
         {embedVideo && meeting?.join_url && (
           <CardContent className="pt-0">
             <div className="aspect-video w-full rounded-md overflow-hidden border bg-black">
@@ -189,6 +213,23 @@ export function ClassSession({ bookingId }: ClassSessionProps) {
           </CardContent>
         )}
       </Card>
+
+      {/* Student / Parent Guidelines */}
+      {!isTeacherOrAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Student Recitation Instructions</CardTitle>
+            <CardDescription className="text-xs">
+              Welcome to your live class. Please follow these guidelines for the best session experience.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-xs text-muted-foreground space-y-2">
+            <p>1. Ensure your camera and microphone are connected and allowed in your browser.</p>
+            <p>2. Keep your Mushaf or Quran study materials open and ready for your recitation turn.</p>
+            <p>3. Following the class, your instructor will record your recitation assessment and progress notes, which will appear on your dashboard.</p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Teaching Workflow: Notes, Assessment & Progress */}
       {isTeacherOrAdmin && (

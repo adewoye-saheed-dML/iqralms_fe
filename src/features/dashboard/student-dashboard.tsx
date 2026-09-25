@@ -11,6 +11,7 @@ import {
   Clock,
   ArrowRight,
   Sparkles,
+  Video,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -20,7 +21,7 @@ import { useAcademy } from '@/lib/academy/academy-provider';
 import { schedulingKeys, progressKeys, assessmentKeys } from '@/lib/api/query-keys';
 import { schedulingApi, type Booking } from '@/features/scheduling/api/scheduling';
 import { progressApi, type ProgressSnapshot } from '@/features/progress/api/progress';
-import { assessmentApi, type TeacherAssessment } from '@/features/assessment/api/assessment';
+import { assessmentApi, type FamilyAssessment } from '@/features/assessment/api/assessment';
 
 export function StudentDashboard() {
   const { user } = useAuth();
@@ -40,10 +41,10 @@ export function StudentDashboard() {
     enabled: !!activeAcademy?.id,
   });
 
-  // Load student's assessments
-  const { data: assessments = [] } = useQuery<TeacherAssessment[]>({
-    queryKey: assessmentKeys.list(activeAcademy?.id, 'placement'),
-    queryFn: () => assessmentApi.getMyAssessments(activeAcademy!.id),
+  // Load student's own assessments (student endpoint, not teacher endpoint)
+  const { data: assessments = [] } = useQuery<FamilyAssessment[]>({
+    queryKey: assessmentKeys.list(activeAcademy?.id, 'student-mine'),
+    queryFn: () => assessmentApi.getStudentAssessments(activeAcademy!.id),
     enabled: !!activeAcademy?.id,
   });
 
@@ -81,12 +82,23 @@ export function StudentDashboard() {
               : 'Book your next lesson or check with your teacher to continue your track.'}
           </CardDescription>
         </CardHeader>
-        <CardFooter className="pt-0">
-          <Button asChild size="sm">
-            <Link href="/app/scheduling">
-              {nextClass ? 'View Lesson Details' : 'Book a Lesson'}
-            </Link>
-          </Button>
+        <CardFooter className="pt-0 flex flex-wrap gap-2">
+          {nextClass ? (
+            <>
+              <Button asChild size="sm">
+                <Link href={`/app/scheduling/${nextClass.id}`}>
+                  <Video className="mr-1.5 h-4 w-4" /> Join Live Class
+                </Link>
+              </Button>
+              <Button variant="outline" asChild size="sm">
+                <Link href="/app/scheduling">All Bookings</Link>
+              </Button>
+            </>
+          ) : (
+            <Button asChild size="sm">
+              <Link href="/app/scheduling/book">Book a Lesson</Link>
+            </Button>
+          )}
         </CardFooter>
       </Card>
 

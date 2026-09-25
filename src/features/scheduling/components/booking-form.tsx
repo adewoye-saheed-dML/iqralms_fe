@@ -47,10 +47,10 @@ export function BookingForm() {
   });
 
   const { data: students, isLoading: isLoadingStudents } = useQuery({
-    queryKey: studentKeys.all(activeAcademy?.id),
+    queryKey: studentKeys.mine(activeAcademy?.id),
     queryFn: () => {
       if (!activeAcademy?.id) throw new Error('No academy');
-      return studentsApi.getStudents(activeAcademy.id);
+      return studentsApi.getMyStudents(activeAcademy.id);
     },
     enabled: !!activeAcademy?.id && isParent,
   });
