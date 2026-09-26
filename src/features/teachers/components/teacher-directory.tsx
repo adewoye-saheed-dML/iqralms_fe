@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, UserPlus } from 'lucide-react';
+import { Search, UserPlus, FileUp } from 'lucide-react';
 import Link from 'next/link';
 import { can } from '@/lib/permissions/capabilities';
 
@@ -64,12 +64,20 @@ export function TeacherDirectory() {
           />
         </div>
         {canManage && (
-          <Button asChild>
-            <Link href="/app/teachers/add">
-              <UserPlus className="mr-2 h-4 w-4" />
-              Invite Teacher
-            </Link>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button asChild>
+              <Link href="/app/invitations?role=teacher">
+                <UserPlus className="mr-2 h-4 w-4" />
+                Invite Teacher
+              </Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/app/imports?kind=teachers">
+                <FileUp className="mr-2 h-4 w-4" />
+                Import CSV / Excel
+              </Link>
+            </Button>
+          </div>
         )}
       </div>
 
@@ -110,6 +118,20 @@ export function TeacherDirectory() {
             </Link>
           ))}
         </Card>
+      )}
+
+      {canManage && (
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+          <div>
+            <span className="font-medium text-foreground">Need to manage pending teacher invitations?</span>
+            <p className="text-xs">Track delivery status, resend, or revoke teacher invitations in the Invitations hub.</p>
+          </div>
+          <Button variant="ghost" size="sm" asChild className="self-start sm:self-auto shrink-0">
+            <Link href="/app/invitations?role=teacher">
+              View Teacher Invitations &rarr;
+            </Link>
+          </Button>
+        </div>
       )}
     </div>
   );

@@ -11,7 +11,7 @@ import { LoadingState } from '@/components/ui/loading';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { Users, Plus } from 'lucide-react';
+import { Users, Plus, Mail, FileUp } from 'lucide-react';
 
 export function StudentDirectory() {
   const { activeAcademy, activeRole } = useAcademy();
@@ -55,87 +55,133 @@ export function StudentDirectory() {
 
   const students = data || [];
 
-  if (students.length === 0) {
-    return (
-      <EmptyState
-        icon={<Users className="text-muted-foreground h-10 w-10" />}
-        title={isOwnerAdmin ? 'No students enrolled yet.' : 'No assigned students.'}
-        description={
-          isOwnerAdmin
-            ? 'Enroll a student in this academy to get started.'
-            : 'You currently have no students assigned to you in this academy.'
-        }
-        action={
-          canManage ? (
+  return (
+    <div className="space-y-8">
+      {canManage && (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-semibold">Student Roster</h2>
+            <p className="text-xs text-muted-foreground">
+              Students currently enrolled in {activeAcademy.name}.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
             <Button asChild>
-              <Link href="/app/students/add">
-                <Plus className="mr-2 h-4 w-4" />
-                Enroll Student
+              <Link href="/app/invitations?role=student">
+                <Mail className="mr-2 h-4 w-4" />
+                Invite Students
               </Link>
             </Button>
-          ) : undefined
-        }
-      />
-    );
-  }
+            <Button variant="outline" asChild>
+              <Link href="/app/imports?kind=students">
+                <FileUp className="mr-2 h-4 w-4" />
+                Import CSV / Excel
+              </Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/app/students/add">
+                <Plus className="mr-2 h-4 w-4" />
+                Enroll Existing User
+              </Link>
+            </Button>
+          </div>
+        </div>
+      )}
 
-  return (
-    <div className="space-y-4">
+      {students.length === 0 ? (
+        <EmptyState
+          icon={<Users className="text-muted-foreground h-10 w-10" />}
+          title={isOwnerAdmin ? 'No students enrolled yet.' : 'No assigned students.'}
+          description={
+            isOwnerAdmin
+              ? 'Send email invitations or import a spreadsheet of students to get started.'
+              : 'You currently have no students assigned to you in this academy.'
+          }
+          action={
+            canManage ? (
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button asChild>
+                  <Link href="/app/invitations?role=student">
+                    <Mail className="mr-2 h-4 w-4" />
+                    Invite Students
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link href="/app/imports?kind=students">
+                    <FileUp className="mr-2 h-4 w-4" />
+                    Import CSV / Excel
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link href="/app/students/add">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Enroll Existing User
+                  </Link>
+                </Button>
+              </div>
+            ) : undefined
+          }
+        />
+      ) : (
+        <div className="rounded-md border">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b">
+              <tr>
+                <th className="p-4 text-left font-medium">Student</th>
+                <th className="p-4 text-left font-medium">Status</th>
+                <th className="p-4 text-right font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {students.map((student) => {
+                const displayName =
+                  student.first_name || student.last_name
+                    ? `${student.first_name || ''} ${student.last_name || ''}`.trim()
+                    : student.username || 'Unknown';
+                return (
+                  <tr
+                    key={student.id}
+                    className="hover:bg-muted/50 border-b transition-colors last:border-0"
+                  >
+                    <td className="p-4">
+                      <div className="font-medium">{displayName}</div>
+                      {student.email && (
+                        <div className="text-muted-foreground text-xs">{student.email}</div>
+                      )}
+                    </td>
+                    <td className="p-4">
+                      <Badge variant={student.enrollment_status === 'active' ? 'default' : 'secondary'}>
+                        {student.enrollment_status || 'active'}
+                      </Badge>
+                    </td>
+                    <td className="p-4 text-right">
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/app/students/${student.id}`}>
+                          {canManage ? 'Manage' : 'View Details'}
+                        </Link>
+                      </Button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {canManage && (
-        <div className="flex justify-end">
-          <Button asChild>
-            <Link href="/app/students/add">
-              <Plus className="mr-2 h-4 w-4" />
-              Enroll Student
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+          <div>
+            <span className="font-medium text-foreground">Need to manage pending student invitations?</span>
+            <p className="text-xs">Track delivery status, resend, or revoke student invitations in the Invitations hub.</p>
+          </div>
+          <Button variant="ghost" size="sm" asChild className="self-start sm:self-auto shrink-0">
+            <Link href="/app/invitations?role=student">
+              View Student Invitations &rarr;
             </Link>
           </Button>
         </div>
       )}
-
-      <div className="rounded-md border">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50 border-b">
-            <tr>
-              <th className="p-4 text-left font-medium">Student</th>
-              <th className="p-4 text-left font-medium">Status</th>
-              <th className="p-4 text-right font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {students.map((student) => {
-              const displayName =
-                student.first_name || student.last_name
-                  ? `${student.first_name || ''} ${student.last_name || ''}`.trim()
-                  : student.username || 'Unknown';
-              return (
-                <tr
-                  key={student.id}
-                  className="hover:bg-muted/50 border-b transition-colors last:border-0"
-                >
-                  <td className="p-4">
-                    <div className="font-medium">{displayName}</div>
-                    {student.email && (
-                      <div className="text-muted-foreground text-xs">{student.email}</div>
-                    )}
-                  </td>
-                  <td className="p-4">
-                    <Badge variant={student.enrollment_status === 'active' ? 'default' : 'secondary'}>
-                      {student.enrollment_status || 'active'}
-                    </Badge>
-                  </td>
-                  <td className="p-4 text-right">
-                    <Button asChild variant="outline" size="sm">
-                      <Link href={`/app/students/${student.id}`}>
-                        {canManage ? 'Manage' : 'View Details'}
-                      </Link>
-                    </Button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 }

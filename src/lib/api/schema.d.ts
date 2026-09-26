@@ -3377,6 +3377,7 @@ export interface components {
             status?: components["schemas"]["StudentEnrollmentUpdateStatusEnum"];
             track_id?: number | null;
             level_id?: number | null;
+            teacher_id?: number | null;
         };
         /**
          * @description Withdrawing or restoring a teacher's eligibility for a track.
@@ -3854,6 +3855,8 @@ export interface components {
             readonly enrollment_status: string;
             readonly track_id: number | null;
             readonly level_id: number | null;
+            readonly teacher_id: number | null;
+            readonly teacher_name: string | null;
             /** Format: date-time */
             readonly created_at: string;
             /** Format: date-time */
@@ -3864,6 +3867,7 @@ export interface components {
             user: number;
             track_id?: number | null;
             level_id?: number | null;
+            teacher_id?: number | null;
         };
         /**
          * @description * `active` - Active
@@ -3885,6 +3889,8 @@ export interface components {
             readonly enrollment_status: string;
             readonly track_id: number | null;
             readonly level_id: number | null;
+            readonly teacher_id: number | null;
+            readonly teacher_name: string | null;
             /** Format: date-time */
             readonly created_at: string;
             /** Format: date-time */

@@ -49,7 +49,14 @@ function LoginForm() {
       await login(credentials);
     } catch (err: unknown) {
       if (err instanceof ApiError) {
-        setError(err.message || 'Invalid credentials');
+        const msg = err.message || '';
+        if (msg.toLowerCase().includes('unable to log in') || msg.toLowerCase().includes('credentials')) {
+          setError(
+            'Invalid username/email or password. If you were recently invited, please check your email and click the invitation link to complete account setup first.',
+          );
+        } else {
+          setError(msg || 'Invalid credentials');
+        }
       } else {
         setError('An unexpected error occurred. Please try again.');
       }

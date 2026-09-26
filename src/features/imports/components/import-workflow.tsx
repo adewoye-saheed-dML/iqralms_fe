@@ -3,6 +3,7 @@
 import { academyKeys, invitationKeys, teacherKeys, studentKeys } from '@/lib/api/query-keys';
 
 import * as React from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { importsApi, type ImportJobResponse, type KindEnum } from '../api/imports';
@@ -10,10 +11,45 @@ import { useAcademy } from '@/lib/academy/academy-provider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ApiError } from '@/lib/api/errors';
+import { ArrowLeft, Download, FileSpreadsheet } from 'lucide-react';
 import { ValidationSummary } from './validation-summary';
+
+const sampleTemplates: Record<KindEnum, { filename: string; headers: string[]; sampleRow: string[] }> = {
+  teachers: {
+    filename: 'teachers_import_template.csv',
+    headers: ['email', 'first_name', 'last_name', 'timezone'],
+    sampleRow: ['ustadh.ahmad@example.com', 'Ahmad', 'Al-Mansoor', 'America/New_York'],
+  },
+  students: {
+    filename: 'students_import_template.csv',
+    headers: ['email', 'first_name', 'last_name', 'date_of_birth', 'timezone', 'parent_email'],
+    sampleRow: ['student.zayd@example.com', 'Zayd', 'Ali', '2012-05-15', 'America/New_York', 'parent.ali@example.com'],
+  },
+  parents: {
+    filename: 'parents_import_template.csv',
+    headers: ['email', 'first_name', 'last_name', 'timezone', 'child_email'],
+    sampleRow: ['parent.ali@example.com', 'Fatima', 'Khan', 'America/New_York', 'student.zayd@example.com'],
+  },
+};
+
+function downloadSampleCsv(kind: KindEnum) {
+  const tmpl = sampleTemplates[kind];
+  if (!tmpl) return;
+  const csvContent = [tmpl.headers.join(','), tmpl.sampleRow.join(',')].join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', tmpl.filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
 
 export function ImportWorkflow() {
   const { activeAcademy } = useAcademy();
@@ -21,7 +57,8 @@ export function ImportWorkflow() {
   const queryClient = useQueryClient();
 
   const requestedKind = searchParams?.get('kind') as KindEnum | null;
-  const initialKind: KindEnum = requestedKind === 'teachers' || requestedKind === 'parents' || requestedKind === 'students' ? requestedKind : 'students';
+  const isScoped = requestedKind === 'teachers' || requestedKind === 'parents' || requestedKind === 'students';
+  const initialKind: KindEnum = isScoped ? (requestedKind as KindEnum) : 'students';
   const [kind, setKind] = React.useState<KindEnum>(initialKind);
   const [file, setFile] = React.useState<File | null>(null);
   const [error, setError] = React.useState<string | null>(null);
@@ -39,7 +76,7 @@ export function ImportWorkflow() {
   }
 
   const validateMutation = useMutation({
-    mutationFn: (data: { file: File, kind: KindEnum }) => {
+    mutationFn: (data: { file: File; kind: KindEnum }) => {
       if (!activeAcademy?.id) throw new Error('No active academy');
       return importsApi.validateImport(activeAcademy.id, data.file, data.kind);
     },
@@ -65,7 +102,6 @@ export function ImportWorkflow() {
     onSuccess: (data) => {
       setJob(data);
       setError(null);
-      // Invalidate relevant queries (e.g. students/teachers lists if we were rendering them)
       queryClient.invalidateQueries({ queryKey: academyKeys.tenant(activeAcademy?.id) });
       if (kind === 'teachers') {
         queryClient.invalidateQueries({ queryKey: invitationKeys.all(activeAcademy?.id) });
@@ -104,7 +140,6 @@ export function ImportWorkflow() {
 
       setError(null);
       setFile(selected);
-      // Reset any previous job if they pick a new file
       setJob(null);
     }
   };
@@ -115,26 +150,102 @@ export function ImportWorkflow() {
     validateMutation.mutate({ file, kind });
   };
 
+  const kindLabel = kind === 'teachers' ? 'Teachers' : kind === 'parents' ? 'Parents' : 'Students';
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {/* Role-scoped Navigation Back Button */}
+      {isScoped && (
+        <div className="flex items-center justify-between">
+          {kind === 'teachers' && (
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/app/teachers">
+                <ArrowLeft className="mr-1.5 h-4 w-4" />
+                Back to Teachers
+              </Link>
+            </Button>
+          )}
+          {kind === 'students' && (
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/app/students">
+                <ArrowLeft className="mr-1.5 h-4 w-4" />
+                Back to Students
+              </Link>
+            </Button>
+          )}
+          {kind === 'parents' && (
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/app/invitations?role=parent">
+                <ArrowLeft className="mr-1.5 h-4 w-4" />
+                Back to Invitations
+              </Link>
+            </Button>
+          )}
+        </div>
+      )}
+
       {/* Step 1: Upload Form */}
-      <div className="rounded-lg border bg-card p-6 shadow-sm">
-        <h2 className="text-lg font-medium mb-4">1. Upload {kind === 'teachers' ? 'Teacher List' : kind === 'parents' ? 'Parent List' : 'Student List'}</h2>
-        <form onSubmit={handleValidate} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="kind">Record Type</Label>
-              <Select value={kind} onValueChange={(val: KindEnum) => setKind(val)}>
-                <SelectTrigger id="kind">
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="students">Students</SelectItem>
-                  <SelectItem value="teachers">Teachers</SelectItem>
-                  <SelectItem value="parents">Parents</SelectItem>
-                </SelectContent>
-              </Select>
+      <div className="rounded-lg border bg-card p-6 shadow-sm space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-3 border-b">
+          <div>
+            <h2 className="text-lg font-medium">
+              1. Upload {kindLabel} List
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              {isScoped
+                ? `Bulk import ${kind} into ${activeAcademy?.name || 'the academy'} using a CSV or Excel spreadsheet.`
+                : 'Upload a spreadsheet to import records in bulk.'}
+            </p>
+          </div>
+          {isScoped && (
+            <Badge variant="secondary" className="self-start sm:self-auto capitalize">
+              Scoped to {kindLabel}
+            </Badge>
+          )}
+        </div>
+
+        {/* Expected columns & sample template download guide */}
+        <div className="rounded-md bg-muted/40 p-4 border text-xs space-y-2">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="flex items-center gap-1.5 font-medium text-foreground">
+              <FileSpreadsheet className="h-4 w-4 text-primary" />
+              <span>Expected Columns for {kindLabel}</span>
             </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs self-start sm:self-auto"
+              onClick={() => downloadSampleCsv(kind)}
+            >
+              <Download className="mr-1.5 h-3.5 w-3.5" />
+              Download Sample CSV
+            </Button>
+          </div>
+          <p className="text-muted-foreground font-mono text-[11px]">
+            {kind === 'teachers' && 'Headers: email (required), first_name, last_name, timezone'}
+            {kind === 'students' && 'Headers: email (required), first_name, last_name, date_of_birth (YYYY-MM-DD), timezone, parent_email'}
+            {kind === 'parents' && 'Headers: email (required), first_name, last_name, timezone, child_email'}
+          </p>
+        </div>
+
+        <form onSubmit={handleValidate} className="space-y-4">
+          <div className={isScoped ? 'space-y-4' : 'grid sm:grid-cols-2 gap-4'}>
+            {!isScoped && (
+              <div className="space-y-2">
+                <Label htmlFor="kind">Record Type</Label>
+                <Select value={kind} onValueChange={(val: KindEnum) => setKind(val)}>
+                  <SelectTrigger id="kind">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="students">Students</SelectItem>
+                    <SelectItem value="teachers">Teachers</SelectItem>
+                    <SelectItem value="parents">Parents</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             
             <div className="space-y-2">
               <Label htmlFor="file">File (CSV or XLSX, max 5MB)</Label>
@@ -185,11 +296,23 @@ export function ImportWorkflow() {
           )}
 
           {job.status === 'completed' || job.status === 'partially_completed' ? (
-             <div className="pt-4 border-t mt-4 bg-green-50/50 p-4 rounded text-green-900 border border-green-200">
-               <h3 className="font-semibold mb-2">Import Successful</h3>
-               <p className="text-sm">
-                 Job completed at {new Date(job.completed_at || '').toLocaleString()}.
-               </p>
+             <div className="pt-4 border-t mt-4 bg-green-50/50 p-4 rounded text-green-900 border border-green-200 space-y-3">
+               <div>
+                 <h3 className="font-semibold mb-1">Import Successful</h3>
+                 <p className="text-sm">
+                   Job completed at {new Date(job.completed_at || '').toLocaleString()}.
+                 </p>
+               </div>
+               {kind === 'teachers' && (
+                 <Button size="sm" asChild>
+                   <Link href="/app/teachers">Go to Teachers Directory &rarr;</Link>
+                 </Button>
+               )}
+               {kind === 'students' && (
+                 <Button size="sm" asChild>
+                   <Link href="/app/students">Go to Students Directory &rarr;</Link>
+                 </Button>
+               )}
              </div>
           ) : null}
         </div>

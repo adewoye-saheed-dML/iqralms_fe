@@ -1,25 +1,28 @@
 'use client';
 
-import { curriculumKeys } from '@/lib/api/query-keys';
-import { can } from '@/lib/permissions/capabilities';
-
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAcademy } from '@/lib/academy/academy-provider';
 import { curriculumApi } from '../api/curriculum';
+import { curriculumKeys } from '@/lib/api/query-keys';
+import { can } from '@/lib/permissions/capabilities';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { LoadingState } from '@/components/ui/loading';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import Link from 'next/link';
-import { BookOpen, Plus } from 'lucide-react';
+import { BookOpen, Plus, GraduationCap, Headphones, ArrowRight } from 'lucide-react';
 import { ApiError } from '@/lib/api/errors';
+import { StudentAllocationsTable } from './student-allocations-table';
+import { AudioPlacementTestsPanel } from './audio-placement-tests-panel';
 import { PlacementsPanel } from './placements-panel';
 
 export function CurriculumDirectory() {
   const { activeAcademy, activeRole } = useAcademy();
+  const [activeTab, setActiveTab] = React.useState<'subjects' | 'allocations' | 'placements'>('subjects');
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: curriculumKeys.tracks(activeAcademy?.id),
@@ -62,85 +65,155 @@ export function CurriculumDirectory() {
   const tracks = data || [];
   const canManageCurriculum = can('manage_curriculum', { activeRole });
 
-  if (tracks.length === 0) {
+  // For students or parents who cannot manage curriculum, display their placements interface
+  if (!canManageCurriculum) {
     return (
       <div className="space-y-6">
-        <EmptyState
-          icon={<BookOpen className="text-muted-foreground h-10 w-10" />}
-          title="No tracks defined"
-          description="Get started by creating the first track for your academy."
-          action={
-            canManageCurriculum ? (
-              <Button asChild>
-                <Link href="/app/curriculum/tracks/add">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create First Track
-                </Link>
-              </Button>
-            ) : undefined
-          }
-        />
-        <PlacementsPanel />
+        <AudioPlacementTestsPanel />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {canManageCurriculum && (
-        <div className="flex justify-end">
-          <Button asChild>
-            <Link href="/app/curriculum/tracks/add">
-              <Plus className="mr-2 h-4 w-4" />
-              Create Track
-            </Link>
-          </Button>
-        </div>
-      )}
+      {/* Top Level Curriculum Navigation Tabs */}
+      <Tabs
+        value={activeTab}
+        onValueChange={(val) => setActiveTab(val as 'subjects' | 'allocations' | 'placements')}
+        className="space-y-6"
+      >
+        <TabsList className="grid w-full grid-cols-3 max-w-2xl bg-muted/60 p-1 rounded-xl">
+          <TabsTrigger value="subjects" className="text-xs sm:text-sm font-medium flex items-center gap-2">
+            <BookOpen className="h-4 w-4" />
+            <span>Subjects &amp; Levels</span>
+          </TabsTrigger>
+          <TabsTrigger value="allocations" className="text-xs sm:text-sm font-medium flex items-center gap-2">
+            <GraduationCap className="h-4 w-4" />
+            <span>Student Allocations</span>
+          </TabsTrigger>
+          <TabsTrigger value="placements" className="text-xs sm:text-sm font-medium flex items-center gap-2">
+            <Headphones className="h-4 w-4" />
+            <span>Audio Placement Tests</span>
+          </TabsTrigger>
+        </TabsList>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {tracks.map((track) => {
-          const trackLevels = levels.filter((l) => l.track === track.id);
-          return (
-            <Card key={track.id} className="flex flex-col">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-xl">{track.name}</CardTitle>
-                    <p className="text-muted-foreground mt-1 font-mono text-sm">{track.slug}</p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="flex-1">
-                <div className="space-y-3">
-                  <h4 className="text-sm font-medium">Levels ({trackLevels.length})</h4>
-                  {trackLevels.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {trackLevels.map((level) => (
-                        <Badge key={level.id} variant="secondary">
-                          {level.order}. {level.name}
-                        </Badge>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground text-sm italic">No levels added yet.</p>
-                  )}
-                </div>
+        {/* TAB 1: SUBJECTS & PROGRESSIVE LEVELS */}
+        <TabsContent value="subjects" className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
+            <div>
+              <h3 className="text-lg font-semibold tracking-tight">Curriculum Subjects (Tracks)</h3>
+              <p className="text-xs text-muted-foreground">
+                Define the academic subjects taught in this academy and build their sequence of progressive levels.
+              </p>
+            </div>
+            {canManageCurriculum && (
+              <Button asChild>
+                <Link href="/app/curriculum/tracks/add">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Track
+                </Link>
+              </Button>
+            )}
+          </div>
 
-                {canManageCurriculum && (
-                  <div className="mt-6">
-                    <Button asChild variant="outline" className="w-full">
-                      <Link href={`/app/curriculum/tracks/${track.id}`}>Manage Track</Link>
+          {tracks.length === 0 ? (
+            <div className="space-y-6">
+              <EmptyState
+                icon={<BookOpen className="text-muted-foreground h-10 w-10" />}
+                title="No tracks defined"
+                description="Get started by creating the first track for your academy."
+                action={
+                  canManageCurriculum ? (
+                    <Button asChild>
+                      <Link href="/app/curriculum/tracks/add">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create First Track
+                      </Link>
                     </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                  ) : undefined
+                }
+              />
+              <PlacementsPanel />
+            </div>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {tracks.map((track) => {
+                const trackLevels = levels
+                  .filter((l) => l.track === track.id)
+                  .sort((a, b) => a.order - b.order);
 
-      <PlacementsPanel />
+                return (
+                  <Card key={track.id} className="flex flex-col border border-border shadow-sm hover:shadow transition-shadow">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle className="text-xl font-bold">{track.name}</CardTitle>
+                          <p className="text-muted-foreground mt-1 font-mono text-xs">{track.slug}</p>
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {trackLevels.length} {trackLevels.length === 1 ? 'Level' : 'Levels'}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="flex-1 flex flex-col justify-between space-y-4">
+                      <div className="space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                            Progressive Levels ({trackLevels.length})
+                          </h4>
+                          {canManageCurriculum && (
+                            <Link
+                              href={`/app/curriculum/tracks/${track.id}/levels/add`}
+                              className="text-xs text-primary hover:underline flex items-center gap-1 font-medium"
+                            >
+                              <Plus className="h-3 w-3" /> Add Level
+                            </Link>
+                          )}
+                        </div>
+
+                        {trackLevels.length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5">
+                            {trackLevels.map((level) => (
+                              <Badge key={level.id} variant="secondary" className="text-xs">
+                                {level.order}. {level.name}
+                              </Badge>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-muted-foreground text-xs italic">
+                            No progressive levels defined yet. Add the first level to start placing students.
+                          </p>
+                        )}
+                      </div>
+
+                      {canManageCurriculum && (
+                        <div className="pt-2 border-t flex items-center justify-between">
+                          <Button asChild variant="outline" size="sm" className="w-full">
+                            <Link href={`/app/curriculum/tracks/${track.id}`} className="flex items-center justify-center gap-1.5">
+                              Manage Track &amp; Levels
+                              <ArrowRight className="h-3.5 w-3.5" />
+                            </Link>
+                          </Button>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* TAB 2: STUDENT LEVEL ALLOCATIONS */}
+        <TabsContent value="allocations" className="space-y-6">
+          <StudentAllocationsTable />
+        </TabsContent>
+
+        {/* TAB 3: AUDIO PLACEMENT TESTS */}
+        <TabsContent value="placements" className="space-y-6">
+          <AudioPlacementTestsPanel />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

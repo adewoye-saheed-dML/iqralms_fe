@@ -39,6 +39,8 @@ export const curriculumKeys = {
     [...curriculumKeys.all(academyId), 'placements', filter] as const,
   teachingTracks: (academyId: AcademyId) =>
     [...curriculumKeys.all(academyId), 'teachers', 'mine'] as const,
+  teacherTracks: (academyId: AcademyId) =>
+    [...curriculumKeys.all(academyId), 'teachers', 'all'] as const,
 };
 
 export const schedulingKeys = {

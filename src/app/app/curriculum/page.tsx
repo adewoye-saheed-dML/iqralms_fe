@@ -11,7 +11,7 @@ export default function CurriculumPage() {
     <div className="space-y-6">
       <PageHeader
         title="Curriculum"
-        description="Manage learning tracks, levels, and placement submissions and reviews."
+        description="Manage curriculum subjects, progressive levels, student allocations with teachers, and audio placement evaluations."
       />
       <CurriculumDirectory />
     </div>

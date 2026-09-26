@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/api/client';
+import { ApiError } from '@/lib/api/errors';
 import type { components } from '@/lib/api/schema';
 
 export type Invitation = components['schemas']['OrganizationInvitation'];
@@ -13,13 +14,59 @@ export type InvitationRegister = Omit<components['schemas']['OrganizationInvitat
 };
 export type InvitationRegisterResponse = components['schemas']['OrganizationInvitationRegisterResponse'];
 
+export interface BatchInvitationResult {
+  successful: Array<{ email: string; invitation: Invitation }>;
+  failed: Array<{ email: string; reason: string }>;
+}
+
+export function parseEmailList(rawInput: string): {
+  valid: string[];
+  invalid: string[];
+  duplicates: string[];
+} {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const tokens = rawInput
+    .split(/[\s,;]+/)
+    .map((t) => t.trim().replace(/^<|>$/g, '').toLowerCase())
+    .filter(Boolean);
+
+  const seen = new Set<string>();
+  const valid: string[] = [];
+  const invalid: string[] = [];
+  const duplicates: string[] = [];
+
+  for (const token of tokens) {
+    if (seen.has(token)) {
+      if (!duplicates.includes(token)) {
+        duplicates.push(token);
+      }
+      continue;
+    }
+    seen.add(token);
+
+    if (emailRegex.test(token)) {
+      valid.push(token);
+    } else {
+      invalid.push(token);
+    }
+  }
+
+  return { valid, invalid, duplicates };
+}
+
 export const invitationsApi = {
   list: async (organizationId: number): Promise<Invitation[]> => {
     const { data } = await apiClient.GET(
       '/api/organizations/{organization_pk}/invitations/',
       { params: { path: { organization_pk: organizationId } } },
     );
-    return data ?? [];
+    if (Array.isArray(data)) {
+      return data;
+    }
+    if (data && typeof data === 'object' && Array.isArray((data as { results?: Invitation[] }).results)) {
+      return (data as { results: Invitation[] }).results;
+    }
+    return [];
   },
 
   create: async (
@@ -37,6 +84,35 @@ export const invitationsApi = {
       throw new Error('Failed to create invitation');
     }
     return data;
+  },
+
+  createBatch: async (
+    organizationId: number,
+    emails: string[],
+    role: InvitationRole,
+    onProgress?: (progress: { completed: number; total: number; currentEmail: string }) => void,
+  ): Promise<BatchInvitationResult> => {
+    const successful: Array<{ email: string; invitation: Invitation }> = [];
+    const failed: Array<{ email: string; reason: string }> = [];
+
+    for (let i = 0; i < emails.length; i++) {
+      const email = emails[i].trim();
+      onProgress?.({ completed: i, total: emails.length, currentEmail: email });
+      try {
+        const invitation = await invitationsApi.create(organizationId, { email, role });
+        successful.push({ email, invitation });
+      } catch (err: unknown) {
+        let reason = 'Failed to send invitation';
+        if (err instanceof ApiError) {
+          reason = err.message || reason;
+        } else if (err instanceof Error) {
+          reason = err.message;
+        }
+        failed.push({ email, reason });
+      }
+    }
+    onProgress?.({ completed: emails.length, total: emails.length, currentEmail: '' });
+    return { successful, failed };
   },
 
   accept: async (

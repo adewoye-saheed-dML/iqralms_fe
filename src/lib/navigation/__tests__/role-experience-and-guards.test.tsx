@@ -58,7 +58,8 @@ describe('Navigation Policy per Role', () => {
     const nav = getNavigationForRole('owner_admin');
     const labels = nav.map((item) => item.label);
     expect(labels).toContain('Dashboard');
-    expect(labels).toContain('Academy');
+    expect(labels).toContain('Invitations');
+    expect(labels).not.toContain('Academy');
     expect(labels).toContain('Teachers');
     expect(labels).toContain('Students');
     expect(labels).toContain('Curriculum');

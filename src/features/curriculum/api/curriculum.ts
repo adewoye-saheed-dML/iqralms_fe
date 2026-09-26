@@ -16,6 +16,7 @@ export type PlacementReview = components['schemas']['PlacementReview'];
 export type PlacementAudioAccess = components['schemas']['PlacementAudioAccess'];
 export type TeacherTrack = components['schemas']['TeacherTrack'];
 export type TeacherTrackCreate = components['schemas']['TeacherTrackCreate'];
+export type PatchedTeacherTrackUpdate = components['schemas']['PatchedTeacherTrackUpdate'];
 
 export const curriculumApi = {
   getTracks: async (organizationId: number) => {
@@ -172,6 +173,22 @@ export const curriculumApi = {
       body,
     });
     if (!data) throw new Error('Failed to assign teacher to track');
+    return data;
+  },
+
+  updateTeacherTrack: async (
+    organizationId: number,
+    assignmentId: number,
+    body: PatchedTeacherTrackUpdate
+  ): Promise<TeacherTrack> => {
+    const { data } = await apiClient.PATCH(
+      '/api/curriculum/organizations/{organization_pk}/teachers/{id}/',
+      {
+        params: { path: { organization_pk: organizationId, id: assignmentId } },
+        body,
+      }
+    );
+    if (!data) throw new Error('Failed to update teacher track assignment');
     return data;
   },
 };

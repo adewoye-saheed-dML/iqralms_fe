@@ -212,4 +212,51 @@ describe('invitationsApi', () => {
       expect(result).toEqual(mockInvitation);
     });
   });
+
+  describe('createBatch', () => {
+    it('sends invitations for multiple emails and tracks successes and failures', async () => {
+      const mockInv1 = { id: 101, email: 'student1@example.com' } as any;
+      const mockInv2 = { id: 102, email: 'student2@example.com' } as any;
+
+      vi.mocked(apiClient.POST)
+        .mockResolvedValueOnce({ data: mockInv1 })
+        .mockRejectedValueOnce(new Error('Already invited'))
+        .mockResolvedValueOnce({ data: mockInv2 });
+
+      const progressCalls: any[] = [];
+      const result = await invitationsApi.createBatch(
+        10,
+        ['student1@example.com', 'dupe@example.com', 'student2@example.com'],
+        'student',
+        (p) => progressCalls.push(p),
+      );
+
+      expect(result.successful).toHaveLength(2);
+      expect(result.successful[0].email).toBe('student1@example.com');
+      expect(result.successful[1].email).toBe('student2@example.com');
+
+      expect(result.failed).toHaveLength(1);
+      expect(result.failed[0].email).toBe('dupe@example.com');
+      expect(result.failed[0].reason).toBe('Already invited');
+
+      expect(progressCalls.length).toBeGreaterThan(0);
+    });
+  });
+});
+
+describe('parseEmailList', () => {
+  it('parses comma, semicolon, space, and newline separated emails and deduplicates', async () => {
+    const { parseEmailList } = await import('../invitations');
+    const input = 'alice@example.com, bob@example.com; charlie@example.com\ndave@example.com ALICE@EXAMPLE.COM not-an-email';
+    const parsed = parseEmailList(input);
+
+    expect(parsed.valid).toEqual([
+      'alice@example.com',
+      'bob@example.com',
+      'charlie@example.com',
+      'dave@example.com',
+    ]);
+    expect(parsed.duplicates).toEqual(['alice@example.com']);
+    expect(parsed.invalid).toEqual(['not-an-email']);
+  });
 });

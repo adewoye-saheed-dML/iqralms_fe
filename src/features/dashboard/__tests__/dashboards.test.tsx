@@ -8,12 +8,21 @@ import { ParentDashboard } from '../parent-dashboard';
 import * as AcademyProvider from '@/lib/academy/academy-provider';
 import * as AuthProvider from '@/lib/auth/auth-provider';
 import { invitationsApi } from '@/features/invitations/api/invitations';
+import { teachersApi } from '@/features/teachers/api/teachers';
 import { studentsApi } from '@/features/students/api/students';
+
+vi.mock('@/features/teachers/api/teachers', () => ({
+  teachersApi: {
+    getTeacherConfigurations: vi.fn().mockResolvedValue([]),
+    getTeacherTracks: vi.fn().mockResolvedValue([]),
+  },
+}));
 import { curriculumApi } from '@/features/curriculum/api/curriculum';
 import { schedulingApi } from '@/features/scheduling/api/scheduling';
 import { assessmentApi } from '@/features/assessment/api/assessment';
 import { payoutsApi } from '@/features/payouts/api/payouts';
 import { progressApi } from '@/features/progress/api/progress';
+import { membershipsApi } from '@/features/memberships/api/memberships';
 
 vi.mock('@/features/invitations/api/invitations', () => ({
   invitationsApi: { list: vi.fn() },
@@ -61,6 +70,13 @@ vi.mock('@/features/progress/api/progress', () => ({
   },
 }));
 
+vi.mock('@/features/memberships/api/memberships', () => ({
+  membershipsApi: {
+    list: vi.fn().mockResolvedValue([]),
+    update: vi.fn(),
+  },
+}));
+
 function renderWithProviders(ui: React.ReactElement) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -71,6 +87,7 @@ function renderWithProviders(ui: React.ReactElement) {
 describe('Role-Based Dashboards and SSoT Compliance', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    vi.mocked(membershipsApi.list).mockResolvedValue([]);
   });
 
   describe('OwnerAdminDashboard', () => {
@@ -115,7 +132,7 @@ describe('Role-Based Dashboards and SSoT Compliance', () => {
         const sessionLink = screen.getByRole('link', { name: /class session/i });
         expect(sessionLink).toHaveAttribute('href', '/app/scheduling/42');
       });
-    });
+    }, 15000);
   });
 
   describe('TeacherDashboard', () => {

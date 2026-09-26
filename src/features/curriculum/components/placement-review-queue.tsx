@@ -101,7 +101,9 @@ interface PlacementReviewDialogProps {
 function PlacementReviewDialog({ placement, onClose }: PlacementReviewDialogProps) {
   const queryClient = useQueryClient();
   const { activeAcademy } = useAcademy();
-  const [levelId, setLevelId] = React.useState<string>(String(placement.recommended_level.id));
+  const [levelId, setLevelId] = React.useState<string>(
+    placement.recommended_level?.id ? String(placement.recommended_level.id) : ''
+  );
   const [audioUrl, setAudioUrl] = React.useState<string | null>(null);
   const [loadingAudio, setLoadingAudio] = React.useState(false);
 
@@ -120,6 +122,17 @@ function PlacementReviewDialog({ placement, onClose }: PlacementReviewDialogProp
     enabled: !!activeAcademy && !!track,
   });
 
+  const defaultLevelId = React.useMemo(() => {
+    if (placement.recommended_level?.id) return String(placement.recommended_level.id);
+    if (placement.skipped_as_beginner) {
+      const firstLevel = levels.find((l) => l.order === 1) || levels[0];
+      return firstLevel ? String(firstLevel.id) : '';
+    }
+    return levels[0] ? String(levels[0].id) : '';
+  }, [levels, placement.recommended_level, placement.skipped_as_beginner]);
+
+  const effectiveLevelId = levelId || defaultLevelId;
+
   const playSample = async () => {
     if (!activeAcademy) return;
     setLoadingAudio(true);
@@ -132,15 +145,36 @@ function PlacementReviewDialog({ placement, onClose }: PlacementReviewDialogProp
   };
 
   const mutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       if (!activeAcademy) throw new Error('No academy context');
-      return curriculumApi.reviewPlacement(activeAcademy.id, placement.id, {
-        recommended_level: Number(levelId),
+      const chosenLevel = Number(effectiveLevelId);
+      const res = await curriculumApi.reviewPlacement(activeAcademy.id, placement.id, {
+        recommended_level: chosenLevel,
       });
+
+      // Also attempt to update the student's enrollment track and level
+      try {
+        const { studentsApi } = await import('@/features/students/api/students');
+        const students = await studentsApi.getAcademyStudents(activeAcademy.id);
+        const enrolled = students.find((s) => s.user_id === placement.student.id);
+        if (enrolled && track) {
+          await studentsApi.updateStudentStatus(activeAcademy.id, enrolled.id, {
+            track_id: track.id,
+            level_id: chosenLevel,
+          });
+        }
+      } catch {
+        // Non-blocking sync
+      }
+
+      return res;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: curriculumKeys.placements(activeAcademy?.id, 'pending'),
+        queryKey: curriculumKeys.placements(activeAcademy?.id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['academy', activeAcademy?.id, 'students'],
       });
       onClose();
     },
@@ -173,17 +207,29 @@ function PlacementReviewDialog({ placement, onClose }: PlacementReviewDialogProp
           )}
 
           {placement.skipped_as_beginner ? (
-            <p className="text-muted-foreground text-sm">
-              This student declared themselves a complete beginner and submitted no sample.
-            </p>
+            <div className="rounded-md border border-amber-200 bg-amber-50/50 p-3 text-sm dark:border-amber-900/50 dark:bg-amber-950/20">
+              <div className="flex items-center gap-2 font-medium text-amber-900 dark:text-amber-200">
+                <Badge variant="outline" className="border-amber-300 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                  Beginner Student
+                </Badge>
+                <span>Complete Beginner Assessment</span>
+              </div>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                This student declared themselves a complete beginner with no prior recitation experience. Level 1 (Foundations) is automatically recommended.
+              </p>
+            </div>
           ) : placement.has_audio_sample ? (
-            <div className="space-y-2">
+            <div className="space-y-2 rounded-md border p-3 bg-muted/30">
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                <span className="font-medium text-foreground">Recitation Audio Sample</span>
+                <span>{placement.audio_filename ?? 'Audio recording'}</span>
+              </div>
               {audioUrl ? (
-                <audio controls src={audioUrl} className="w-full" />
+                <audio controls src={audioUrl} className="w-full h-10" />
               ) : (
-                <Button variant="outline" size="sm" onClick={playSample} disabled={loadingAudio}>
+                <Button variant="outline" size="sm" onClick={playSample} disabled={loadingAudio} className="w-full">
                   <Play className="mr-1.5 h-4 w-4" />
-                  {loadingAudio ? 'Loading...' : 'Load sample to listen'}
+                  {loadingAudio ? 'Loading recitation audio...' : 'Play Recitation Audio Sample'}
                 </Button>
               )}
             </div>
@@ -192,15 +238,15 @@ function PlacementReviewDialog({ placement, onClose }: PlacementReviewDialogProp
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="review-level">Recommended level</Label>
-            <Select value={levelId} onValueChange={setLevelId} disabled={mutation.isPending}>
+            <Label htmlFor="review-level">Determined Starting Level</Label>
+            <Select value={effectiveLevelId} onValueChange={setLevelId} disabled={mutation.isPending}>
               <SelectTrigger id="review-level">
                 <SelectValue placeholder="Choose a level" />
               </SelectTrigger>
               <SelectContent>
                 {levels.map((level) => (
                   <SelectItem key={level.id} value={String(level.id)}>
-                    {level.name}
+                    Level {level.order}: {level.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -212,8 +258,8 @@ function PlacementReviewDialog({ placement, onClose }: PlacementReviewDialogProp
           <Button variant="outline" onClick={onClose} disabled={mutation.isPending}>
             Cancel
           </Button>
-          <Button onClick={() => mutation.mutate()} disabled={!levelId || mutation.isPending}>
-            {mutation.isPending ? 'Saving...' : 'Confirm level'}
+          <Button onClick={() => mutation.mutate()} disabled={!effectiveLevelId || mutation.isPending}>
+            {mutation.isPending ? 'Confirming...' : 'Confirm Level & Allocate'}
           </Button>
         </DialogFooter>
       </DialogContent>

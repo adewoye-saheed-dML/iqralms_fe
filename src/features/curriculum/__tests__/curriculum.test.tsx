@@ -41,6 +41,9 @@ vi.mock('../api/curriculum', () => ({
     submitPlacement: vi.fn(),
     reviewPlacement: vi.fn(),
     getPlacementAudioUrl: vi.fn(),
+    getAcademyTeacherTracks: vi.fn().mockResolvedValue([]),
+    assignTeacherTrack: vi.fn(),
+    updateTeacherTrack: vi.fn(),
   },
 }));
 
@@ -60,6 +63,7 @@ describe('Curriculum Feature', () => {
     vi.mocked(curriculumApi.getMyPlacements).mockResolvedValue([]);
     vi.mocked(curriculumApi.getChildPlacements).mockResolvedValue([]);
     vi.mocked(curriculumApi.getPendingPlacements).mockResolvedValue([]);
+    vi.mocked(curriculumApi.getAcademyTeacherTracks).mockResolvedValue([]);
     vi.spyOn(AcademyProvider, 'useAcademy').mockReturnValue({
       activeAcademy: mockAcademy,
       activeRole: 'admin',
