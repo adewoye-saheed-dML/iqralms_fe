@@ -45,10 +45,14 @@ export function Waitlist() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const isOwnerOrAdmin = activeRole === 'owner' || activeRole === 'admin';
-  const isTeacher = user?.role === 'lead' || user?.role === 'sub' || activeRole === 'teacher';
-  const isManagement = isOwnerOrAdmin || isTeacher;
-  const isStudentOrParent = user?.role === 'student' || user?.role === 'parent' || activeRole === 'student' || activeRole === 'parent';
+  const isOwnerOrAdmin =
+    activeRole === 'owner' ||
+    activeRole === 'admin' ||
+    (user?.role as string) === 'owner' ||
+    (user?.role as string) === 'admin';
+  const isLeadTeacher = user?.role === 'lead';
+  const isManagement = isOwnerOrAdmin || isLeadTeacher;
+  const isStudentOrParent = !isManagement;
 
   // State for management allocation modal
   const [selectedTeacherId, setSelectedTeacherId] = React.useState<string>('');
@@ -86,7 +90,7 @@ export function Waitlist() {
   // Default selectedTeacherId
   React.useEffect(() => {
     if (isManagement && teacherConfigs && teacherConfigs.length > 0 && !selectedTeacherId) {
-      if (isTeacher) {
+      if (isLeadTeacher) {
         const myConfig = teacherConfigs.find(
           (tc) =>
             tc.membership === user?.id ||
@@ -110,7 +114,7 @@ export function Waitlist() {
         firstTeacher.id;
       setSelectedTeacherId(String(tId));
     }
-  }, [isManagement, isTeacher, teacherConfigs, user, selectedTeacherId]);
+  }, [isManagement, isLeadTeacher, teacherConfigs, user, selectedTeacherId]);
 
   const activeTeacherIdNum = selectedTeacherId ? Number(selectedTeacherId) : undefined;
 

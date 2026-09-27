@@ -18,7 +18,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { ApiError } from '@/lib/api/errors';
 import type { RouteRequest, Routed } from '../api/scheduling';
-import { Bell, CheckCircle2, Calendar, Clock, Video, UserCheck } from 'lucide-react';
+import { Bell, CheckCircle2, Calendar, Clock, Video, UserCheck, Info, CalendarCheck, Users } from 'lucide-react';
 
 import { studentsApi } from '@/features/students/api/students';
 import { useAuth } from '@/lib/auth/auth-provider';
@@ -45,9 +45,15 @@ export function BookingForm() {
   } | null>(null);
 
   const isParent = user?.role === 'parent';
-  const isTeacher = user?.role === 'lead' || user?.role === 'sub' || activeRole === 'teacher';
-  const isOwnerOrAdmin = activeRole === 'owner' || activeRole === 'admin';
-  const canSelectStudent = isParent || isTeacher || isOwnerOrAdmin;
+  const isLead = user?.role === 'lead';
+  const isSub = user?.role === 'sub';
+  const isTeacher = isLead || isSub || activeRole === 'teacher';
+  const isOwnerOrAdmin =
+    activeRole === 'owner' ||
+    activeRole === 'admin' ||
+    (user?.role as string) === 'owner' ||
+    (user?.role as string) === 'admin';
+  const canSelectStudent = isParent;
 
   const { data: tracks, isLoading: isLoadingTracks } = useQuery({
     queryKey: curriculumKeys.tracks(activeAcademy?.id),
@@ -212,6 +218,58 @@ export function BookingForm() {
 
     routeMutation.mutate(payload);
   };
+
+  if (isTeacher || isOwnerOrAdmin) {
+    return (
+      <Card className="max-w-xl mx-auto shadow-sm">
+        <CardHeader>
+          <div className="flex items-center gap-2 text-primary">
+            <Info className="h-5 w-5" />
+            <CardTitle>Class Scheduling Overview</CardTitle>
+          </div>
+          <CardDescription>
+            {isTeacher
+              ? 'As a teacher, your classes are scheduled through student requests matching your declared availability, or assigned by academy leadership.'
+              : 'As academy leadership, 1-on-1 sessions are requested by students and parents. You review student requests against teacher schedules and allocate confirmed sessions.'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm text-muted-foreground">
+          <p>
+            {isTeacher
+              ? 'To view your upcoming scheduled classes with your students or start a live Jitsi classroom, visit your Teaching Schedule. To review or declare your available working hours, visit My Availability.'
+              : 'To review open student requests and allocate them to teachers, visit the Requests & Allocation tab on the scheduling dashboard. To open group classes, use the Cohorts tab.'}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            {isTeacher && (
+              <>
+                <Button onClick={() => router.push('/app/scheduling')}>
+                  <Calendar className="mr-2 h-4 w-4" /> Go to Teaching Schedule
+                </Button>
+                <Button variant="outline" onClick={() => router.push('/app/scheduling?tab=availability')}>
+                  <CalendarCheck className="mr-2 h-4 w-4" /> View My Availability
+                </Button>
+                {isLead && (
+                  <Button variant="outline" onClick={() => router.push('/app/scheduling?tab=waitlist')}>
+                    <Users className="mr-2 h-4 w-4" /> Review Student Requests
+                  </Button>
+                )}
+              </>
+            )}
+            {isOwnerOrAdmin && (
+              <>
+                <Button onClick={() => router.push('/app/scheduling?tab=waitlist')}>
+                  <UserCheck className="mr-2 h-4 w-4" /> Open Allocation Workspace
+                </Button>
+                <Button variant="outline" onClick={() => router.push('/app/scheduling?tab=cohorts')}>
+                  Manage Cohorts
+                </Button>
+              </>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (routedResult) {
     return (

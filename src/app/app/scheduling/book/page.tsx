@@ -5,8 +5,8 @@ export default function BookSessionPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Book a Session"
-        description="Schedule a new session with a teacher."
+        title="Request a Class Session"
+        description="Select your curriculum level and requested class time window."
         backHref="/app/scheduling"
         backLabel="Back to Scheduling"
       />

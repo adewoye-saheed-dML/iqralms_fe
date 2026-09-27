@@ -5,6 +5,8 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BookingForm } from '../components/booking-form';
 import { Waitlist } from '../components/waitlist';
+import { SchedulingDashboard } from '../components/scheduling-dashboard';
+import { TeacherAvailabilityView } from '../components/teacher-availability-view';
 import { schedulingApi } from '../api/scheduling';
 import { curriculumApi } from '@/features/curriculum/api/curriculum';
 import { teachersApi } from '@/features/teachers/api/teachers';
@@ -20,6 +22,10 @@ vi.mock('../api/scheduling', () => ({
     getMyWaitlist: vi.fn(),
     getTeacherWaitlist: vi.fn(),
     promoteWaitlist: vi.fn(),
+    getTeachingBookings: vi.fn(),
+    getMyBookings: vi.fn(),
+    getAcademyBookings: vi.fn(),
+    getCohorts: vi.fn(),
   },
 }));
 
@@ -37,6 +43,9 @@ vi.mock('@/features/teachers/api/teachers', () => ({
 
 vi.mock('next/navigation', () => ({
   useRouter: vi.fn(() => ({ push: vi.fn() })),
+  useSearchParams: vi.fn(() => ({
+    get: vi.fn((param: string) => null),
+  })),
 }));
 
 function renderWithProviders(ui: React.ReactElement) {
@@ -280,6 +289,106 @@ describe('Student Availability Request & Teacher Allocation Workflow', () => {
         expect(screen.getByText('Noorani Qaida')).toBeInTheDocument();
         expect(screen.getByText('Under Academy Review')).toBeInTheDocument();
         expect(screen.getByText(/Teacher: Ahmad/i)).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Teacher Scheduling & Availability Flow', () => {
+    beforeEach(() => {
+      vi.spyOn(AcademyProvider, 'useAcademy').mockReturnValue({
+        activeAcademy: { id: 1, name: 'Darul Quran Academy' },
+        activeRole: 'teacher',
+      } as any);
+
+      vi.mocked(teachersApi.getTeacherConfigurations).mockResolvedValue([
+        {
+          id: 5,
+          membership: 50,
+          user: 55,
+          username: 'ustadh_ahmad',
+          teacher_name: 'Ustadh Ahmad',
+          teacher_username: 'ustadh_ahmad',
+          approved: true,
+        } as any,
+      ]);
+
+      vi.mocked(schedulingApi.getAvailability).mockResolvedValue([
+        {
+          id: 1,
+          teacher: 55,
+          teacher_username: 'ustadh_ahmad',
+          weekday: 0 as any, // Monday
+          weekday_display: 'Monday',
+          start_time_utc: '14:00:00',
+          end_time_utc: '18:00:00',
+          local: {
+            weekday: 'Monday',
+            start_time: '14:00:00',
+            end_time: '18:00:00',
+            timezone: 'UTC',
+          } as any,
+        } as any,
+      ]);
+
+      vi.mocked(schedulingApi.getTeachingBookings).mockResolvedValue([]);
+    });
+
+    it('renders teacher declared availability in TeacherAvailabilityView with working hours and capacity', async () => {
+      vi.spyOn(AuthProvider, 'useAuth').mockReturnValue({
+        user: { id: 55, role: 'lead', username: 'ustadh_ahmad' },
+      } as any);
+
+      renderWithProviders(<TeacherAvailabilityView />);
+
+      await waitFor(() => {
+        expect(screen.getByText('My Declared Teaching Availability')).toBeInTheDocument();
+        expect(screen.getByText(/4.0 Hours \/ Week/i)).toBeInTheDocument();
+        expect(screen.getByText('14:00 – 18:00')).toBeInTheDocument();
+      });
+    });
+
+    it('teacher scheduling dashboard displays teaching schedule and my availability without confusing student booking options', async () => {
+      vi.spyOn(AuthProvider, 'useAuth').mockReturnValue({
+        user: { id: 55, role: 'sub', username: 'ustadh_ahmad' },
+      } as any);
+
+      renderWithProviders(<SchedulingDashboard />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('tab', { name: 'Teaching Schedule' })).toBeInTheDocument();
+        expect(screen.getByRole('tab', { name: 'My Availability' })).toBeInTheDocument();
+        // Regular sub teacher should NOT have the student booking button
+        expect(screen.queryByText('Book a Session')).not.toBeInTheDocument();
+        // Regular sub teacher should NOT see allocation queue
+        expect(screen.queryByRole('tab', { name: 'Requests & Allocation' })).not.toBeInTheDocument();
+      });
+    });
+
+    it('lead teacher sees review student requests and allocation tab', async () => {
+      vi.spyOn(AuthProvider, 'useAuth').mockReturnValue({
+        user: { id: 55, role: 'lead', username: 'ustadh_ahmad' },
+      } as any);
+
+      renderWithProviders(<SchedulingDashboard />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('tab', { name: 'Teaching Schedule' })).toBeInTheDocument();
+        expect(screen.getByText('Review Student Requests')).toBeInTheDocument();
+        expect(screen.getByRole('tab', { name: 'Requests & Allocation' })).toBeInTheDocument();
+      });
+    });
+
+    it('teacher visiting BookingForm sees role-appropriate overview card instead of student booking form', async () => {
+      vi.spyOn(AuthProvider, 'useAuth').mockReturnValue({
+        user: { id: 55, role: 'lead', username: 'ustadh_ahmad' },
+      } as any);
+
+      renderWithProviders(<BookingForm />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Class Scheduling Overview')).toBeInTheDocument();
+        expect(screen.getByText('Go to Teaching Schedule')).toBeInTheDocument();
+        expect(screen.getByText('View My Availability')).toBeInTheDocument();
       });
     });
   });
