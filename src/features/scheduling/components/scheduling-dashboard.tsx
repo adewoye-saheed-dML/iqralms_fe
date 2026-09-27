@@ -55,7 +55,9 @@ export function SchedulingDashboard() {
             <TabsTrigger value="my-bookings">My Bookings</TabsTrigger>
           )}
           <TabsTrigger value="cohorts">Cohorts</TabsTrigger>
-          <TabsTrigger value="waitlist">Waitlist</TabsTrigger>
+          <TabsTrigger value="waitlist">
+            {isOwnerOrAdminUser || isTeacherUser ? 'Requests & Allocation' : 'Requests & Waitlist'}
+          </TabsTrigger>
         </TabsList>
 
         {isOwnerOrAdminUser && (

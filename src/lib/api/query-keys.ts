@@ -49,6 +49,8 @@ export const schedulingKeys = {
   bookingsByType: (academyId: AcademyId, type: string) => [...schedulingKeys.bookings(academyId), type] as const,
   waitlist: (academyId: AcademyId) => [...schedulingKeys.all(academyId), 'waitlist'] as const,
   waitlistMine: (academyId: AcademyId) => [...schedulingKeys.waitlist(academyId), 'mine'] as const,
+  waitlistTeacher: (academyId: AcademyId, teacherId: number | string | undefined) =>
+    [...schedulingKeys.waitlist(academyId), 'teacher', teacherId] as const,
 };
 
 export const assessmentKeys = {

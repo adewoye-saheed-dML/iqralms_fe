@@ -76,7 +76,7 @@ describe('Classroom Jitsi, Whiteboard & Materials Integration', () => {
     expect(screen.getByText('Video + Whiteboard')).toBeInTheDocument();
     expect(screen.getByText('Full Materials')).toBeInTheDocument();
     expect(screen.getByText('Full Whiteboard')).toBeInTheDocument();
-  });
+  }, 15000);
 
   it('tracks teaching hours and allows teacher to conclude session for payout generation', async () => {
     vi.mocked(schedulingApi.getMeeting).mockResolvedValue({

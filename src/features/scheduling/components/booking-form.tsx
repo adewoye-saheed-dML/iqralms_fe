@@ -37,6 +37,12 @@ export function BookingForm() {
 
   const [error, setError] = React.useState<string | null>(null);
   const [routedResult, setRoutedResult] = React.useState<Routed | null>(null);
+  const [waitlistSuccessInfo, setWaitlistSuccessInfo] = React.useState<{
+    levelName?: string;
+    requestedTime?: string;
+    duration?: string;
+    teacherName?: string;
+  } | null>(null);
 
   const isParent = user?.role === 'parent';
   const isTeacher = user?.role === 'lead' || user?.role === 'sub' || activeRole === 'teacher';
@@ -75,6 +81,18 @@ export function BookingForm() {
     enabled: !!activeAcademy?.id,
   });
 
+  const selectedTeacherId =
+    preferredTeacher && preferredTeacher !== 'none' ? Number(preferredTeacher) : null;
+
+  const { data: teacherAvailability, isLoading: isLoadingAvailability } = useQuery({
+    queryKey: ['scheduling', 'availability', activeAcademy?.id, selectedTeacherId],
+    queryFn: () => {
+      if (!activeAcademy?.id || !selectedTeacherId) return [];
+      return schedulingApi.getAvailability(activeAcademy.id, selectedTeacherId);
+    },
+    enabled: !!activeAcademy?.id && !!selectedTeacherId,
+  });
+
   const embeddedLevels = React.useMemo(() => {
     const list: { id: number; name: string; trackName: string }[] = [];
     tracks?.forEach((t) => {
@@ -96,6 +114,7 @@ export function BookingForm() {
     onSuccess: (result) => {
       setError(null);
       setRoutedResult(result);
+      setWaitlistSuccessInfo(null);
       queryClient.invalidateQueries({
         queryKey: schedulingKeys.bookings(activeAcademy?.id),
       });
@@ -104,16 +123,43 @@ export function BookingForm() {
       });
     },
     onError: (err) => {
-      if (err instanceof ApiError) {
-        if (err.status === 409) {
-          setError(
-            'No capacity available for the requested time. You may have been waitlisted if you requested a specific teacher.'
-          );
-        } else {
-          setError(err.message || 'Failed to book session.');
-        }
+      if (err instanceof ApiError && err.status === 409) {
+        // Backend returns 409 when capacity is full and student is registered on the waitlist/schedule queue
+        setError(null);
+        const selectedLevel = embeddedLevels.find((l) => String(l.id) === levelId);
+        const selectedTeacherObj = teacherConfigs?.find((tc) => {
+          const tId = (tc as unknown as { teacher?: number }).teacher || (tc as unknown as { user?: number }).user || tc.id;
+          return String(tId) === preferredTeacher;
+        });
+        const teacherName = selectedTeacherObj
+          ? (selectedTeacherObj as unknown as { teacher_username?: string; teacher_name?: string }).teacher_username ||
+            (selectedTeacherObj as unknown as { teacher_name?: string }).teacher_name ||
+            selectedTeacherObj.username
+          : 'Academy Teacher Pool';
+
+        setWaitlistSuccessInfo({
+          levelName: selectedLevel ? `${selectedLevel.trackName} — ${selectedLevel.name}` : 'Curriculum Lesson',
+          requestedTime: startTime
+            ? new Date(startTime).toLocaleString(undefined, {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            : '',
+          duration: duration || '30',
+          teacherName,
+        });
+        queryClient.invalidateQueries({
+          queryKey: schedulingKeys.waitlist(activeAcademy?.id),
+        });
+      } else if (err instanceof ApiError) {
+        setError(err.message || 'Failed to book session.');
+        setWaitlistSuccessInfo(null);
       } else {
         setError('An unexpected error occurred.');
+        setWaitlistSuccessInfo(null);
       }
       setRoutedResult(null);
     },
@@ -218,6 +264,60 @@ export function BookingForm() {
     );
   }
 
+  if (waitlistSuccessInfo) {
+    return (
+      <Card className="max-w-xl mx-auto shadow-sm">
+        <CardHeader>
+          <div className="flex items-center gap-2 text-primary">
+            <CheckCircle2 className="h-6 w-6 text-emerald-600" />
+            <CardTitle>Schedule Request Placed in Queue</CardTitle>
+          </div>
+          <CardDescription>
+            Your requested session time has been recorded in the academy scheduling queue.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Alert className="border-primary/30 bg-primary/5 text-foreground text-xs space-y-2">
+            <AlertTitle className="font-semibold text-primary flex items-center gap-1.5">
+              <Clock className="h-4 w-4 text-primary" />
+              Availability Request Recorded
+            </AlertTitle>
+            <AlertDescription className="space-y-1">
+              <p>
+                <strong>Requested Slot:</strong> {waitlistSuccessInfo.requestedTime} ({waitlistSuccessInfo.duration} minutes)
+              </p>
+              <p>
+                <strong>Curriculum:</strong> {waitlistSuccessInfo.levelName}
+              </p>
+              <p>
+                <strong>Teacher Preference:</strong> {waitlistSuccessInfo.teacherName}
+              </p>
+            </AlertDescription>
+          </Alert>
+
+          <div className="p-3 rounded-lg border bg-muted/30 text-xs text-muted-foreground flex items-start gap-2.5">
+            <Bell className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+            <div>
+              <span className="font-medium text-foreground">What happens next?</span>
+              <p className="mt-0.5">
+                The academy director and lead teacher review incoming student requests, compare with teacher availability, and allocate the class session. Both student and teacher will receive advance notifications once the session is confirmed.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setWaitlistSuccessInfo(null)}>
+              Request Another Time
+            </Button>
+            <Button onClick={() => router.push('/app/scheduling')}>
+              View My Requests & Schedule
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="max-w-xl mx-auto shadow-sm">
       <CardHeader>
@@ -234,6 +334,26 @@ export function BookingForm() {
 
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {isOwnerOrAdmin && (
+            <div className="p-3 rounded-lg border border-amber-300/60 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <div>
+                <span className="font-semibold">Management Allocation Flow</span>
+                <p className="mt-0.5 text-muted-foreground dark:text-amber-300/80">
+                  Review student availability requests, compare with teacher schedules, and allocate confirmed sessions directly.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs bg-background text-foreground shrink-0"
+                onClick={() => router.push('/app/scheduling')}
+              >
+                Go to Allocation Queue
+              </Button>
+            </div>
+          )}
+
           {error && (
             <Alert variant="destructive">
               <AlertTitle>Cannot Book Session</AlertTitle>
@@ -366,6 +486,49 @@ export function BookingForm() {
               />
             )}
           </div>
+
+          {/* Teacher Declared Availability Display */}
+          {selectedTeacherId && (
+            <div className="rounded-lg border p-3 bg-muted/20 space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-foreground flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5 text-primary" />
+                  Teacher's Declared Schedule Hours
+                </span>
+                {isLoadingAvailability && (
+                  <span className="text-[11px] text-muted-foreground">Loading declared hours...</span>
+                )}
+              </div>
+              {teacherAvailability && teacherAvailability.length > 0 ? (
+                <div className="space-y-1.5 pt-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                    {teacherAvailability.map((block) => (
+                      <div
+                        key={block.id}
+                        className="flex items-center justify-between px-2.5 py-1.5 rounded bg-background border text-[11px]"
+                      >
+                        <span className="font-medium text-foreground">
+                          {block.local?.weekday || block.weekday_display}
+                        </span>
+                        <span className="text-muted-foreground font-mono">
+                          {block.local?.start_time
+                            ? `${block.local.start_time.slice(0, 5)} - ${block.local.end_time?.slice(0, 5)}`
+                            : `${block.start_time_utc.slice(0, 5)} - ${block.end_time_utc.slice(0, 5)} UTC`}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground pt-1">
+                    Slots within declared hours confirm instantly if capacity allows. Slots outside these hours will be placed on the academy queue for management allocation.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-[11px] text-muted-foreground">
+                  No fixed recurring weekly hours declared by this teacher. Your requested time will be submitted to the academy scheduling queue for management allocation.
+                </p>
+              )}
+            </div>
+          )}
 
           <Button type="submit" className="w-full" disabled={routeMutation.isPending}>
             {routeMutation.isPending ? 'Processing Booking...' : 'Schedule Class Session'}
