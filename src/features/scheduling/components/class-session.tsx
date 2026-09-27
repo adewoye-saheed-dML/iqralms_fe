@@ -78,6 +78,12 @@ export function ClassSession({ bookingId }: ClassSessionProps) {
     };
   }, [embedVideo, isTimerRunning]);
 
+  React.useEffect(() => {
+    if (sessionSeconds > 0) {
+      setCustomDurationInput(String(Math.max(1, Math.round(sessionSeconds / 60))));
+    }
+  }, [sessionSeconds]);
+
   const {
     data: meeting,
     isLoading: isMeetingLoading,
@@ -199,7 +205,7 @@ export function ClassSession({ bookingId }: ClassSessionProps) {
 
   const handleCompleteSession = () => {
     setCompletionError(null);
-    const mins = Math.max(1, Math.round(sessionSeconds / 60)) || Number(customDurationInput) || 30;
+    const mins = Number(customDurationInput) || Math.max(1, Math.round(sessionSeconds / 60)) || 30;
     completeMutation.mutate(mins);
   };
 
@@ -335,6 +341,19 @@ export function ClassSession({ bookingId }: ClassSessionProps) {
           {/* Teacher Hours Tracking & Session Conclude Action */}
           {isTeacherOrAdmin && !completionSuccess && (
             <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 bg-background/80 px-2 py-0.5 rounded border text-[11px]">
+                <span className="text-muted-foreground">Logged:</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="480"
+                  aria-label="Teaching duration in minutes"
+                  value={customDurationInput}
+                  onChange={(e) => setCustomDurationInput(e.target.value)}
+                  className="w-12 h-6 px-1 text-center font-mono font-medium rounded border bg-background text-xs"
+                />
+                <span className="text-muted-foreground">min</span>
+              </div>
               <Button
                 variant="default"
                 size="sm"

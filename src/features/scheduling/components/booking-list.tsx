@@ -259,7 +259,7 @@ export function BookingList({ type }: BookingListProps) {
                           rel="noreferrer"
                           className="text-xs text-center text-muted-foreground hover:text-primary transition-colors"
                         >
-                          Direct Meeting Link ↗
+                          Join Session
                         </a>
                       )}
                     </div>

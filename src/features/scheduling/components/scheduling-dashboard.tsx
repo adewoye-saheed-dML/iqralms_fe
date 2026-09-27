@@ -36,9 +36,9 @@ export function SchedulingDashboard() {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        {isStudentOrParent && (
+        {(isStudentOrParent || isTeacherUser || isOwnerOrAdminUser) && (
           <Button onClick={() => router.push('/app/scheduling/book')}>
-            <Plus className="mr-2 h-4 w-4" /> Book a Session
+            <Plus className="mr-2 h-4 w-4" /> Schedule a Session
           </Button>
         )}
       </div>

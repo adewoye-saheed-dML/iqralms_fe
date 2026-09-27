@@ -24,7 +24,7 @@ import { studentsApi } from '@/features/students/api/students';
 import { useAuth } from '@/lib/auth/auth-provider';
 
 export function BookingForm() {
-  const { activeAcademy } = useAcademy();
+  const { activeAcademy, activeRole } = useAcademy();
   const { user } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -39,6 +39,9 @@ export function BookingForm() {
   const [routedResult, setRoutedResult] = React.useState<Routed | null>(null);
 
   const isParent = user?.role === 'parent';
+  const isTeacher = user?.role === 'lead' || user?.role === 'sub' || activeRole === 'teacher';
+  const isOwnerOrAdmin = activeRole === 'owner' || activeRole === 'admin';
+  const canSelectStudent = isParent || isTeacher || isOwnerOrAdmin;
 
   const { data: tracks, isLoading: isLoadingTracks } = useQuery({
     queryKey: curriculumKeys.tracks(activeAcademy?.id),
@@ -50,12 +53,17 @@ export function BookingForm() {
   });
 
   const { data: students, isLoading: isLoadingStudents } = useQuery({
-    queryKey: studentKeys.mine(activeAcademy?.id),
+    queryKey: isParent
+      ? studentKeys.mine(activeAcademy?.id)
+      : ['students', 'academy', activeAcademy?.id],
     queryFn: () => {
       if (!activeAcademy?.id) throw new Error('No academy');
-      return studentsApi.getMyStudents(activeAcademy.id);
+      if (isParent) {
+        return studentsApi.getMyStudents(activeAcademy.id);
+      }
+      return studentsApi.getAcademyStudents(activeAcademy.id);
     },
-    enabled: !!activeAcademy?.id && isParent,
+    enabled: !!activeAcademy?.id && canSelectStudent,
   });
 
   const { data: teacherConfigs } = useQuery({
@@ -111,10 +119,29 @@ export function BookingForm() {
     },
   });
 
+  React.useEffect(() => {
+    if (isTeacher && teacherConfigs && teacherConfigs.length > 0 && !preferredTeacher) {
+      const myConfig = teacherConfigs.find(
+        (tc) =>
+          tc.membership === user?.id ||
+          (tc as unknown as { user?: number }).user === user?.id ||
+          (tc as unknown as { teacher?: number }).teacher === user?.id ||
+          (tc as unknown as { teacher_username?: string }).teacher_username === user?.username
+      );
+      if (myConfig) {
+        const tId =
+          (myConfig as unknown as { teacher?: number }).teacher ||
+          (myConfig as unknown as { user?: number }).user ||
+          myConfig.id;
+        setPreferredTeacher(String(tId));
+      }
+    }
+  }, [isTeacher, teacherConfigs, user, preferredTeacher]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!levelId || !startTime) return;
-    if (isParent && !studentId) {
+    if (canSelectStudent && !studentId) {
       setError('You must select a student.');
       return;
     }
@@ -129,11 +156,11 @@ export function BookingForm() {
       },
     };
 
-    if (isParent && studentId) {
+    if (canSelectStudent && studentId) {
       payload.student = parseInt(studentId, 10);
     }
 
-    if (preferredTeacher) {
+    if (preferredTeacher && preferredTeacher !== 'none') {
       payload.preferred_teacher = parseInt(preferredTeacher, 10);
     }
 
@@ -225,9 +252,9 @@ export function BookingForm() {
             </div>
           </div>
 
-          {isParent && (
+          {canSelectStudent && (
             <div className="space-y-2">
-              <Label>Student</Label>
+              <Label>{isParent ? 'Student (Child)' : 'Student'}</Label>
               <Select
                 value={studentId}
                 onValueChange={setStudentId}
@@ -238,7 +265,7 @@ export function BookingForm() {
                 </SelectTrigger>
                 <SelectContent>
                   {students?.map((s) => {
-                    const studentUserId = s.user_id ?? (s as unknown as { user?: number }).user;
+                    const studentUserId = s.user_id ?? (s as unknown as { user?: number }).user ?? s.id;
                     const studentDisplayName = s.first_name || s.username || `Student #${s.id}`;
                     return (
                       <SelectItem key={s.id} value={String(studentUserId)}>

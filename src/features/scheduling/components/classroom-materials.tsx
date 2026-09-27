@@ -180,6 +180,8 @@ export function ClassroomMaterials({ levelName, trackName }: ClassroomMaterialsP
   const [fontSizeClass, setFontSizeClass] = React.useState<'text-xl' | 'text-2xl' | 'text-3xl' | 'text-4xl'>('text-2xl');
   const [activeVerseHighlight, setActiveVerseHighlight] = React.useState<number | null>(null);
 
+  const [activeTab, setActiveTab] = React.useState<'quran' | 'tajweed' | 'syllabus'>('quran');
+
   const filteredSurahs = React.useMemo(() => {
     if (!searchQuery.trim()) return POPULAR_SURAHS;
     const q = searchQuery.toLowerCase();
@@ -222,12 +224,12 @@ export function ClassroomMaterials({ levelName, trackName }: ClassroomMaterialsP
       </CardHeader>
 
       <CardContent className="p-0 flex-1 flex flex-col overflow-hidden">
-        <Tabs defaultValue="quran" className="flex-1 flex flex-col h-full">
+        <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as any)} className="flex-1 flex flex-col h-full">
           <div className="px-3 pt-2 border-b bg-muted/10">
             <TabsList className="grid grid-cols-3 w-full h-8 text-xs">
-              <TabsTrigger value="quran" className="text-xs py-1">Quran Reader</TabsTrigger>
-              <TabsTrigger value="tajweed" className="text-xs py-1">Tajweed & Makharij</TabsTrigger>
-              <TabsTrigger value="syllabus" className="text-xs py-1">Level Goals</TabsTrigger>
+              <TabsTrigger value="quran" onClick={() => setActiveTab('quran')} className="text-xs py-1">Quran Reader</TabsTrigger>
+              <TabsTrigger value="tajweed" onClick={() => setActiveTab('tajweed')} className="text-xs py-1">Tajweed & Makharij</TabsTrigger>
+              <TabsTrigger value="syllabus" onClick={() => setActiveTab('syllabus')} className="text-xs py-1">Level Goals</TabsTrigger>
             </TabsList>
           </div>
 
