@@ -172,14 +172,12 @@ export function getNavigationForRole(experience: RoleExperience): NavItem[] {
       return [
         { label: 'Dashboard', href: '/app/dashboard', icon: LayoutDashboard },
         { label: 'My Classes', href: '/app/scheduling', icon: Calendar },
-        { label: 'My Schedule', href: '/app/scheduling?view=calendar', icon: Clock },
         { label: 'Students', href: '/app/students', icon: Users },
         { label: 'Assessments', href: '/app/assessments', icon: CheckSquare },
         { label: 'Progress', href: '/app/progress', icon: TrendingUp },
         { label: 'Curriculum & Placements', href: '/app/curriculum', icon: BookOpen },
         { label: 'Pricing', href: '/app/pricing', icon: Wallet, requiredCapability: 'manage_pricing' },
         { label: 'Payouts', href: '/app/payouts', icon: Banknote, requiredCapability: 'view_academy_payouts' },
-        { label: 'Availability', href: '/app/scheduling?tab=availability', icon: CalendarCheck },
         { label: 'Notifications', href: '/app/notifications', icon: Bell },
         { label: 'Profile', href: '/app/profile', icon: User },
       ];
@@ -188,11 +186,9 @@ export function getNavigationForRole(experience: RoleExperience): NavItem[] {
       return [
         { label: 'Dashboard', href: '/app/dashboard', icon: LayoutDashboard },
         { label: 'My Classes', href: '/app/scheduling', icon: Calendar },
-        { label: 'My Schedule', href: '/app/scheduling?view=calendar', icon: Clock },
         { label: 'Students', href: '/app/students', icon: Users },
         { label: 'Assessments', href: '/app/assessments', icon: CheckSquare },
         { label: 'Progress', href: '/app/progress', icon: TrendingUp },
-        { label: 'Availability', href: '/app/scheduling?tab=availability', icon: CalendarCheck },
         { label: 'My Earnings', href: '/app/payouts', icon: Banknote, requiredCapability: 'view_own_payouts' },
         { label: 'Notifications', href: '/app/notifications', icon: Bell },
         { label: 'Profile', href: '/app/profile', icon: User },

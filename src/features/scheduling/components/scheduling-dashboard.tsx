@@ -77,25 +77,14 @@ function SchedulingDashboardInner() {
           )}
 
           {/* Teacher Actions */}
-          {isTeacherUser && (
-            <>
-              <Button
-                variant={activeTab === 'availability' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setActiveTab('availability')}
-              >
-                <CalendarCheck className="mr-2 h-4 w-4" /> My Availability
-              </Button>
-              {canAllocate && (
-                <Button
-                  variant={activeTab === 'waitlist' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setActiveTab('waitlist')}
-                >
-                  <Users className="mr-2 h-4 w-4" /> Review Student Requests
-                </Button>
-              )}
-            </>
+          {isTeacherUser && canAllocate && (
+            <Button
+              variant={activeTab === 'waitlist' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveTab('waitlist')}
+            >
+              <Users className="mr-2 h-4 w-4" /> Review Student Requests
+            </Button>
           )}
 
           {/* Owner/Admin Action */}

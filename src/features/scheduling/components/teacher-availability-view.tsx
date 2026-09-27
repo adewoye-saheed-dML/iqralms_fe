@@ -36,37 +36,19 @@ export function TeacherAvailabilityView() {
 
   const [selectedTeacherId, setSelectedTeacherId] = React.useState<string>('');
 
-  // Fetch teacher configurations so management can select teachers or regular teachers resolve their ID
-  const { data: teacherConfigs, isLoading: isLoadingConfigs } = useQuery({
+  // Fetch teacher configurations ONLY for owner/admin who can manage memberships
+  const { data: teacherConfigs = [], isLoading: isLoadingConfigs } = useQuery({
     queryKey: ['teachers', 'configurations', activeAcademy?.id],
     queryFn: () => {
       if (!activeAcademy?.id) throw new Error('No academy');
       return teachersApi.getTeacherConfigurations(activeAcademy.id);
     },
-    enabled: !!activeAcademy?.id,
+    enabled: !!activeAcademy?.id && isOwnerOrAdmin,
   });
 
-  // Resolve active teacher ID
+  // Resolve active teacher ID for owner/admin
   React.useEffect(() => {
-    if (teacherConfigs && teacherConfigs.length > 0 && !selectedTeacherId) {
-      if (isTeacher) {
-        const myConfig = teacherConfigs.find(
-          (tc) =>
-            tc.membership === user?.id ||
-            (tc as unknown as { user?: number }).user === user?.id ||
-            (tc as unknown as { teacher?: number }).teacher === user?.id ||
-            (tc as unknown as { teacher_username?: string }).teacher_username === user?.username
-        );
-        if (myConfig) {
-          const tId =
-            (myConfig as unknown as { teacher?: number }).teacher ||
-            (myConfig as unknown as { user?: number }).user ||
-            myConfig.id;
-          setSelectedTeacherId(String(tId));
-          return;
-        }
-      }
-      // If owner/admin, default to first teacher
+    if (isOwnerOrAdmin && teacherConfigs.length > 0 && !selectedTeacherId) {
       const firstConfig = teacherConfigs[0];
       const tId =
         (firstConfig as unknown as { teacher?: number }).teacher ||
@@ -74,9 +56,13 @@ export function TeacherAvailabilityView() {
         firstConfig.id;
       setSelectedTeacherId(String(tId));
     }
-  }, [teacherConfigs, selectedTeacherId, isTeacher, user]);
+  }, [isOwnerOrAdmin, teacherConfigs, selectedTeacherId]);
 
-  const teacherIdNum = selectedTeacherId ? Number(selectedTeacherId) : null;
+  // For a teacher, their teacher ID is simply user.id (no need for management configurations API).
+  // For owner/admin, use the selected teacher from dropdown.
+  const teacherIdNum = isTeacher && !isOwnerOrAdmin
+    ? user?.id
+    : (selectedTeacherId ? Number(selectedTeacherId) : null);
 
   const { data: availabilityList = [], isLoading: isLoadingAvailability } = useQuery({
     queryKey: ['scheduling', 'availability', activeAcademy?.id, teacherIdNum],
@@ -87,20 +73,28 @@ export function TeacherAvailabilityView() {
     enabled: !!activeAcademy?.id && !!teacherIdNum,
   });
 
-  const selectedTeacherConfig = teacherConfigs?.find((tc) => {
-    const tId =
-      (tc as unknown as { teacher?: number }).teacher ||
-      (tc as unknown as { user?: number }).user ||
-      tc.id;
-    return String(tId) === selectedTeacherId;
-  });
+  const selectedTeacherConfig = isOwnerOrAdmin
+    ? teacherConfigs.find((tc) => {
+        const tId =
+          (tc as unknown as { teacher?: number }).teacher ||
+          (tc as unknown as { user?: number }).user ||
+          tc.id;
+        return String(tId) === selectedTeacherId;
+      })
+    : null;
 
-  const teacherDisplayName = selectedTeacherConfig
+  const teacherDisplayName = isTeacher && !isOwnerOrAdmin
+    ? user?.first_name
+      ? `${user.first_name} ${user.last_name || ''}`.trim()
+      : user?.username || 'Teacher'
+    : selectedTeacherConfig
     ? (selectedTeacherConfig as unknown as { teacher_username?: string; teacher_name?: string }).teacher_username ||
       (selectedTeacherConfig as unknown as { teacher_name?: string }).teacher_name ||
       selectedTeacherConfig.username ||
       `Teacher #${selectedTeacherId}`
-    : `Teacher #${selectedTeacherId}`;
+    : selectedTeacherId
+    ? `Teacher #${selectedTeacherId}`
+    : 'Teacher';
 
   // Group availability by weekday
   const groupedByDay = React.useMemo(() => {
@@ -129,7 +123,7 @@ export function TeacherAvailabilityView() {
     }, 0);
   }, [availabilityList]);
 
-  if (isLoadingConfigs && !selectedTeacherId) {
+  if (isOwnerOrAdmin && isLoadingConfigs && !selectedTeacherId) {
     return <LoadingState />;
   }
 
@@ -224,8 +218,9 @@ export function TeacherAvailabilityView() {
           <AlertCircle className="h-8 w-8 text-muted-foreground mx-auto" />
           <h4 className="font-medium text-sm">No Availability Windows Declared</h4>
           <p className="text-xs text-muted-foreground max-w-md mx-auto">
-            No recurring weekly working hours have been registered for this teacher in {activeAcademy?.name || 'this academy'}.
-            Management can configure working hours to enable student bookings and automated allocation.
+            {isTeacher && !isOwnerOrAdmin
+              ? `No recurring weekly teaching hours have been declared yet for your profile in ${activeAcademy?.name || 'this academy'}. Your declared hours determine when students and management can schedule classes with you. Please contact academy leadership to register your active teaching windows.`
+              : `No recurring weekly working hours have been registered for this teacher in ${activeAcademy?.name || 'this academy'}. In this backend version, availability windows are maintained by academy leadership to enable automated student routing and allocation.`}
           </p>
         </Card>
       ) : (
