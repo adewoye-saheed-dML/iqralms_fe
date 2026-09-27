@@ -16,13 +16,42 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import Link from 'next/link';
 import { BookOpen, Plus, GraduationCap, Headphones, ArrowRight } from 'lucide-react';
 import { ApiError } from '@/lib/api/errors';
+import { useSearchParams } from 'next/navigation';
 import { StudentAllocationsTable } from './student-allocations-table';
 import { AudioPlacementTestsPanel } from './audio-placement-tests-panel';
 import { PlacementsPanel } from './placements-panel';
 
 export function CurriculumDirectory() {
   const { activeAcademy, activeRole } = useAcademy();
-  const [activeTab, setActiveTab] = React.useState<'subjects' | 'allocations' | 'placements'>('subjects');
+
+  const searchParams = useSearchParams();
+  const tabParam = searchParams?.get('tab') ?? null;
+
+  const initialTab: 'subjects' | 'allocations' | 'placements' =
+    tabParam === 'mapping' || tabParam === 'allocations'
+      ? 'allocations'
+      : tabParam === 'placements'
+      ? 'placements'
+      : 'subjects';
+
+  const [selectedTab, setSelectedTab] = React.useState<'subjects' | 'allocations' | 'placements' | null>(null);
+  const [prevTabParam, setPrevTabParam] = React.useState(tabParam);
+
+  if (tabParam !== prevTabParam) {
+    setPrevTabParam(tabParam);
+    setSelectedTab(null);
+  }
+
+  const activeTab = selectedTab ?? initialTab;
+
+  const handleTabChange = (val: 'subjects' | 'allocations' | 'placements') => {
+    setSelectedTab(val);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', val);
+      window.history.replaceState(null, '', url.toString());
+    }
+  };
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: curriculumKeys.tracks(activeAcademy?.id),
@@ -79,7 +108,7 @@ export function CurriculumDirectory() {
       {/* Top Level Curriculum Navigation Tabs */}
       <Tabs
         value={activeTab}
-        onValueChange={(val) => setActiveTab(val as 'subjects' | 'allocations' | 'placements')}
+        onValueChange={(val) => handleTabChange(val as 'subjects' | 'allocations' | 'placements')}
         className="space-y-6"
       >
         <TabsList className="grid w-full grid-cols-3 max-w-2xl bg-muted/60 p-1 rounded-xl">
@@ -89,7 +118,7 @@ export function CurriculumDirectory() {
           </TabsTrigger>
           <TabsTrigger value="allocations" className="text-xs sm:text-sm font-medium flex items-center gap-2">
             <GraduationCap className="h-4 w-4" />
-            <span>Student Allocations</span>
+            <span>Student-Teacher Mapping</span>
           </TabsTrigger>
           <TabsTrigger value="placements" className="text-xs sm:text-sm font-medium flex items-center gap-2">
             <Headphones className="h-4 w-4" />

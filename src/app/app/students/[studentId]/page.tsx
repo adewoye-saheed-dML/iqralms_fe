@@ -1,34 +1,39 @@
 import * as React from 'react';
 import { PageHeader } from '@/components/ui/page-header';
 import { StudentDetail } from '@/features/students/components/student-detail';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
 
 export const metadata = {
   title: 'Student Details | Quran Academy',
 };
 
 interface StudentDetailPageProps {
-  params: {
+  params: Promise<{
     studentId: string;
-  };
+  }>;
+  searchParams?: Promise<{
+    from?: string;
+  }>;
 }
 
-export default function StudentDetailPage({ params }: StudentDetailPageProps) {
-  const enrollmentId = parseInt(params.studentId, 10);
+export default async function StudentDetailPage({ params, searchParams }: StudentDetailPageProps) {
+  const resolvedParams = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const enrollmentId = parseInt(resolvedParams.studentId, 10);
+  const from = resolvedSearchParams?.from;
+
+  const backHref =
+    from === 'dashboard-students' || from === 'dashboard'
+      ? '/app/dashboard?tab=students'
+      : '/app/students';
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button asChild variant="ghost" size="icon">
-          <Link href="/app/students">
-            <ArrowLeft className="h-4 w-4" />
-            <span className="sr-only">Back to students</span>
-          </Link>
-        </Button>
-        <PageHeader title="Student Details" description="Manage student enrollment status." />
-      </div>
+      <PageHeader
+        title="Student Details"
+        description="Manage student enrollment status."
+        backHref={backHref}
+        backLabel="Back to Students"
+      />
 
       <div className="mt-8">
         <StudentDetail enrollmentId={enrollmentId} />

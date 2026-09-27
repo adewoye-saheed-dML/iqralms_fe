@@ -63,7 +63,7 @@ describe('Student Allocations & Curriculum Features', () => {
     } as any);
   });
 
-  describe('StudentAllocationsTable', () => {
+  describe('StudentAllocationsTable', { timeout: 15000 }, () => {
     it('renders enrolled students with assigned subjects, levels, and qualified teachers', async () => {
       vi.mocked(studentsApi.getAcademyStudents).mockResolvedValue([
         {

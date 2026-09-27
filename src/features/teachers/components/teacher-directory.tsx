@@ -3,7 +3,8 @@
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAcademy } from '@/lib/academy/academy-provider';
-import { teachersApi } from '../api/teachers';
+import { teachersApi, type TeacherConfiguration } from '../api/teachers';
+import { membershipsApi, type Membership } from '@/features/memberships/api/memberships';
 import { teacherKeys } from '@/lib/api/query-keys';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
@@ -21,19 +22,94 @@ export function TeacherDirectory() {
   const [search, setSearch] = React.useState('');
 
   const {
-    data: teachers,
-    isLoading,
+    data: teachers = [],
+    isLoading: isTeachersLoading,
     isError,
     error,
-  } = useQuery({
+  } = useQuery<TeacherConfiguration[]>({
     queryKey: teacherKeys.all(activeAcademy?.id),
-    queryFn: () => teachersApi.getTeacherConfigurations(activeAcademy!.id),
+    queryFn: async () => {
+      if (!activeAcademy?.id) return [];
+      const res = await teachersApi.getTeacherConfigurations(activeAcademy.id);
+      return res ?? [];
+    },
     enabled: !!activeAcademy,
   });
 
+  const { data: members = [] } = useQuery<Membership[]>({
+    queryKey: ['memberships', activeAcademy?.id],
+    queryFn: async () => {
+      try {
+        if (!activeAcademy?.id) return [];
+        const res = await membershipsApi.list(activeAcademy.id);
+        return res ?? [];
+      } catch {
+        return [];
+      }
+    },
+    enabled: !!activeAcademy,
+  });
+
+  const unifiedTeachers = React.useMemo(() => {
+    const list: Array<{
+      key: string;
+      membership: number;
+      user: number;
+      username: string;
+      max_weekly_hours: number | null;
+      hourly_payout_rate: string | null;
+      approved: boolean;
+      hasConfig: boolean;
+      created_at: string;
+    }> = [];
+
+    const teacherConfigs = teachers || [];
+    const teacherMembers = members.filter((m) => m.role === 'teacher');
+
+    // 1. All teacher members first
+    for (const m of teacherMembers) {
+      const config = teacherConfigs.find(
+        (c) =>
+          c.membership === m.id ||
+          c.user === m.user ||
+          c.username.toLowerCase() === m.username.toLowerCase()
+      );
+      list.push({
+        key: `member-${m.id}`,
+        membership: m.id,
+        user: m.user,
+        username: m.username,
+        max_weekly_hours: config ? config.max_weekly_hours : null,
+        hourly_payout_rate: config ? config.hourly_payout_rate : null,
+        approved: config ? config.approved : false,
+        hasConfig: !!config,
+        created_at: config?.created_at || m.created_at,
+      });
+    }
+
+    // 2. Any configs not found in membersList
+    for (const c of teacherConfigs) {
+      if (!list.some((t) => t.username.toLowerCase() === c.username.toLowerCase())) {
+        list.push({
+          key: `config-${c.id}`,
+          membership: c.membership,
+          user: c.user,
+          username: c.username,
+          max_weekly_hours: c.max_weekly_hours,
+          hourly_payout_rate: c.hourly_payout_rate,
+          approved: c.approved,
+          hasConfig: true,
+          created_at: c.created_at,
+        });
+      }
+    }
+
+    return list;
+  }, [teachers, members]);
+
   if (!activeAcademy) return null;
 
-  if (isLoading) {
+  if (isTeachersLoading) {
     return (
       <div className="flex justify-center p-12">
         <Spinner className="h-8 w-8" />
@@ -47,7 +123,7 @@ export function TeacherDirectory() {
 
   const canManage = can('manage_teachers', { activeRole });
 
-  const filtered = (teachers || []).filter((t) =>
+  const filtered = unifiedTeachers.filter((t) =>
     t.username.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -66,7 +142,7 @@ export function TeacherDirectory() {
         {canManage && (
           <div className="flex flex-wrap items-center gap-2">
             <Button asChild>
-              <Link href="/app/invitations?role=teacher">
+              <Link href="/app/invitations?role=teacher&from=teachers">
                 <UserPlus className="mr-2 h-4 w-4" />
                 Invite Teacher
               </Link>
@@ -95,24 +171,39 @@ export function TeacherDirectory() {
           </div>
           {filtered.map((teacher) => (
             <Link
-              key={teacher.user}
-              href={`/app/teachers/${teacher.membership}`}
+              key={teacher.key}
+              href={`/app/teachers/${teacher.membership}?from=teachers`}
               className="hover:bg-muted/50 block p-4 transition-colors"
             >
               <div className="grid gap-4 sm:grid-cols-4 sm:items-center">
                 <div className="col-span-2">
                   <div className="text-foreground font-medium">{teacher.username}</div>
                   <div className="text-muted-foreground text-sm">
-                    Added {new Date(teacher.created_at).toLocaleDateString()}
+                    Added {teacher.created_at ? new Date(teacher.created_at).toLocaleDateString() : 'Recently'}
                   </div>
                 </div>
                 <div>
-                  <div className="text-sm">{teacher.max_weekly_hours} hrs/wk</div>
+                  <div className="text-sm">
+                    {teacher.hasConfig && teacher.max_weekly_hours != null
+                      ? `${teacher.max_weekly_hours} hrs/wk`
+                      : 'Terms not set'}
+                  </div>
+                  {teacher.hasConfig && teacher.hourly_payout_rate && (
+                    <div className="text-xs text-muted-foreground">
+                      ${teacher.hourly_payout_rate}/hr
+                    </div>
+                  )}
                 </div>
                 <div>
-                  <Badge variant={teacher.approved ? 'default' : 'secondary'}>
-                    {teacher.approved ? 'Active' : 'Pending Activation'}
-                  </Badge>
+                  {teacher.hasConfig ? (
+                    <Badge variant={teacher.approved ? 'default' : 'secondary'}>
+                      {teacher.approved ? 'Active' : 'Pending Activation'}
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="border-amber-300 text-amber-600 dark:text-amber-400">
+                      Pending Terms Setup
+                    </Badge>
+                  )}
                 </div>
               </div>
             </Link>

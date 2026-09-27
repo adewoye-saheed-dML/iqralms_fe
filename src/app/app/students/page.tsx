@@ -12,6 +12,8 @@ export default function StudentsPage() {
       <PageHeader
         title="Student Management"
         description="Manage students, enrollments, and parent links."
+        backHref="/app/dashboard?tab=students"
+        backLabel="Back to Dashboard"
       />
       <StudentDirectory />
     </div>

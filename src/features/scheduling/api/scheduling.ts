@@ -72,6 +72,24 @@ export const schedulingApi = {
     return data;
   },
 
+  completeBooking: async (
+    organizationId: number,
+    bookingId: number,
+    body?: { duration_minutes?: number }
+  ): Promise<Booking> => {
+    const { data } = await apiClient.POST(
+      '/api/scheduling/organizations/{organization_pk}/bookings/{id}/complete/' as any,
+      {
+        params: { path: { organization_pk: organizationId, id: bookingId } },
+        body: body || {},
+      }
+    );
+    if (!data) {
+      throw new Error('Failed to complete booking');
+    }
+    return data as Booking;
+  },
+
   getMyBookings: async (organizationId: number): Promise<Booking[]> => {
     const { data } = await apiClient.GET('/api/scheduling/organizations/{organization_pk}/bookings/mine/', {
       params: { path: { organization_pk: organizationId } },

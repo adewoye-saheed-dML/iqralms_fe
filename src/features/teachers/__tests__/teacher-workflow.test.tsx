@@ -18,9 +18,13 @@ vi.mock('@/lib/permissions/capabilities', () => ({
 }));
 vi.mock('next/navigation', () => ({
   useRouter: vi.fn(() => ({ push: vi.fn() })),
+  useSearchParams: vi.fn(() => new URLSearchParams()),
 }));
 vi.mock('../api/teachers', () => ({
   teachersApi: { getTeacherConfigurations: vi.fn(), updateTeacherConfiguration: vi.fn() },
+}));
+vi.mock('@/features/memberships/api/memberships', () => ({
+  membershipsApi: { list: vi.fn().mockResolvedValue([]) },
 }));
 
 const queryClient = new QueryClient({
@@ -54,6 +58,20 @@ describe('Teacher Workflows', () => {
     await waitFor(() => {
       expect(screen.getByText('Invite Teacher')).toBeInTheDocument();
       expect(screen.getByText('teacher1')).toBeInTheDocument();
+    });
+  });
+
+  it('displays onboarded teacher with membership as pending terms setup even without configuration', async () => {
+    vi.mocked(teachersApi.getTeacherConfigurations).mockResolvedValue([]);
+    const { membershipsApi } = await import('@/features/memberships/api/memberships');
+    vi.mocked(membershipsApi.list).mockResolvedValue([
+      { id: 25, user: 200, username: 'newteacher', role: 'teacher', status: 'active', created_at: '2026-09-20T00:00:00Z' } as any
+    ]);
+    renderDir();
+    await waitFor(() => {
+      expect(screen.getByText('newteacher')).toBeInTheDocument();
+      expect(screen.getByText('Pending Terms Setup')).toBeInTheDocument();
+      expect(screen.getByText('Terms not set')).toBeInTheDocument();
     });
   });
 

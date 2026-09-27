@@ -27,6 +27,15 @@ export function InvitationsDashboard() {
 
   const role = selectedRole ?? initialRole;
 
+  const handleRoleChange = (newRole: InvitationRole) => {
+    setSelectedRole(newRole);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('role', newRole);
+      window.history.replaceState(null, '', url.toString());
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -37,7 +46,7 @@ export function InvitationsDashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={role} onValueChange={(value) => setSelectedRole(value as InvitationRole)}>
+          <Tabs value={role} onValueChange={(val) => handleRoleChange(val as InvitationRole)}>
             <TabsList>
               <TabsTrigger value="teacher">Teacher</TabsTrigger>
               <TabsTrigger value="parent">Parent</TabsTrigger>

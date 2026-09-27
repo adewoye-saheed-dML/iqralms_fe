@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { OwnerAdminDashboard } from '../owner-admin-dashboard';
@@ -131,6 +131,101 @@ describe('Role-Based Dashboards and SSoT Compliance', () => {
         expect(screen.getByText('Student: Zayd · Teacher: Ali')).toBeInTheDocument();
         const sessionLink = screen.getByRole('link', { name: /class session/i });
         expect(sessionLink).toHaveAttribute('href', '/app/scheduling/42');
+      });
+    }, 15000);
+
+    it('unifies onboarded students and teachers, showing correct counts and dedicated rosters', async () => {
+      vi.spyOn(AcademyProvider, 'useAcademy').mockReturnValue({
+        activeAcademy: { id: 1, name: 'Furqan Academy' },
+        activeRole: 'owner',
+      } as any);
+      vi.spyOn(AuthProvider, 'useAuth').mockReturnValue({
+        user: { id: 1, username: 'admin_user', first_name: 'Admin' },
+      } as any);
+
+      // 1 teacher via membership without configuration
+      vi.mocked(membershipsApi.list).mockResolvedValue([
+        { id: 101, user: 1, username: 'admin_user', role: 'owner', status: 'active', created_at: '2026-09-01T00:00:00Z' } as any,
+        { id: 102, user: 50, username: 'ustadh_bilal', role: 'teacher', status: 'active', created_at: '2026-09-05T00:00:00Z' } as any,
+        { id: 103, user: 60, username: 'student_maryam', role: 'student', status: 'active', created_at: '2026-09-10T00:00:00Z' } as any,
+      ]);
+      // Teacher configuration is empty (pending configuration)
+      vi.mocked(teachersApi.getTeacherConfigurations).mockResolvedValue([]);
+
+      // 2 students in StudentEnrollment (one overlaps with membership, one is enrollment-only)
+      vi.mocked(studentsApi.getStudents).mockResolvedValue([
+        {
+          id: 11,
+          user_id: 60,
+          username: 'student_maryam',
+          first_name: 'Maryam',
+          last_name: 'Ahmed',
+          enrollment_status: 'active',
+          track_id: 5,
+          level_id: 2,
+          teacher_name: 'Ustadh Bilal',
+        } as any,
+        {
+          id: 12,
+          user_id: 70,
+          username: 'student_hamzah',
+          first_name: 'Hamzah',
+          last_name: 'Ali',
+          enrollment_status: 'active',
+          track_id: null,
+          level_id: null,
+          teacher_name: null,
+        } as any,
+      ]);
+
+      vi.mocked(curriculumApi.getTracks).mockResolvedValue([
+        { id: 5, name: 'Tajweed Track', levels: [{ id: 2, name: 'Level 2' }] } as any,
+      ]);
+      vi.mocked(invitationsApi.list).mockResolvedValue([]);
+      vi.mocked(schedulingApi.getAcademyBookings).mockResolvedValue([]);
+
+      renderWithProviders(<OwnerAdminDashboard />);
+
+      // Verify KPI counts
+      await waitFor(() => {
+        expect(screen.getAllByText('Teachers').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('Enrolled Students').length).toBeGreaterThan(0);
+      });
+
+      // Switch to Teachers tab
+      const teachersTab = screen.getByRole('tab', { name: /teachers/i });
+      fireEvent.pointerDown(teachersTab, { button: 0, ctrlKey: false });
+      fireEvent.click(teachersTab);
+
+      await waitFor(() => {
+        expect(screen.getByText('ustadh_bilal')).toBeInTheDocument();
+        expect(screen.getByText('Pending Terms Setup')).toBeInTheDocument();
+      });
+
+      // Switch to Students tab
+      const studentsTab = screen.getByRole('tab', { name: /students/i });
+      fireEvent.pointerDown(studentsTab, { button: 0, ctrlKey: false });
+      fireEvent.click(studentsTab);
+
+      await waitFor(() => {
+        expect(screen.getByText('Maryam Ahmed')).toBeInTheDocument();
+        expect(screen.getByText('Hamzah Ali')).toBeInTheDocument();
+        expect(screen.getByText('Tajweed Track · Level 2')).toBeInTheDocument();
+        expect(screen.getByText('Ustadh Bilal')).toBeInTheDocument();
+        expect(screen.getByText('Unplaced Track')).toBeInTheDocument();
+        expect(screen.getByText('No Teacher Assigned')).toBeInTheDocument();
+      });
+
+      // Switch to Members tab
+      const membersTab = screen.getByRole('tab', { name: /members/i });
+      fireEvent.pointerDown(membersTab, { button: 0, ctrlKey: false });
+      fireEvent.click(membersTab);
+
+      await waitFor(() => {
+        const studentFilterBtn = screen.getByRole('button', { name: /student \(2\)/i });
+        expect(studentFilterBtn).toBeInTheDocument();
+        const teacherFilterBtn = screen.getByRole('button', { name: /teacher \(1\)/i });
+        expect(teacherFilterBtn).toBeInTheDocument();
       });
     }, 15000);
   });

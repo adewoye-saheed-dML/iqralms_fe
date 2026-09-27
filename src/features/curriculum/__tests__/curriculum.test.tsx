@@ -16,6 +16,7 @@ import { act } from 'react';
 const pushMock = vi.fn();
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: pushMock }),
+  useSearchParams: () => ({ get: vi.fn(() => null) }),
 }));
 
 vi.mock('next/link', () => ({

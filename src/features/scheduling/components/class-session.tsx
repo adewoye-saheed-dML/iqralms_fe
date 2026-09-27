@@ -13,12 +13,29 @@ import { Badge } from '@/components/ui/badge';
 import { LoadingState } from '@/components/ui/loading';
 import { ErrorState } from '@/components/ui/error-state';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Video, ExternalLink, CheckSquare, AlertTriangle } from 'lucide-react';
+import {
+  Video,
+  ExternalLink,
+  CheckSquare,
+  AlertTriangle,
+  Clock,
+  CheckCircle2,
+  DollarSign,
+  BookOpen,
+  PenTool,
+  Maximize2,
+  Layout,
+  Columns,
+} from 'lucide-react';
 import { ApiError } from '@/lib/api/errors';
+import { ClassroomMaterials } from './classroom-materials';
+import { ClassroomWhiteboard } from './classroom-whiteboard';
 
 interface ClassSessionProps {
   bookingId: number;
 }
+
+type WorkspaceView = 'video' | 'split-materials' | 'split-whiteboard' | 'materials' | 'whiteboard';
 
 export function ClassSession({ bookingId }: ClassSessionProps) {
   const { activeAcademy, activeRole } = useAcademy();
@@ -26,8 +43,17 @@ export function ClassSession({ bookingId }: ClassSessionProps) {
   const queryClient = useQueryClient();
 
   const [embedVideo, setEmbedVideo] = React.useState(false);
+  const [viewMode, setViewMode] = React.useState<WorkspaceView>('split-materials');
   const [assessmentSuccess, setAssessmentSuccess] = React.useState(false);
   const [assessmentError, setAssessmentError] = React.useState<string | null>(null);
+
+  // Live Timer for Hours Tracking
+  const [sessionSeconds, setSessionSeconds] = React.useState(0);
+  const [isTimerRunning, setIsTimerRunning] = React.useState(false);
+  const [completedDuration, setCompletedDuration] = React.useState<number | null>(null);
+  const [completionSuccess, setCompletionSuccess] = React.useState(false);
+  const [completionError, setCompletionError] = React.useState<string | null>(null);
+  const [customDurationInput, setCustomDurationInput] = React.useState('30');
 
   // Form state for teacher assessment/notes
   const [score, setScore] = React.useState('8.50');
@@ -38,6 +64,19 @@ export function ClassSession({ bookingId }: ClassSessionProps) {
     activeRole,
     userRole: user?.role,
   });
+
+  // Start timer automatically when embed video is active
+  React.useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    if (embedVideo && isTimerRunning) {
+      interval = setInterval(() => {
+        setSessionSeconds((prev) => prev + 1);
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [embedVideo, isTimerRunning]);
 
   const {
     data: meeting,
@@ -52,6 +91,35 @@ export function ClassSession({ bookingId }: ClassSessionProps) {
     },
     enabled: !!activeAcademy?.id && !!bookingId,
     retry: false,
+  });
+
+  // Complete session mutation (transitions status to completed, logs duration for payout)
+  const completeMutation = useMutation({
+    mutationFn: (durationMins: number) => {
+      if (!activeAcademy?.id) throw new Error('No active academy');
+      return schedulingApi.completeBooking(activeAcademy.id, bookingId, {
+        duration_minutes: durationMins,
+      });
+    },
+    onSuccess: (updatedBooking) => {
+      setCompletionSuccess(true);
+      setCompletionError(null);
+      setIsTimerRunning(false);
+      setCompletedDuration(updatedBooking.duration_minutes || Number(customDurationInput));
+      queryClient.invalidateQueries({
+        queryKey: ['scheduling', 'bookings', activeAcademy?.id],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['payouts', 'list', activeAcademy?.id],
+      });
+    },
+    onError: (err) => {
+      if (err instanceof ApiError) {
+        setCompletionError(err.message || 'Failed to complete session.');
+      } else {
+        setCompletionError('An unexpected error occurred while completing the session.');
+      }
+    },
   });
 
   const assessmentMutation = useMutation({
@@ -120,6 +188,21 @@ export function ClassSession({ bookingId }: ClassSessionProps) {
     );
   }
 
+  const handleToggleVideo = () => {
+    if (!embedVideo) {
+      setEmbedVideo(true);
+      setIsTimerRunning(true);
+    } else {
+      setEmbedVideo(false);
+    }
+  };
+
+  const handleCompleteSession = () => {
+    setCompletionError(null);
+    const mins = Math.max(1, Math.round(sessionSeconds / 60)) || Number(customDurationInput) || 30;
+    completeMutation.mutate(mins);
+  };
+
   const handleAssessmentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setAssessmentError(null);
@@ -136,11 +219,21 @@ export function ClassSession({ bookingId }: ClassSessionProps) {
     });
   };
 
+  const formatTimer = (totalSeconds: number) => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    if (hours > 0) {
+      return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  };
+
   return (
     <div className="space-y-6">
-      {/* Meeting Header Card */}
-      <Card>
-        <CardHeader>
+      {/* Header & Classroom Controls */}
+      <Card className="border shadow-xs">
+        <CardHeader className="pb-3">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <div className="flex items-center gap-2">
@@ -150,20 +243,37 @@ export function ClassSession({ bookingId }: ClassSessionProps) {
                 <Badge variant="outline" className="uppercase text-xs font-semibold">
                   {meeting?.provider || 'Jitsi'}
                 </Badge>
+                {completionSuccess ? (
+                  <Badge className="bg-emerald-600 text-white text-xs">
+                    Completed • {completedDuration} min
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="text-xs">
+                    In Progress
+                  </Badge>
+                )}
               </div>
               <CardDescription className="mt-1">
-                Authorized provider-neutral class session
+                Authorized provider-neutral class session with in-app tracking
               </CardDescription>
             </div>
 
-            <div className="flex gap-2">
+            {/* Video Action Buttons */}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Teaching duration counter */}
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-muted/60 text-xs font-mono font-medium">
+                <Clock className="h-3.5 w-3.5 text-primary animate-pulse" />
+                <span>Teaching Time: {formatTimer(sessionSeconds)}</span>
+              </div>
+
               <Button
                 variant={embedVideo ? 'secondary' : 'default'}
-                onClick={() => setEmbedVideo(!embedVideo)}
+                onClick={handleToggleVideo}
               >
                 <Video className="mr-2 h-4 w-4" />
                 {embedVideo ? 'Hide In-App Video' : 'Join Video Here'}
               </Button>
+
               {meeting?.join_url && (
                 <Button variant="outline" asChild>
                   <a href={meeting.join_url} target="_blank" rel="noreferrer">
@@ -176,20 +286,107 @@ export function ClassSession({ bookingId }: ClassSessionProps) {
           </div>
         </CardHeader>
 
-        {!embedVideo && (
-          <CardContent className="pt-0">
-            <div className="rounded-lg border border-dashed p-6 text-center bg-muted/20">
-              <Video className="mx-auto h-10 w-10 text-primary mb-3" />
-              <h4 className="text-sm font-semibold text-foreground">Interactive Classroom Ready</h4>
-              <p className="text-xs text-muted-foreground max-w-md mx-auto mt-1 mb-4">
-                Connect directly inside the academy using the embedded video frame, or launch in an external window for a full-screen experience.
+        {/* View Switcher Bar (Visible when Video is active or tools are used) */}
+        <div className="px-6 py-2.5 border-t bg-muted/20 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-1">
+            <span className="text-muted-foreground mr-1 font-medium">Class Layout:</span>
+            <Button
+              variant={viewMode === 'video' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('video')}
+              className="h-7 text-xs"
+            >
+              <Video className="h-3 w-3 mr-1" /> Video Only
+            </Button>
+            <Button
+              variant={viewMode === 'split-materials' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('split-materials')}
+              className="h-7 text-xs"
+            >
+              <Columns className="h-3 w-3 mr-1" /> Video + Materials
+            </Button>
+            <Button
+              variant={viewMode === 'split-whiteboard' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('split-whiteboard')}
+              className="h-7 text-xs"
+            >
+              <Columns className="h-3 w-3 mr-1" /> Video + Whiteboard
+            </Button>
+            <Button
+              variant={viewMode === 'materials' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('materials')}
+              className="h-7 text-xs"
+            >
+              <BookOpen className="h-3 w-3 mr-1" /> Full Materials
+            </Button>
+            <Button
+              variant={viewMode === 'whiteboard' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('whiteboard')}
+              className="h-7 text-xs"
+            >
+              <PenTool className="h-3 w-3 mr-1" /> Full Whiteboard
+            </Button>
+          </div>
+
+          {/* Teacher Hours Tracking & Session Conclude Action */}
+          {isTeacherOrAdmin && !completionSuccess && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleCompleteSession}
+                disabled={completeMutation.isPending}
+                className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                {completeMutation.isPending ? 'Completing...' : 'Conclude & Log Hours for Payout'}
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Completion Alert */}
+        {completionSuccess && (
+          <div className="p-4 border-t bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 text-xs flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-emerald-600 shrink-0" />
+              <span>
+                <strong>Session Recorded Successfully!</strong> {completedDuration} minutes of teaching time have been verified and submitted for teacher payout calculation.
+              </span>
+            </div>
+            <Badge variant="outline" className="border-emerald-500 text-emerald-700 dark:text-emerald-300">
+              Payout Eligible
+            </Badge>
+          </div>
+        )}
+
+        {completionError && (
+          <div className="p-3 border-t bg-destructive/10 text-destructive text-xs">
+            {completionError}
+          </div>
+        )}
+      </Card>
+
+      {/* Classroom Main Interactive Area */}
+      {!embedVideo && viewMode !== 'materials' && viewMode !== 'whiteboard' ? (
+        <Card>
+          <CardContent className="py-12">
+            <div className="rounded-lg border border-dashed p-8 text-center bg-muted/20 max-w-xl mx-auto">
+              <Video className="mx-auto h-12 w-12 text-primary mb-3" />
+              <h4 className="text-base font-semibold text-foreground">Interactive Classroom Ready</h4>
+              <p className="text-xs text-muted-foreground mt-1 mb-5">
+                Join video directly inside the academy to automatically track teaching hours for payouts, access learning materials for screen-sharing, and use the whiteboard.
               </p>
-              <div className="flex justify-center gap-3">
-                <Button onClick={() => setEmbedVideo(true)} size="sm">
+              <div className="flex flex-wrap justify-center gap-3">
+                <Button onClick={handleToggleVideo} size="default">
                   <Video className="mr-2 h-4 w-4" /> Start In-App Video
                 </Button>
                 {meeting?.join_url && (
-                  <Button variant="outline" size="sm" asChild>
+                  <Button variant="outline" size="default" asChild>
                     <a href={meeting.join_url} target="_blank" rel="noreferrer">
                       <ExternalLink className="mr-2 h-4 w-4" /> Launch in External Window
                     </a>
@@ -198,21 +395,98 @@ export function ClassSession({ bookingId }: ClassSessionProps) {
               </div>
             </div>
           </CardContent>
-        )}
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 gap-6">
+          {/* Layout 1: Split Video + Materials */}
+          {viewMode === 'split-materials' && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[580px]">
+              {/* Video frame (7 cols) */}
+              <div className="lg:col-span-7 flex flex-col">
+                <Card className="flex-1 overflow-hidden border shadow-sm flex flex-col bg-black">
+                  <div className="w-full flex-1 min-h-[420px] aspect-video">
+                    {meeting?.join_url && (
+                      <iframe
+                        src={meeting.join_url}
+                        className="w-full h-full border-0"
+                        allow="camera; microphone; fullscreen; display-capture; autoplay"
+                        title="Class Video Session"
+                      />
+                    )}
+                  </div>
+                </Card>
+              </div>
 
-        {embedVideo && meeting?.join_url && (
-          <CardContent className="pt-0">
-            <div className="aspect-video w-full rounded-md overflow-hidden border bg-black">
-              <iframe
-                src={meeting.join_url}
-                className="w-full h-full border-0"
-                allow="camera; microphone; fullscreen; display-capture; autoplay"
-                title="Class Video Session"
+              {/* Learning Materials Side (5 cols) */}
+              <div className="lg:col-span-5 flex flex-col">
+                <ClassroomMaterials
+                  levelName={meeting?.display_name}
+                  trackName={activeAcademy.name}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Layout 2: Split Video + Whiteboard */}
+          {viewMode === 'split-whiteboard' && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[580px]">
+              {/* Video frame (6 cols) */}
+              <div className="lg:col-span-6 flex flex-col">
+                <Card className="flex-1 overflow-hidden border shadow-sm flex flex-col bg-black">
+                  <div className="w-full flex-1 min-h-[420px] aspect-video">
+                    {meeting?.join_url && (
+                      <iframe
+                        src={meeting.join_url}
+                        className="w-full h-full border-0"
+                        allow="camera; microphone; fullscreen; display-capture; autoplay"
+                        title="Class Video Session"
+                      />
+                    )}
+                  </div>
+                </Card>
+              </div>
+
+              {/* Whiteboard Side (6 cols) */}
+              <div className="lg:col-span-6 flex flex-col">
+                <ClassroomWhiteboard />
+              </div>
+            </div>
+          )}
+
+          {/* Layout 3: Video Only */}
+          {viewMode === 'video' && (
+            <Card className="overflow-hidden border shadow-sm bg-black">
+              <div className="w-full aspect-video min-h-[520px]">
+                {meeting?.join_url && (
+                  <iframe
+                    src={meeting.join_url}
+                    className="w-full h-full border-0"
+                    allow="camera; microphone; fullscreen; display-capture; autoplay"
+                    title="Class Video Session"
+                  />
+                )}
+              </div>
+            </Card>
+          )}
+
+          {/* Layout 4: Full Materials */}
+          {viewMode === 'materials' && (
+            <div className="min-h-[600px]">
+              <ClassroomMaterials
+                levelName={meeting?.display_name}
+                trackName={activeAcademy.name}
               />
             </div>
-          </CardContent>
-        )}
-      </Card>
+          )}
+
+          {/* Layout 5: Full Whiteboard */}
+          {viewMode === 'whiteboard' && (
+            <div className="min-h-[600px]">
+              <ClassroomWhiteboard />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Student / Parent Guidelines */}
       {!isTeacherOrAdmin && (
@@ -225,7 +499,7 @@ export function ClassSession({ bookingId }: ClassSessionProps) {
           </CardHeader>
           <CardContent className="text-xs text-muted-foreground space-y-2">
             <p>1. Ensure your camera and microphone are connected and allowed in your browser.</p>
-            <p>2. Keep your Mushaf or Quran study materials open and ready for your recitation turn.</p>
+            <p>2. Keep your Mushaf or the in-app Quran Reader open and ready for your recitation turn.</p>
             <p>3. Following the class, your instructor will record your recitation assessment and progress notes, which will appear on your dashboard.</p>
           </CardContent>
         </Card>

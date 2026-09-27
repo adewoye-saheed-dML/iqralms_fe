@@ -12,6 +12,7 @@ import { Spinner } from '@/components/ui/loading';
 import { ErrorState } from '@/components/ui/error-state';
 import { AlertCircle, ArrowLeft, CheckCircle2, Clock } from 'lucide-react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { can } from '@/lib/permissions/capabilities';
 import { Input } from '@/components/ui/input';
 
@@ -22,6 +23,7 @@ interface TeacherDetailProps {
 export function TeacherDetail({ membershipId }: TeacherDetailProps) {
   const queryClient = useQueryClient();
   const { activeAcademy, activeRole } = useAcademy();
+  const searchParams = useSearchParams();
 
   const {
     data: teachers,
@@ -75,12 +77,23 @@ export function TeacherDetail({ membershipId }: TeacherDetailProps) {
     }
   };
 
+  const from = searchParams?.get('from');
+  const backHref =
+    from === 'teachers' ? '/app/teachers' : '/app/dashboard?tab=teachers';
+  const backLabel = 'Back to Teachers';
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center space-x-4">
-        <Button variant="outline" size="icon" asChild>
-          <Link href="/app/teachers?tab=teachers">
-            <ArrowLeft className="h-4 w-4" />
+      <div>
+        <Button
+          variant="ghost"
+          size="sm"
+          asChild
+          className="-ml-2.5 h-8 px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 mb-2"
+        >
+          <Link href={backHref}>
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span>{backLabel}</span>
           </Link>
         </Button>
         <h1 className="text-2xl font-bold tracking-tight">{config.username} (Teacher)</h1>

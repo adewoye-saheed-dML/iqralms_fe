@@ -4,9 +4,10 @@ import * as React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAcademy } from '@/lib/academy/academy-provider';
 import { studentsApi, StudentList } from '@/features/students/api/students';
-import { curriculumApi, TrackBrief, Level, TeacherTrack } from '../api/curriculum';
+import { curriculumApi, TrackBrief, Level, TeacherTrack, PlacementResult } from '../api/curriculum';
 import { membershipsApi, Membership } from '@/features/memberships/api/memberships';
 import { curriculumKeys, studentKeys } from '@/lib/api/query-keys';
+import { AllocateStudentModal, AllocatableStudent } from './allocate-student-modal';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +39,7 @@ import {
   AlertCircle,
   Plus,
   UserCheck,
+  Pencil,
 } from 'lucide-react';
 
 export function StudentAllocationsTable() {
@@ -47,8 +49,9 @@ export function StudentAllocationsTable() {
   const [trackFilter, setTrackFilter] = React.useState<string>('all');
   const [allocationFilter, setAllocationFilter] = React.useState<'all' | 'allocated' | 'unallocated'>('all');
   const [teacherFilter, setTeacherFilter] = React.useState<string>('all');
-  const [selectedStudent, setSelectedStudent] = React.useState<StudentList | null>(null);
+  const [selectedStudent, setSelectedStudent] = React.useState<AllocatableStudent | null>(null);
   const [isTeacherModalOpen, setIsTeacherModalOpen] = React.useState(false);
+  const [noStudentsDialogOpen, setNoStudentsDialogOpen] = React.useState(false);
 
   // Fetch students enrolled in this academy
   const { data: students = [], isLoading: isStudentsLoading } = useQuery<StudentList[]>({
@@ -78,12 +81,104 @@ export function StudentAllocationsTable() {
     enabled: !!activeAcademy?.id,
   });
 
-  // Fetch academy memberships to identify teachers
+  // Fetch academy memberships to identify teachers & student members
   const { data: members = [] } = useQuery<Membership[]>({
     queryKey: ['memberships', activeAcademy?.id],
     queryFn: () => membershipsApi.list(activeAcademy!.id),
     enabled: !!activeAcademy?.id,
   });
+
+  // Fetch pending placements (placement tests / applications)
+  const { data: pendingPlacements = [] } = useQuery<PlacementResult[]>({
+    queryKey: ['placements', activeAcademy?.id, 'pending'],
+    queryFn: async () => {
+      try {
+        if (!activeAcademy?.id) return [];
+        return await curriculumApi.getPendingPlacements(activeAcademy.id);
+      } catch {
+        return [];
+      }
+    },
+    enabled: !!activeAcademy?.id,
+  });
+
+  // Unified Allocatable Students: Cross-match enrolled students and student members
+  const allAllocatableStudents = React.useMemo<AllocatableStudent[]>(() => {
+    const list: AllocatableStudent[] = [];
+
+    // 1. Enrolled students
+    for (const s of students) {
+      const placement = pendingPlacements.find(
+        (p) => p.student?.id === s.user_id || p.student?.username === s.username
+      );
+      list.push({
+        id: s.id,
+        user_id: s.user_id,
+        username: s.username,
+        first_name: s.first_name,
+        last_name: s.last_name,
+        email: s.email,
+        is_minor: s.is_minor,
+        date_of_birth: s.date_of_birth,
+        enrollment_status: s.enrollment_status,
+        track_id: s.track_id,
+        level_id: s.level_id,
+        teacher_id: s.teacher_id,
+        teacher_name: s.teacher_name,
+        hasEnrollment: true,
+        appliedTrackName: placement ? placement.track : null,
+        appliedLevelName: placement?.recommended_level?.name || null,
+        appliedAsBeginner: placement ? placement.skipped_as_beginner : false,
+      });
+    }
+
+    // 2. Student members awaiting initial enrollment / placement
+    const enrolledUserIds = new Set(students.map((s) => s.user_id));
+    const studentMembers = members.filter((m) => m.role === 'student');
+
+    for (const m of studentMembers) {
+      if (!enrolledUserIds.has(m.user)) {
+        const placement = pendingPlacements.find(
+          (p) => p.student?.id === m.user || p.student?.username === m.username
+        );
+        let appliedTrackId: number | null = null;
+        let appliedLevelId: number | null = null;
+        if (placement) {
+          const match = tracks.find(
+            (t) =>
+              t.name.toLowerCase() === placement.track.toLowerCase() ||
+              t.slug.toLowerCase() === placement.track.toLowerCase()
+          );
+          if (match) appliedTrackId = match.id;
+          if (placement.recommended_level?.id) {
+            appliedLevelId = placement.recommended_level.id;
+          }
+        }
+
+        list.push({
+          id: -(m.id || m.user),
+          user_id: m.user,
+          username: m.username,
+          first_name: '',
+          last_name: '',
+          email: '',
+          is_minor: false,
+          date_of_birth: '',
+          enrollment_status: 'pending_placement',
+          track_id: appliedTrackId,
+          level_id: appliedLevelId,
+          teacher_id: null,
+          teacher_name: null,
+          hasEnrollment: false,
+          appliedTrackName: placement ? placement.track : null,
+          appliedLevelName: placement?.recommended_level?.name || null,
+          appliedAsBeginner: placement ? placement.skipped_as_beginner : false,
+        });
+      }
+    }
+
+    return list;
+  }, [students, members, pendingPlacements, tracks]);
 
   // Teachers in the academy
   const teacherMembers = React.useMemo(() => {
@@ -95,8 +190,8 @@ export function StudentAllocationsTable() {
   if (isStudentsLoading || isTracksLoading) return <LoadingState />;
 
   // Filter students based on search, track, allocation status, and teacher
-  const filteredStudents = students.filter((s) => {
-    const studentName = `${s.first_name || ''} ${s.last_name || ''} ${s.username} ${s.email}`.toLowerCase();
+  const filteredStudents = allAllocatableStudents.filter((s) => {
+    const studentName = `${s.first_name || ''} ${s.last_name || ''} ${s.username} ${s.email || ''}`.toLowerCase();
     const matchesSearch = studentName.includes(search.toLowerCase());
 
     const isAllocated = s.track_id !== null && s.level_id !== null;
@@ -119,14 +214,16 @@ export function StudentAllocationsTable() {
   });
 
   // Count metrics
-  const totalStudents = students.length;
-  const allocatedCount = students.filter((s) => s.track_id && s.level_id).length;
-  const pendingCount = totalStudents - allocatedCount;
+  const totalStudents = allAllocatableStudents.length;
+  const fullyAllocatedCount = allAllocatableStudents.filter((s) => s.track_id && s.level_id && s.teacher_id).length;
+  const levelAllocatedCount = allAllocatableStudents.filter((s) => s.track_id && s.level_id).length;
+  const pendingTeacherCount = allAllocatableStudents.filter((s) => !s.teacher_id).length;
+  const pendingLevelCount = totalStudents - levelAllocatedCount;
 
   return (
     <div className="space-y-6">
       {/* Allocation Overview KPIs */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="p-4 flex items-center gap-4">
           <div className="rounded-lg bg-primary/10 p-2.5 text-primary">
             <Users className="h-5 w-5" />
@@ -144,19 +241,31 @@ export function StudentAllocationsTable() {
           <div>
             <p className="text-xs font-medium text-muted-foreground">Level &amp; Teacher Allocated</p>
             <p className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
-              {allocatedCount}
+              {fullyAllocatedCount || levelAllocatedCount}
             </p>
           </div>
         </Card>
 
         <Card className="p-4 flex items-center gap-4">
           <div className="rounded-lg bg-amber-500/10 p-2.5 text-amber-600 dark:text-amber-400">
+            <UserCheck className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-xs font-medium text-muted-foreground">Awaiting Teacher Mapping</p>
+            <p className="text-2xl font-bold tracking-tight text-amber-600 dark:text-amber-400">
+              {pendingTeacherCount}
+            </p>
+          </div>
+        </Card>
+
+        <Card className="p-4 flex items-center gap-4">
+          <div className="rounded-lg bg-blue-500/10 p-2.5 text-blue-600 dark:text-blue-400">
             <AlertCircle className="h-5 w-5" />
           </div>
           <div>
             <p className="text-xs font-medium text-muted-foreground">Awaiting Level Allocation</p>
-            <p className="text-2xl font-bold tracking-tight text-amber-600 dark:text-amber-400">
-              {pendingCount}
+            <p className="text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400">
+              {pendingLevelCount}
             </p>
           </div>
         </Card>
@@ -168,26 +277,84 @@ export function StudentAllocationsTable() {
           <div>
             <CardTitle className="text-lg flex items-center gap-2">
               <GraduationCap className="h-5 w-5 text-primary" />
-              Student Curriculum &amp; Teacher Allocations
+              Student-Teacher &amp; Curriculum Mapping
             </CardTitle>
             <CardDescription className="text-xs">
-              Assign students to curriculum subjects, progressive levels, and qualified instructors.
+              Assign students to curriculum subjects, progressive levels, and qualified teachers.
             </CardDescription>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => {
+                if (allAllocatableStudents.length === 0) {
+                  setNoStudentsDialogOpen(true);
+                  return;
+                }
+                const unassigned =
+                  allAllocatableStudents.find(
+                    (s) => !s.teacher_id || !s.level_id || !s.track_id
+                  ) || allAllocatableStudents[0];
+                setSelectedStudent(unassigned);
+              }}
+              className="text-xs"
+            >
+              <UserCheck className="mr-1.5 h-3.5 w-3.5" />
+              Map Student to Teacher
+            </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setIsTeacherModalOpen(true)}
               className="text-xs"
             >
-              <UserCheck className="mr-1.5 h-3.5 w-3.5" />
+              <BookOpen className="mr-1.5 h-3.5 w-3.5" />
               Teacher Subject Assignments ({teacherTracks.filter((t) => t.active).length})
             </Button>
           </div>
         </CardHeader>
 
         <CardContent className="space-y-4">
+          {/* 3-Step Student Mapping Architecture Guide */}
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-3.5 space-y-2">
+            <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+              <GraduationCap className="h-4 w-4 text-primary" />
+              How Student Curriculum &amp; Teacher Mapping Works
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Academic placement maps each enrolled student across three core dimensions:
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 pt-0.5">
+              <div className="rounded bg-background/80 p-2.5 border border-border/80 space-y-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">1</span>
+                  <span className="text-xs font-medium text-foreground">Curriculum Subject</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  The academic track (e.g. Tajweed, Hifz, Arabic) the student is learning.
+                </p>
+              </div>
+              <div className="rounded bg-background/80 p-2.5 border border-border/80 space-y-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">2</span>
+                  <span className="text-xs font-medium text-foreground">Progressive Level</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  The milestone level inside that subject (e.g. Level 1). Optional if levels aren&apos;t set yet.
+                </p>
+              </div>
+              <div className="rounded bg-background/80 p-2.5 border border-border/80 space-y-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">3</span>
+                  <span className="text-xs font-medium text-foreground">Assigned Teacher</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  An instructor authorized to teach that subject assigned to mentor the student.
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Filters Bar */}
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
@@ -330,24 +497,49 @@ export function StudentAllocationsTable() {
 
                         <td className="py-3 px-3">
                           {student.teacher_id ? (
-                            <Badge
-                              variant="outline"
-                              className="text-xs py-0.5 px-2 font-medium bg-primary/10 text-primary border-primary/30"
-                            >
-                              <UserCheck className="mr-1 h-3.5 w-3.5" />
-                              Ustadh {student.teacher_name || 'Assigned'}
-                            </Badge>
+                            <div className="flex items-center gap-1.5">
+                              <Badge
+                                variant="outline"
+                                className="text-xs py-0.5 px-2 font-medium bg-primary/10 text-primary border-primary/30"
+                              >
+                                <UserCheck className="mr-1 h-3.5 w-3.5" />
+                                Ustadh {student.teacher_name || 'Assigned'}
+                              </Badge>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                                title="Change assigned teacher"
+                                onClick={() => setSelectedStudent(student)}
+                              >
+                                <Pencil className="h-3 w-3" />
+                                <span className="sr-only">Change Teacher</span>
+                              </Button>
+                            </div>
                           ) : qualifiedTeachers.length > 0 ? (
                             <div className="flex flex-col gap-1">
-                              <span className="text-amber-600 dark:text-amber-400 text-[11px] font-medium">
-                                Unassigned
-                              </span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-amber-600 dark:text-amber-400 text-[11px] font-medium">
+                                  Unassigned
+                                </span>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-5 text-[10px] px-1.5 text-primary border-primary/40 hover:bg-primary/10"
+                                  onClick={() => setSelectedStudent(student)}
+                                >
+                                  <UserCheck className="mr-1 h-3 w-3" />
+                                  Assign Teacher
+                                </Button>
+                              </div>
                               <div className="flex flex-wrap gap-1">
                                 {qualifiedTeachers.map((qt) => (
                                   <Badge
                                     key={qt.id}
                                     variant="outline"
-                                    className="text-[10px] py-0 px-1 font-normal"
+                                    className="text-[10px] py-0 px-1 font-normal cursor-pointer hover:bg-primary/10"
+                                    onClick={() => setSelectedStudent(student)}
+                                    title={`Assign Ustadh ${qt.username}`}
                                   >
                                     Ustadh {qt.username}
                                   </Badge>
@@ -362,12 +554,18 @@ export function StudentAllocationsTable() {
                         </td>
 
                         <td className="py-3 px-3">
-                          <Badge
-                            variant={student.enrollment_status === 'active' ? 'default' : 'secondary'}
-                            className="text-[11px] capitalize"
-                          >
-                            {student.enrollment_status}
-                          </Badge>
+                          {student.hasEnrollment === false ? (
+                            <Badge variant="outline" className="text-[11px] border-amber-400/60 text-amber-700 dark:text-amber-400 bg-amber-50/40">
+                              Pending Placement
+                            </Badge>
+                          ) : (
+                            <Badge
+                              variant={student.enrollment_status === 'active' ? 'default' : 'secondary'}
+                              className="text-[11px] capitalize"
+                            >
+                              {student.enrollment_status}
+                            </Badge>
+                          )}
                         </td>
 
                         <td className="py-3 px-3 text-right">
@@ -377,7 +575,11 @@ export function StudentAllocationsTable() {
                             onClick={() => setSelectedStudent(student)}
                             className="text-xs h-7 px-2.5"
                           >
-                            {isAllocated ? 'Change Level' : 'Allocate Level'}
+                            {!isAllocated
+                              ? 'Allocate Level'
+                              : !student.teacher_id
+                              ? 'Assign Teacher'
+                              : 'Edit Mapping'}
                           </Button>
                         </td>
                       </tr>
@@ -390,15 +592,21 @@ export function StudentAllocationsTable() {
         </CardContent>
       </Card>
 
-      {/* Allocate Student Level Modal */}
+      {/* Allocate Student Level & Teacher Modal */}
       {selectedStudent && (
         <AllocateStudentModal
+          key={selectedStudent.id}
           student={selectedStudent}
+          allStudents={allAllocatableStudents}
           tracks={tracks}
           levels={levels}
           teacherTracks={teacherTracks}
           members={members}
           onClose={() => setSelectedStudent(null)}
+          onOpenTeacherAssignments={() => {
+            setSelectedStudent(null);
+            setIsTeacherModalOpen(true);
+          }}
         />
       )}
 
@@ -411,248 +619,32 @@ export function StudentAllocationsTable() {
           onClose={() => setIsTeacherModalOpen(false)}
         />
       )}
+      {/* No Students Warning Dialog */}
+      {noStudentsDialogOpen && (
+        <Dialog open onOpenChange={setNoStudentsDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-amber-500" />
+                No Students Enrolled Yet
+              </DialogTitle>
+            </DialogHeader>
+            <p className="text-xs text-muted-foreground py-2">
+              There are currently no students enrolled in this academy. To map students to subjects, progressive levels, and teachers, you must first add students under the Students management section.
+            </p>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setNoStudentsDialogOpen(false)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
+export { AllocateStudentModal } from './allocate-student-modal';
 
-// -------------------------------------------------------------------------
-// Allocate Student Modal Component
-// -------------------------------------------------------------------------
-interface AllocateStudentModalProps {
-  student: StudentList;
-  tracks: TrackBrief[];
-  levels: Level[];
-  teacherTracks: TeacherTrack[];
-  members: Membership[];
-  onClose: () => void;
-}
-
-function AllocateStudentModal({
-  student,
-  tracks,
-  levels,
-  teacherTracks,
-  members,
-  onClose,
-}: AllocateStudentModalProps) {
-  const queryClient = useQueryClient();
-  const { activeAcademy } = useAcademy();
-
-  const [selectedTrackId, setSelectedTrackId] = React.useState<string>(
-    student.track_id ? String(student.track_id) : tracks[0] ? String(tracks[0].id) : ''
-  );
-
-  const availableLevels = React.useMemo(() => {
-    if (!selectedTrackId) return [];
-    return levels
-      .filter((l) => String(l.track) === selectedTrackId)
-      .sort((a, b) => a.order - b.order);
-  }, [levels, selectedTrackId]);
-
-  const [selectedLevelId, setSelectedLevelId] = React.useState<string>(
-    student.level_id ? String(student.level_id) : ''
-  );
-
-  const [selectedTeacherId, setSelectedTeacherId] = React.useState<string>(
-    student.teacher_id ? String(student.teacher_id) : 'unassigned'
-  );
-
-  const effectiveLevelId = React.useMemo(() => {
-    if (availableLevels.length === 0) return '';
-    const matches = availableLevels.some((l) => String(l.id) === selectedLevelId);
-    return matches ? selectedLevelId : String(availableLevels[0].id);
-  }, [availableLevels, selectedLevelId]);
-
-  const handleTrackChange = (newTrackId: string) => {
-    setSelectedTrackId(newTrackId);
-    const newLevels = levels
-      .filter((l) => String(l.track) === newTrackId)
-      .sort((a, b) => a.order - b.order);
-    setSelectedLevelId(newLevels[0] ? String(newLevels[0].id) : '');
-
-    // Reset teacher selection if current teacher is not eligible for new track
-    const newActiveTt = teacherTracks.filter(
-      (tt) => tt.active && String(tt.track) === newTrackId
-    );
-    const newTeacherUserIds = newActiveTt.map((tt) => tt.user);
-    if (selectedTeacherId !== 'unassigned' && !newTeacherUserIds.includes(Number(selectedTeacherId))) {
-      setSelectedTeacherId('unassigned');
-    }
-  };
-
-  // Teachers teaching the selected track
-  const eligibleTeachers = React.useMemo(() => {
-    if (!selectedTrackId) return [];
-    const activeTt = teacherTracks.filter(
-      (tt) => tt.active && String(tt.track) === selectedTrackId
-    );
-    const teacherUserIds = activeTt.map((tt) => tt.user);
-    return members.filter((m) => teacherUserIds.includes(m.user));
-  }, [teacherTracks, selectedTrackId, members]);
-
-  const mutation = useMutation({
-    mutationFn: async () => {
-      if (!activeAcademy) throw new Error('No active academy');
-      return studentsApi.updateStudentStatus(activeAcademy.id, student.id, {
-        track_id: selectedTrackId ? Number(selectedTrackId) : null,
-        level_id: effectiveLevelId ? Number(effectiveLevelId) : null,
-        teacher_id:
-          selectedTeacherId && selectedTeacherId !== 'unassigned'
-            ? Number(selectedTeacherId)
-            : null,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: studentKeys.all(activeAcademy?.id),
-      });
-      onClose();
-    },
-  });
-
-  const studentFullName = student.first_name || student.last_name
-    ? `${student.first_name} ${student.last_name}`
-    : student.username;
-
-  return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <GraduationCap className="h-5 w-5 text-primary" />
-            Allocate Level for {studentFullName}
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4 py-2">
-          {mutation.isError && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                {mutation.error instanceof Error
-                  ? mutation.error.message
-                  : 'Failed to update student allocation.'}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          <div className="space-y-2">
-            <Label htmlFor="alloc-track">Curriculum Subject (Track)</Label>
-            <Select
-              value={selectedTrackId}
-              onValueChange={handleTrackChange}
-              disabled={mutation.isPending}
-            >
-              <SelectTrigger id="alloc-track">
-                <SelectValue placeholder="Select curriculum subject..." />
-              </SelectTrigger>
-              <SelectContent>
-                {tracks.map((track) => (
-                  <SelectItem key={track.id} value={String(track.id)}>
-                    {track.name} ({track.slug})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="alloc-level">Progressive Level</Label>
-            {availableLevels.length > 0 ? (
-              <Select
-                value={effectiveLevelId}
-                onValueChange={setSelectedLevelId}
-                disabled={mutation.isPending}
-              >
-                <SelectTrigger id="alloc-level">
-                  <SelectValue placeholder="Choose level..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableLevels.map((lvl) => (
-                    <SelectItem key={lvl.id} value={String(lvl.id)}>
-                      Level {lvl.order}: {lvl.name} {lvl.min_age ? `(Age ${lvl.min_age}+)` : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
-                No progressive levels defined yet for this track. Add levels first.
-              </div>
-            )}
-          </div>
-
-          {/* Assigned Teacher (Instructor) */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="alloc-teacher">Assigned Teacher (Instructor)</Label>
-              <span className="text-[11px] text-muted-foreground">Direct Allocation</span>
-            </div>
-            <Select
-              value={selectedTeacherId}
-              onValueChange={setSelectedTeacherId}
-              disabled={mutation.isPending}
-            >
-              <SelectTrigger id="alloc-teacher" aria-label="Select instructor">
-                <SelectValue placeholder="Select instructor..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="unassigned">-- No Teacher Assigned (Unassigned) --</SelectItem>
-                {eligibleTeachers.map((t) => (
-                  <SelectItem key={t.id} value={String(t.user)}>
-                    Ustadh {t.username}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {eligibleTeachers.length === 0 ? (
-              <p className="text-[11px] text-amber-600 dark:text-amber-400">
-                No instructor is currently assigned to this track. Use &quot;Teacher Subject Assignments&quot; to authorize teachers first.
-              </p>
-            ) : (
-              <p className="text-[11px] text-muted-foreground">
-                Only instructors authorized to teach this subject are eligible.
-              </p>
-            )}
-          </div>
-
-          {/* Qualified Teachers for this subject */}
-          <div className="rounded-md bg-muted/40 p-3 text-xs space-y-1.5 border border-border">
-            <div className="font-semibold text-foreground flex items-center gap-1.5">
-              <Users className="h-3.5 w-3.5 text-primary" />
-              Qualified Instructors for this Subject ({eligibleTeachers.length})
-            </div>
-            {eligibleTeachers.length > 0 ? (
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {eligibleTeachers.map((t) => (
-                  <Badge key={t.id} variant="secondary" className="text-[11px]">
-                    Ustadh {t.username}
-                  </Badge>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground">
-                No teacher has been assigned to teach this track yet.
-              </p>
-            )}
-          </div>
-        </div>
-
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={onClose} disabled={mutation.isPending}>
-            Cancel
-          </Button>
-          <Button
-            onClick={() => mutation.mutate()}
-            disabled={!selectedTrackId || !effectiveLevelId || mutation.isPending}
-          >
-            {mutation.isPending ? 'Allocating...' : 'Confirm Allocation'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 // -------------------------------------------------------------------------
 // Teacher Track Assignments Modal

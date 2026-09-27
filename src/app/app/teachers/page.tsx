@@ -9,6 +9,8 @@ export default function TeachersPage() {
       <PageHeader
         title="Teachers"
         description="Manage academy teachers, invitations, and teaching configuration."
+        backHref="/app/dashboard?tab=teachers"
+        backLabel="Back to Dashboard"
       />
 
       <TeacherDirectory />

@@ -10,13 +10,14 @@ import { Spinner } from '@/components/ui/loading';
 import { ErrorState } from '@/components/ui/error-state';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     memberId: string;
-  };
+  }>;
 }
 
 export default function TeacherMemberPage({ params }: PageProps) {
-  const memberId = parseInt(params.memberId, 10);
+  const resolvedParams = React.use(params);
+  const memberId = parseInt(resolvedParams.memberId, 10);
   const { activeAcademy } = useAcademy();
 
   const {
@@ -55,7 +56,15 @@ export default function TeacherMemberPage({ params }: PageProps) {
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       {member.role === 'teacher' ? (
-        <TeacherDetail membershipId={memberId} />
+        <React.Suspense
+          fallback={
+            <div className="flex justify-center p-12">
+              <Spinner className="h-8 w-8" />
+            </div>
+          }
+        >
+          <TeacherDetail membershipId={memberId} />
+        </React.Suspense>
       ) : (
         <ErrorState title="Unsupported membership" message="This page is only available for teachers." />
       )}

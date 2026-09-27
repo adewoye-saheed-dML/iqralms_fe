@@ -32,7 +32,7 @@ export function TrackDetail({ trackId }: TrackDetailProps) {
   } = useQuery({
     queryKey: curriculumKeys.trackDetail(activeAcademy?.id, trackId),
     queryFn: () => curriculumApi.getTrack(activeAcademy!.id, trackId),
-    enabled: !!activeAcademy,
+    enabled: !!activeAcademy && !isNaN(trackId) && trackId > 0,
   });
 
   if (!activeAcademy) return null;

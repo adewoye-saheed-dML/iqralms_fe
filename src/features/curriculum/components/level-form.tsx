@@ -41,7 +41,7 @@ export function LevelForm({ trackId, initialData }: LevelFormProps) {
   } = useQuery({
     queryKey: curriculumKeys.trackDetail(activeAcademy?.id, trackId),
     queryFn: () => curriculumApi.getTrack(activeAcademy!.id, trackId),
-    enabled: !!activeAcademy && !initialData,
+    enabled: !!activeAcademy && !initialData && !isNaN(trackId) && trackId > 0,
   });
 
   const mutation = useMutation({

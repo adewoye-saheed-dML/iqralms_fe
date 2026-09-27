@@ -7,6 +7,8 @@ export default function BookSessionPage() {
       <PageHeader
         title="Book a Session"
         description="Schedule a new session with a teacher."
+        backHref="/app/scheduling"
+        backLabel="Back to Scheduling"
       />
       <BookingForm />
     </div>

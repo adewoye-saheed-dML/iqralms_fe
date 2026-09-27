@@ -1,9 +1,6 @@
 import * as React from 'react';
 import { PageHeader } from '@/components/ui/page-header';
 import { ClassSession } from '@/features/scheduling/components/class-session';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
 
 export const metadata = {
   title: 'Class Session | Quran Academy',
@@ -13,23 +10,28 @@ interface ClassSessionPageProps {
   params: Promise<{
     bookingId: string;
   }>;
+  searchParams?: Promise<{
+    from?: string;
+  }>;
 }
 
-export default async function ClassSessionPage({ params }: ClassSessionPageProps) {
+export default async function ClassSessionPage({ params, searchParams }: ClassSessionPageProps) {
   const resolvedParams = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const bookingId = parseInt(resolvedParams.bookingId, 10);
+  const from = resolvedSearchParams?.from;
+
+  const backHref = from === 'dashboard' ? '/app/dashboard' : '/app/scheduling';
+  const backLabel = from === 'dashboard' ? 'Back to Dashboard' : 'Back to Scheduling';
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button asChild variant="ghost" size="icon">
-          <Link href="/app/scheduling">
-            <ArrowLeft className="h-4 w-4" />
-            <span className="sr-only">Back to scheduling</span>
-          </Link>
-        </Button>
-        <PageHeader title="Class Session" description="Live classroom, notes, and attendance." />
-      </div>
+      <PageHeader
+        title="Class Session"
+        description="Live classroom, notes, and attendance."
+        backHref={backHref}
+        backLabel={backLabel}
+      />
 
       <div className="mt-6">
         <ClassSession bookingId={bookingId} />

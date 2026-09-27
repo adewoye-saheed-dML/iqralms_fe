@@ -2,9 +2,6 @@ import { Metadata } from 'next';
 import { PageHeader } from '@/components/ui/page-header';
 import { InvitationForm } from '@/features/invitations/components/invitation-form';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Invite Teacher | Quran Academy',
@@ -14,17 +11,12 @@ export const metadata: Metadata = {
 export default function AddTeacherPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <div className="flex items-center space-x-4">
-        <Button variant="outline" size="icon" asChild>
-          <Link href="/app/teachers">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <PageHeader
-          title="Invite Teacher"
-          description="Send an email invitation to join this academy as a teacher."
-        />
-      </div>
+      <PageHeader
+        title="Invite Teacher"
+        description="Send an email invitation to join this academy as a teacher."
+        backHref="/app/dashboard?tab=teachers"
+        backLabel="Back to Teachers"
+      />
 
       <Card>
         <CardHeader>
