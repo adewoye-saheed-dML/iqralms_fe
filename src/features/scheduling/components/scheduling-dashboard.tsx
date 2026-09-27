@@ -114,15 +114,18 @@ function SchedulingDashboardInner() {
           {isTeacherUser && (
             <TabsTrigger value="availability">My Availability</TabsTrigger>
           )}
+          {isOwnerOrAdminUser && (
+            <TabsTrigger value="availability">Teacher Availabilities</TabsTrigger>
+          )}
+          {isStudentOrParent && (
+            <TabsTrigger value="availability">Teacher Schedules</TabsTrigger>
+          )}
           <TabsTrigger value="cohorts">Cohorts</TabsTrigger>
           {/* Only show allocation workspace to management (owner, admin, or lead teacher) */}
           {(canAllocate || isStudentOrParent) && (
             <TabsTrigger value="waitlist">
               {canAllocate ? 'Requests & Allocation' : 'Requests & Waitlist'}
             </TabsTrigger>
-          )}
-          {isOwnerOrAdminUser && (
-            <TabsTrigger value="availability">Teacher Availabilities</TabsTrigger>
           )}
         </TabsList>
 

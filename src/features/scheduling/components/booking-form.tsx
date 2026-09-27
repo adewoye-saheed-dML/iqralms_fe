@@ -80,12 +80,59 @@ export function BookingForm() {
 
   const { data: teacherConfigs } = useQuery({
     queryKey: ['teachers', 'configurations', activeAcademy?.id],
-    queryFn: () => {
-      if (!activeAcademy?.id) throw new Error('No academy');
-      return teachersApi.getTeacherConfigurations(activeAcademy.id);
+    queryFn: async () => {
+      if (!activeAcademy?.id) return [];
+      try {
+        return await teachersApi.getTeacherConfigurations(activeAcademy.id);
+      } catch {
+        return [];
+      }
     },
     enabled: !!activeAcademy?.id,
   });
+
+  const { data: myBookings = [] } = useQuery({
+    queryKey: schedulingKeys.bookings(activeAcademy?.id),
+    queryFn: async () => {
+      if (!activeAcademy?.id) return [];
+      try {
+        const res = await schedulingApi.getMyBookings(activeAcademy.id);
+        return res ?? [];
+      } catch {
+        return [];
+      }
+    },
+    enabled: !!activeAcademy?.id && !isOwnerOrAdmin && !isTeacher,
+  });
+
+  const availableTeachers = React.useMemo(() => {
+    const list: { id: number; name: string }[] = [];
+    if (teacherConfigs && teacherConfigs.length > 0) {
+      teacherConfigs.forEach((tc) => {
+        const tId =
+          (tc as unknown as { teacher?: number; user?: number }).teacher ||
+          (tc as unknown as { user?: number }).user ||
+          tc.id;
+        const tName =
+          (tc as unknown as { teacher_username?: string; teacher_name?: string }).teacher_username ||
+          (tc as unknown as { teacher_name?: string }).teacher_name ||
+          tc.username ||
+          `Teacher #${tId}`;
+        list.push({ id: Number(tId), name: tName });
+      });
+    }
+    if (myBookings && myBookings.length > 0) {
+      myBookings.forEach((b) => {
+        if (b.teacher?.id && !list.some((t) => t.id === b.teacher!.id)) {
+          const name = b.teacher.first_name
+            ? `${b.teacher.first_name} ${b.teacher.last_name || ''}`.trim()
+            : b.teacher.username || `Teacher #${b.teacher.id}`;
+          list.push({ id: b.teacher.id, name });
+        }
+      });
+    }
+    return list;
+  }, [teacherConfigs, myBookings]);
 
   const selectedTeacherId =
     preferredTeacher && preferredTeacher !== 'none' ? Number(preferredTeacher) : null;
@@ -512,7 +559,7 @@ export function BookingForm() {
               <Label>Preferred Teacher (Optional)</Label>
               <span className="text-[11px] text-muted-foreground">Auto-match if empty</span>
             </div>
-            {teacherConfigs && teacherConfigs.length > 0 ? (
+            {availableTeachers && availableTeachers.length > 0 ? (
               <Select
                 value={preferredTeacher}
                 onValueChange={setPreferredTeacher}
@@ -523,25 +570,26 @@ export function BookingForm() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Auto-assign best available teacher</SelectItem>
-                  {teacherConfigs.map((tc) => {
-                    const tId = (tc as unknown as { teacher?: number; user?: number }).teacher || (tc as unknown as { user?: number }).user || tc.id;
-                    const tName = (tc as unknown as { teacher_username?: string; teacher_name?: string }).teacher_username || (tc as unknown as { teacher_name?: string }).teacher_name || `Teacher #${tId}`;
-                    return (
-                      <SelectItem key={tc.id} value={String(tId)}>
-                        {tName}
-                      </SelectItem>
-                    );
-                  })}
+                  {availableTeachers.map((tc) => (
+                    <SelectItem key={tc.id} value={String(tc.id)}>
+                      {tc.name.toLowerCase().startsWith('ustadh') ? tc.name : `Ustadh ${tc.name}`}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             ) : (
-              <Input
-                type="number"
-                placeholder="e.g. 5"
-                value={preferredTeacher}
-                onChange={(e) => setPreferredTeacher(e.target.value)}
+              <Select
+                value={preferredTeacher === 'none' || !preferredTeacher ? 'none' : preferredTeacher}
+                onValueChange={setPreferredTeacher}
                 disabled={routeMutation.isPending}
-              />
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Auto-assign best available teacher" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Auto-assign best available teacher (Recommended)</SelectItem>
+                </SelectContent>
+              </Select>
             )}
           </div>
 

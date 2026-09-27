@@ -44,6 +44,7 @@ vi.mock('@/features/scheduling/api/scheduling', () => ({
     getAcademyBookings: vi.fn(),
     getTeachingBookings: vi.fn(),
     getMyBookings: vi.fn(),
+    getAvailability: vi.fn(),
   },
 }));
 
@@ -125,12 +126,16 @@ describe('Role-Based Dashboards and SSoT Compliance', () => {
       expect(screen.getByText('Academy Administration')).toBeInTheDocument();
       expect(screen.getByText('Furqan Academy')).toBeInTheDocument();
 
-      await waitFor(() => {
         expect(screen.getByText("Today's Classes & Live Sessions")).toBeInTheDocument();
         expect(screen.getByText('Level 1 Tajweed')).toBeInTheDocument();
         expect(screen.getByText('Student: Zayd · Teacher: Ali')).toBeInTheDocument();
         const sessionLink = screen.getByRole('link', { name: /class session/i });
         expect(sessionLink).toHaveAttribute('href', '/app/scheduling/42');
+
+        // Teacher Working Hours & Capacity on Overview
+        expect(screen.getByText('Teacher Working Hours & Capacity')).toBeInTheDocument();
+        const inspectAvailLink = screen.getByRole('link', { name: /inspect teacher availabilities/i });
+        expect(inspectAvailLink).toHaveAttribute('href', '/app/scheduling?tab=availability');
       });
     }, 15000);
 
@@ -200,6 +205,10 @@ describe('Role-Based Dashboards and SSoT Compliance', () => {
       await waitFor(() => {
         expect(screen.getByText('ustadh_bilal')).toBeInTheDocument();
         expect(screen.getByText('Pending Terms Setup')).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: /availability/i })).toHaveAttribute(
+          'href',
+          '/app/scheduling?tab=availability'
+        );
       });
 
       // Switch to Students tab
@@ -265,6 +274,12 @@ describe('Role-Based Dashboards and SSoT Compliance', () => {
         // Calls teacher assessments instead
         expect(assessmentApi.getTeacherAssessments).toHaveBeenCalledWith(1);
         expect(screen.getByText('Assessments & Submissions')).toBeInTheDocument();
+        // Availability card & My Availability button
+        expect(screen.getByText('Weekly Working Availability & Teaching Hours')).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: /my availability/i })).toHaveAttribute(
+          'href',
+          '/app/scheduling?tab=availability'
+        );
         // Provides direct Join Class button
         const joinLink = screen.getByRole('link', { name: /join class/i });
         expect(joinLink).toHaveAttribute('href', '/app/scheduling/77');
@@ -329,9 +344,13 @@ describe('Role-Based Dashboards and SSoT Compliance', () => {
         // Verifies direct Jitsi / Live Class link
         const joinLink = screen.getByRole('link', { name: /join live class/i });
         expect(joinLink).toHaveAttribute('href', '/app/scheduling/88');
+
+        // Verifies Teacher Schedules & Class Booking section
+        expect(screen.getByText('Teacher Schedules & Class Booking')).toBeInTheDocument();
+        const bookClassLink = screen.getByRole('link', { name: /book a class \/ request slot/i });
+        expect(bookClassLink).toHaveAttribute('href', '/app/scheduling/book');
       });
     });
-  });
 
   describe('ParentDashboard', () => {
     it('calls parent-safe student and assessment queries and includes Join Class link', async () => {

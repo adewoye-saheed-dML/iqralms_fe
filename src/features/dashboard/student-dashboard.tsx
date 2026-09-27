@@ -12,10 +12,13 @@ import {
   ArrowRight,
   Sparkles,
   Video,
+  CalendarCheck,
+  User,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/auth/auth-provider';
 import { useAcademy } from '@/lib/academy/academy-provider';
 import { schedulingKeys, progressKeys, assessmentKeys } from '@/lib/api/query-keys';
@@ -49,6 +52,20 @@ export function StudentDashboard() {
   });
 
   const nextClass = bookings[0];
+
+  const myTeachers = React.useMemo(() => {
+    const map = new Map<number, { id: number; name: string; username: string }>();
+    bookings.forEach((b) => {
+      if (b.teacher) {
+        const id = b.teacher.id;
+        const name = b.teacher.first_name
+          ? `${b.teacher.first_name} ${b.teacher.last_name || ''}`.trim()
+          : b.teacher.username;
+        map.set(id, { id, name, username: b.teacher.username });
+      }
+    });
+    return Array.from(map.values());
+  }, [bookings]);
 
   return (
     <div className="space-y-8">
@@ -100,6 +117,55 @@ export function StudentDashboard() {
             </Button>
           )}
         </CardFooter>
+      </Card>
+
+      {/* Teacher Availability & Class Booking Section */}
+      <Card className="border-primary/20 bg-muted/20">
+        <CardHeader className="pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <CalendarCheck className="h-5 w-5 text-primary" />
+              <CardTitle className="text-base">Teacher Schedules &amp; Class Booking</CardTitle>
+            </div>
+            <Badge variant="outline" className="text-xs bg-background">
+              SSoT Availability Flow
+            </Badge>
+          </div>
+          <CardDescription className="text-xs">
+            Ustadhs declare recurring weekly working hours. Request a class during open teaching windows for automatic confirmation, or submit your preferred time for management review and teacher allocation.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3 pt-0">
+          {myTeachers.length > 0 ? (
+            <div className="rounded-lg border bg-background p-3 text-xs space-y-2">
+              <span className="font-semibold text-foreground">Your Ustadhs &amp; Instructors:</span>
+              <div className="flex flex-wrap gap-2">
+                {myTeachers.map((t) => (
+                  <Badge key={t.id} variant="secondary" className="text-xs py-1 px-2.5 flex items-center gap-1.5">
+                    <User className="h-3 w-3 text-primary" />
+                    <span>Ustadh {t.name}</span>
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-lg border bg-background p-3 text-xs text-muted-foreground">
+              New to the academy? Book your first session with any available Ustadh. Academy teachers will guide you through your track level.
+            </div>
+          )}
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <Button size="sm" asChild>
+              <Link href="/app/scheduling/book">
+                <CalendarCheck className="mr-1.5 h-4 w-4" /> Book a Class / Request Slot
+              </Link>
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/app/scheduling">
+                <Calendar className="mr-1.5 h-4 w-4" /> My Bookings &amp; Schedule
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
       </Card>
 
       {/* Learning & Progress Overview */}

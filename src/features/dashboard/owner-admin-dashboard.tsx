@@ -21,6 +21,7 @@ import {
   Search,
   UserCheck,
   UserX,
+  CalendarCheck,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -260,6 +261,10 @@ export function OwnerAdminDashboard() {
 
     return Array.from(teacherMap.values());
   }, [membersList, teachersList]);
+
+  const totalTeacherWeeklyCapacity = React.useMemo(() => {
+    return allTeachers.reduce((acc, t) => acc + (t.maxWeeklyHours || 0), 0);
+  }, [allTeachers]);
 
   // Unified Students: Cross-matched between StudentEnrollment and OrganizationMembership (role=student)
   const allStudents = React.useMemo(() => {
@@ -627,6 +632,43 @@ export function OwnerAdminDashboard() {
             </Card>
           </div>
 
+          {/* Teacher Working Hours & Teaching Capacity Management Section */}
+          <Card className="border-primary/30 bg-gradient-to-r from-primary/5 via-background to-background">
+            <CardHeader className="pb-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <CalendarCheck className="h-5 w-5 text-primary" />
+                  <CardTitle className="text-base">Teacher Working Hours &amp; Capacity</CardTitle>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300">
+                    {allTeachers.filter((t) => t.hasConfiguration).length} Configured Teachers
+                  </Badge>
+                  {totalTeacherWeeklyCapacity > 0 && (
+                    <Badge variant="secondary" className="text-xs font-semibold">
+                      {totalTeacherWeeklyCapacity} hrs/wk Max Capacity
+                    </Badge>
+                  )}
+                </div>
+              </div>
+              <CardDescription className="text-xs">
+                Teachers declare their weekly working hours. Academy leadership reviews incoming student availability requests, compares them against teacher schedules, and allocates confirmed sessions.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0 flex flex-wrap items-center gap-2">
+              <Button size="sm" asChild>
+                <Link href="/app/scheduling?tab=availability">
+                  <CalendarCheck className="mr-1.5 h-4 w-4" /> Inspect Teacher Availabilities
+                </Link>
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/app/scheduling?tab=waitlist">
+                  <UserCheck className="mr-1.5 h-4 w-4" /> Review Student Requests &amp; Allocate
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+
           {/* Today's Classes & Live Sessions (SSoT Section 10) */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -770,12 +812,15 @@ export function OwnerAdminDashboard() {
                     <CardTitle className="text-base">Scheduling &amp; Bookings</CardTitle>
                   </div>
                   <CardDescription className="text-xs mt-2">
-                    View academy lesson calendars, monitor cohort enrollments, and manage the student waitlist.
+                    View academy lesson calendars, inspect teacher declared working hours, and allocate student requests.
                   </CardDescription>
                 </CardHeader>
-                <CardFooter className="pt-0">
+                <CardFooter className="pt-0 flex flex-col gap-1.5">
                   <Button variant="ghost" size="sm" asChild className="w-full justify-between">
-                    <Link href="/app/scheduling">Open Scheduling <ArrowRight className="h-4 w-4" /></Link>
+                    <Link href="/app/scheduling">Open Full Schedule <ArrowRight className="h-4 w-4" /></Link>
+                  </Button>
+                  <Button variant="outline" size="sm" asChild className="w-full justify-between text-xs font-normal">
+                    <Link href="/app/scheduling?tab=availability">Teacher Availabilities <ArrowRight className="h-3.5 w-3.5" /></Link>
                   </Button>
                 </CardFooter>
               </Card>
@@ -959,6 +1004,11 @@ export function OwnerAdminDashboard() {
                       </td>
                       <td className="p-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          <Button variant="outline" size="sm" asChild className="h-7 text-xs px-2" title="Inspect Teacher Availability">
+                            <Link href="/app/scheduling?tab=availability">
+                              <CalendarCheck className="h-3.5 w-3.5 mr-1 text-primary" /> Availability
+                            </Link>
+                          </Button>
                           <Button variant="outline" size="sm" asChild className="h-7 text-xs px-2.5">
                             <Link href={`/app/teachers/${teacher.membershipId}?from=dashboard-teachers`}>
                               {teacher.hasConfiguration ? 'View / Terms' : 'Set Terms'}

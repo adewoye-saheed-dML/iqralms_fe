@@ -51,6 +51,8 @@ export const schedulingKeys = {
   waitlistMine: (academyId: AcademyId) => [...schedulingKeys.waitlist(academyId), 'mine'] as const,
   waitlistTeacher: (academyId: AcademyId, teacherId: number | string | undefined) =>
     [...schedulingKeys.waitlist(academyId), 'teacher', teacherId] as const,
+  availability: (academyId: AcademyId, teacherId?: number | string) =>
+    [...schedulingKeys.all(academyId), 'availability', teacherId] as const,
 };
 
 export const assessmentKeys = {

@@ -1,12 +1,14 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { useAcademy } from '@/lib/academy/academy-provider';
 import { useAuth } from '@/lib/auth/auth-provider';
 import { schedulingApi, type AvailabilityBlock } from '../api/scheduling';
 import { teachersApi } from '@/features/teachers/api/teachers';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
@@ -58,8 +60,38 @@ export function TeacherAvailabilityView() {
     }
   }, [isOwnerOrAdmin, teacherConfigs, selectedTeacherId]);
 
+  // For student/parent, fetch their bookings to discover assigned/past teachers
+  const { data: myBookings = [] } = useQuery({
+    queryKey: ['scheduling', 'bookings', activeAcademy?.id, 'mine'],
+    queryFn: () => {
+      if (!activeAcademy?.id) return [];
+      return schedulingApi.getMyBookings(activeAcademy.id);
+    },
+    enabled: !!activeAcademy?.id && !isTeacher && !isOwnerOrAdmin,
+  });
+
+  const studentTeachers = React.useMemo(() => {
+    const map = new Map<number, { id: number; name: string }>();
+    myBookings.forEach((b) => {
+      if (b.teacher?.id) {
+        const name = b.teacher.first_name
+          ? `${b.teacher.first_name} ${b.teacher.last_name || ''}`.trim()
+          : b.teacher.username || `Teacher #${b.teacher.id}`;
+        map.set(b.teacher.id, { id: b.teacher.id, name });
+      }
+    });
+    return Array.from(map.values());
+  }, [myBookings]);
+
+  // Resolve active teacher ID for student/parent
+  React.useEffect(() => {
+    if (!isTeacher && !isOwnerOrAdmin && studentTeachers.length > 0 && !selectedTeacherId) {
+      setSelectedTeacherId(String(studentTeachers[0].id));
+    }
+  }, [isTeacher, isOwnerOrAdmin, studentTeachers, selectedTeacherId]);
+
   // For a teacher, their teacher ID is simply user.id (no need for management configurations API).
-  // For owner/admin, use the selected teacher from dropdown.
+  // For owner/admin or student, use the selected teacher from dropdown/history.
   const teacherIdNum = isTeacher && !isOwnerOrAdmin
     ? user?.id
     : (selectedTeacherId ? Number(selectedTeacherId) : null);
@@ -92,6 +124,8 @@ export function TeacherAvailabilityView() {
       (selectedTeacherConfig as unknown as { teacher_name?: string }).teacher_name ||
       selectedTeacherConfig.username ||
       `Teacher #${selectedTeacherId}`
+    : (!isTeacher && !isOwnerOrAdmin && studentTeachers.length > 0)
+    ? (studentTeachers.find((st) => String(st.id) === selectedTeacherId)?.name || 'Teacher')
     : selectedTeacherId
     ? `Teacher #${selectedTeacherId}`
     : 'Teacher';
@@ -173,6 +207,39 @@ export function TeacherAvailabilityView() {
         </Card>
       )}
 
+      {/* Header controls for Student/Parent to switch teachers */}
+      {!isTeacher && !isOwnerOrAdmin && studentTeachers.length > 1 && (
+        <Card className="bg-muted/40">
+          <CardContent className="pt-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <Label className="text-xs text-muted-foreground uppercase font-semibold">Select Ustadh</Label>
+                <div className="mt-1">
+                  <Select value={selectedTeacherId} onValueChange={setSelectedTeacherId}>
+                    <SelectTrigger className="w-[280px]">
+                      <SelectValue placeholder="Select teacher schedule" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {studentTeachers.map((st) => (
+                        <SelectItem key={st.id} value={String(st.id)}>
+                          Ustadh {st.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Badge variant="outline" className="px-3 py-1 bg-background text-xs">
+                  <Clock className="w-3.5 h-3.5 mr-1 text-primary" />
+                  Teaching Hours: {(totalWeeklyMinutes / 60).toFixed(1)} hrs
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Overview Banner */}
       <Card>
         <CardHeader className="pb-3">
@@ -182,6 +249,8 @@ export function TeacherAvailabilityView() {
               <CardTitle className="text-lg">
                 {isTeacher && !isOwnerOrAdmin
                   ? 'My Declared Teaching Availability'
+                  : !isTeacher && !isOwnerOrAdmin
+                  ? `Ustadh ${teacherDisplayName}'s Teaching Schedule`
                   : `Teaching Availability — Ustadh ${teacherDisplayName}`}
               </CardTitle>
             </div>
@@ -195,8 +264,11 @@ export function TeacherAvailabilityView() {
             </div>
           </div>
           <CardDescription className="text-xs">
-            These weekly time windows declare when Ustadh {teacherDisplayName} is available for recitation classes.
-            Students request sessions matching these hours, and academy leadership allocates confirmed sessions within them.
+            {isTeacher && !isOwnerOrAdmin
+              ? 'These weekly time windows declare when you are available for recitation classes in this academy.'
+              : !isTeacher && !isOwnerOrAdmin
+              ? `These weekly time windows declare when Ustadh ${teacherDisplayName} is available for recitation classes. Sessions booked during these hours confirm immediately.`
+              : `These weekly time windows declare when Ustadh ${teacherDisplayName} is available for recitation classes. Students request sessions matching these hours, and academy leadership allocates confirmed sessions within them.`}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -214,14 +286,23 @@ export function TeacherAvailabilityView() {
       {isLoadingAvailability ? (
         <LoadingState />
       ) : availabilityList.length === 0 ? (
-        <Card className="border-dashed p-8 text-center space-y-2">
+        <Card className="border-dashed p-8 text-center space-y-3">
           <AlertCircle className="h-8 w-8 text-muted-foreground mx-auto" />
           <h4 className="font-medium text-sm">No Availability Windows Declared</h4>
           <p className="text-xs text-muted-foreground max-w-md mx-auto">
             {isTeacher && !isOwnerOrAdmin
               ? `No recurring weekly teaching hours have been declared yet for your profile in ${activeAcademy?.name || 'this academy'}. Your declared hours determine when students and management can schedule classes with you. Please contact academy leadership to register your active teaching windows.`
+              : !isTeacher && !isOwnerOrAdmin
+              ? `Ustadh ${teacherDisplayName} does not currently have fixed recurring weekly hours declared in ${activeAcademy?.name || 'this academy'}. You can still request a class session and the academy will route or allocate an instructor.`
               : `No recurring weekly working hours have been registered for this teacher in ${activeAcademy?.name || 'this academy'}. In this backend version, availability windows are maintained by academy leadership to enable automated student routing and allocation.`}
           </p>
+          {!isTeacher && !isOwnerOrAdmin && (
+            <Button size="sm" asChild className="mt-2">
+              <Link href="/app/scheduling/book">
+                <Calendar className="mr-1.5 h-4 w-4" /> Book a Class Session
+              </Link>
+            </Button>
+          )}
         </Card>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

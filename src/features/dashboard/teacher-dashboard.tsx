@@ -18,10 +18,11 @@ import {
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/auth/auth-provider';
 import { useAcademy } from '@/lib/academy/academy-provider';
 import { schedulingKeys, assessmentKeys, payoutsKeys } from '@/lib/api/query-keys';
-import { schedulingApi, type Booking } from '@/features/scheduling/api/scheduling';
+import { schedulingApi, type Booking, type AvailabilityBlock } from '@/features/scheduling/api/scheduling';
 import { assessmentApi, type LeadAssessment, type TeacherAssessment } from '@/features/assessment/api/assessment';
 import { payoutsApi, type MyTeacherPayout } from '@/features/payouts/api/payouts';
 import { can } from '@/lib/permissions/capabilities';
@@ -60,6 +61,33 @@ export function TeacherDashboard() {
     enabled: !!activeAcademy?.id,
   });
 
+  // Load teacher's declared availability
+  const { data: myAvailability = [] } = useQuery<AvailabilityBlock[]>({
+    queryKey: schedulingKeys.availability(activeAcademy?.id, user?.id),
+    queryFn: () => {
+      if (!activeAcademy?.id || !user?.id) return [];
+      return schedulingApi.getAvailability(activeAcademy.id, user.id);
+    },
+    enabled: !!activeAcademy?.id && !!user?.id,
+  });
+
+  const totalWeeklyMinutes = React.useMemo(() => {
+    return myAvailability.reduce((acc, curr) => {
+      if (curr.start_time_utc && curr.end_time_utc) {
+        const [sh, sm] = curr.start_time_utc.split(':').map(Number);
+        const [eh, em] = curr.end_time_utc.split(':').map(Number);
+        const diff = eh * 60 + em - (sh * 60 + sm);
+        return acc + (diff > 0 ? diff : 0);
+      }
+      return acc;
+    }, 0);
+  }, [myAvailability]);
+
+  const activeDaysCount = React.useMemo(() => {
+    const days = new Set(myAvailability.map((b) => b.weekday));
+    return days.size;
+  }, [myAvailability]);
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -68,9 +96,15 @@ export function TeacherDashboard() {
           description={`Welcome back, Ustadh ${user?.first_name || user?.username}. Academy: ${activeAcademy?.name || 'Academy'}.`}
         />
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" asChild>
+          <Button variant="outline" size="sm" asChild className="border-primary/30 hover:bg-primary/5">
             <Link href="/app/scheduling?tab=availability">
-              <CalendarCheck className="h-4 w-4 mr-1.5" /> My Availability
+              <CalendarCheck className="h-4 w-4 mr-1.5 text-primary" />
+              <span>My Availability</span>
+              {myAvailability.length > 0 && (
+                <Badge variant="secondary" className="ml-1.5 px-1.5 py-0 text-[10px] bg-primary/10 text-primary">
+                  {(totalWeeklyMinutes / 60).toFixed(0)}h/wk
+                </Badge>
+              )}
             </Link>
           </Button>
           <Button size="sm" asChild>
@@ -80,6 +114,71 @@ export function TeacherDashboard() {
           </Button>
         </div>
       </div>
+
+      {/* Teacher Declared Working Hours & Availability Section */}
+      <Card className="border-primary/30 bg-gradient-to-r from-primary/5 via-background to-background">
+        <CardHeader className="pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <CalendarCheck className="h-5 w-5 text-primary" />
+              <CardTitle className="text-base">Weekly Working Availability &amp; Teaching Hours</CardTitle>
+            </div>
+            <div className="flex items-center gap-2">
+              {myAvailability.length > 0 ? (
+                <>
+                  <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 text-xs">
+                    <CheckCircle className="w-3 h-3 mr-1" /> Active Teaching Schedule
+                  </Badge>
+                  <Badge variant="secondary" className="text-xs font-semibold">
+                    {(totalWeeklyMinutes / 60).toFixed(1)} hrs/week ({activeDaysCount} active days)
+                  </Badge>
+                </>
+              ) : (
+                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 text-xs">
+                  No Working Hours Declared
+                </Badge>
+              )}
+            </div>
+          </div>
+          <CardDescription className="text-xs">
+            Your declared working hours dictate when students can request 1-on-1 recitation classes and when academy leadership can allocate confirmed lessons to your schedule.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-0 pb-3">
+          {myAvailability.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-amber-300 bg-amber-50/50 dark:bg-amber-950/20 p-4 text-xs text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <p className="font-semibold">Declare Your Weekly Teaching Windows</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  You have not registered your weekly availability windows in this academy yet. Set your hours so students and academy management can route sessions to you.
+                </p>
+              </div>
+              <Button size="sm" asChild className="shrink-0">
+                <Link href="/app/scheduling?tab=availability">
+                  <CalendarCheck className="mr-1.5 h-4 w-4" /> Declare My Hours
+                </Link>
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-lg border bg-card text-xs">
+              <div className="space-y-1">
+                <div className="font-medium text-foreground flex items-center gap-2">
+                  <span>Weekly Capacity: {(totalWeeklyMinutes / 60).toFixed(1)} hours across {activeDaysCount} days</span>
+                  <span className="text-muted-foreground text-[11px]">({myAvailability.length} slot windows)</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Recitation booking requests matching your declared schedule confirm automatically or enter priority allocation.
+                </p>
+              </div>
+              <Button variant="outline" size="sm" asChild className="shrink-0">
+                <Link href="/app/scheduling?tab=availability">
+                  <CalendarCheck className="mr-1.5 h-4 w-4" /> View Full Availability
+                </Link>
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Primary Teacher Questions Grid */}
       <div className="grid gap-6 md:grid-cols-2">
