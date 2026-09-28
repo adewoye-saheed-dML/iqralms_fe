@@ -159,7 +159,7 @@ describe('Learning Materials Feature', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/Books \(3\)/i)).toBeInTheDocument();
+      expect(screen.getByText('Classroom Learning Materials')).toBeInTheDocument();
       expect(screen.getByText('Noorani Qaida Beginners Handbook')).toBeInTheDocument();
       expect(screen.getByText('Surah Al-Fatihah Pronunciation Notes')).toBeInTheDocument();
     });

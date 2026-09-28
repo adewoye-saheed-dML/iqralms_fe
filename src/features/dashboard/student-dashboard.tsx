@@ -482,7 +482,7 @@ export function StudentDashboard() {
       </div>
 
       {/* Quick Navigation Cards */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
@@ -496,6 +496,23 @@ export function StudentDashboard() {
           <CardFooter className="pt-0">
             <Button variant="outline" size="sm" asChild className="w-full text-xs">
               <Link href="/app/scheduling">Open Schedule</Link>
+            </Button>
+          </CardFooter>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4 text-primary" />
+              <CardTitle className="text-sm">Books & Materials</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="text-xs text-muted-foreground">
+            Browse authentic syllabus books, texts, worksheets, and resources.
+          </CardContent>
+          <CardFooter className="pt-0">
+            <Button variant="outline" size="sm" asChild className="w-full text-xs">
+              <Link href="/app/curriculum?tab=materials">Open Books</Link>
             </Button>
           </CardFooter>
         </Card>

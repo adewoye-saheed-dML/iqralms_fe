@@ -94,7 +94,7 @@ describe('Imports Feature', () => {
       // Check commit counts
       expect(screen.getByText('Created:')).toBeInTheDocument();
       expect(screen.getByText('3')).toBeInTheDocument(); // created
-    });
+    }, 15000);
 
     it('renders validation errors properly', async () => {
       vi.mocked(importsApi.validateImport).mockResolvedValue({

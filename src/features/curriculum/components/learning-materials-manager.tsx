@@ -54,12 +54,17 @@ const MATERIAL_TYPES: { value: MaterialType; label: string; icon: React.Componen
   { value: 'text', label: 'Study Text / Ayah Notes', icon: Sparkles },
 ];
 
-export function LearningMaterialsManager() {
+interface LearningMaterialsManagerProps {
+  initialTrackId?: number;
+  hideHeader?: boolean;
+}
+
+export function LearningMaterialsManager({ initialTrackId, hideHeader = false }: LearningMaterialsManagerProps = {}) {
   const { activeAcademy, activeRole } = useAcademy();
   const queryClient = useQueryClient();
 
   const [searchQuery, setSearchQuery] = React.useState('');
-  const [selectedTrackId, setSelectedTrackId] = React.useState<string>('all');
+  const [selectedTrackId, setSelectedTrackId] = React.useState<string>(initialTrackId ? String(initialTrackId) : 'all');
   const [selectedLevelId, setSelectedLevelId] = React.useState<string>('all');
   const [selectedType, setSelectedType] = React.useState<string>('all');
 
@@ -73,7 +78,7 @@ export function LearningMaterialsManager() {
   const [title, setTitle] = React.useState('');
   const [description, setDescription] = React.useState('');
   const [materialType, setMaterialType] = React.useState<MaterialType>('pdf');
-  const [formTrackId, setFormTrackId] = React.useState<string>('none');
+  const [formTrackId, setFormTrackId] = React.useState<string>(initialTrackId ? String(initialTrackId) : 'none');
   const [formLevelId, setFormLevelId] = React.useState<string>('none');
   const [externalUrl, setExternalUrl] = React.useState('');
   const [contentText, setContentText] = React.useState('');
@@ -274,21 +279,23 @@ export function LearningMaterialsManager() {
       )}
 
       {/* Header and Quick Stats */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold tracking-tight">Curriculum Books & Learning Materials</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Upload and organize authentic syllabus texts, PDF workbooks, and resources for teachers and students across all tracks.
-          </p>
-        </div>
+      {!hideHeader && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-bold tracking-tight">Curriculum Books & Learning Materials</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Upload and organize authentic syllabus texts, PDF workbooks, and resources for teachers and students across all tracks.
+            </p>
+          </div>
 
-        {canManage && (
-          <Button onClick={() => setIsUploadModalOpen(true)} className="gap-2 shrink-0">
-            <Plus className="h-4 w-4" />
-            Upload New Material
-          </Button>
-        )}
-      </div>
+          {canManage && (
+            <Button onClick={() => setIsUploadModalOpen(true)} className="gap-2 shrink-0">
+              <Plus className="h-4 w-4" />
+              Upload New Material
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* Filter and Search Bar */}
       <Card className="shadow-2xs">

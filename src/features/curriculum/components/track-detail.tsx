@@ -14,7 +14,10 @@ import { ErrorState } from '@/components/ui/error-state';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Plus, Pencil } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Layers, BookOpen } from 'lucide-react';
 import { LevelList } from './level-list';
+import { LearningMaterialsManager } from './learning-materials-manager';
 
 interface TrackDetailProps {
   trackId: number;
@@ -92,19 +95,37 @@ export function TrackDetail({ trackId }: TrackDetailProps) {
         </CardHeader>
       </Card>
 
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium">Levels</h3>
-        {canManageCurriculum && (
-          <Button asChild size="sm">
-            <Link href={`/app/curriculum/tracks/${track.id}/levels/add`}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Level
-            </Link>
-          </Button>
-        )}
-      </div>
+      <Tabs defaultValue="levels" className="space-y-4">
+        <TabsList className="grid w-full sm:w-auto grid-cols-2">
+          <TabsTrigger value="levels" className="flex items-center gap-2">
+            <Layers className="h-4 w-4" />
+            Levels & Milestones
+          </TabsTrigger>
+          <TabsTrigger value="materials" className="flex items-center gap-2">
+            <BookOpen className="h-4 w-4" />
+            Track Books & Materials
+          </TabsTrigger>
+        </TabsList>
 
-      <LevelList track={track} canManage={canManageCurriculum} />
+        <TabsContent value="levels" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium">Levels</h3>
+            {canManageCurriculum && (
+              <Button asChild size="sm">
+                <Link href={`/app/curriculum/tracks/${track.id}/levels/add`}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Level
+                </Link>
+              </Button>
+            )}
+          </div>
+          <LevelList track={track} canManage={canManageCurriculum} />
+        </TabsContent>
+
+        <TabsContent value="materials" className="space-y-4">
+          <LearningMaterialsManager initialTrackId={track.id} hideHeader />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

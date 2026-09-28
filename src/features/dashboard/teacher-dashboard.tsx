@@ -14,6 +14,7 @@ import {
   CalendarCheck,
   CheckCircle,
   Video,
+  BookOpen,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -357,7 +358,7 @@ export function TeacherDashboard() {
       </div>
 
       {/* Secondary Teaching Operations & Earnings */}
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -388,6 +389,23 @@ export function TeacherDashboard() {
           <CardFooter className="pt-0">
             <Button variant="outline" size="sm" asChild className="w-full">
               <Link href="/app/progress">Record Progress</Link>
+            </Button>
+          </CardFooter>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-primary" />
+              <CardTitle className="text-base">Books & Materials</CardTitle>
+            </div>
+            <CardDescription className="text-xs">
+              Access textbooks, worksheets, and syllabus resources for your lessons.
+            </CardDescription>
+          </CardHeader>
+          <CardFooter className="pt-0">
+            <Button variant="outline" size="sm" asChild className="w-full">
+              <Link href="/app/curriculum?tab=materials">View Materials</Link>
             </Button>
           </CardFooter>
         </Card>

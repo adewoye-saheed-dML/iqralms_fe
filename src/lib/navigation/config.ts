@@ -186,6 +186,7 @@ export function getNavigationForRole(experience: RoleExperience): NavItem[] {
       return [
         { label: 'Dashboard', href: '/app/dashboard', icon: LayoutDashboard },
         { label: 'My Classes', href: '/app/scheduling', icon: Calendar },
+        { label: 'Books & Materials', href: '/app/curriculum?tab=materials', icon: BookOpen },
         { label: 'Students', href: '/app/students', icon: Users },
         { label: 'Assessments', href: '/app/assessments', icon: CheckSquare },
         { label: 'Progress', href: '/app/progress', icon: TrendingUp },
@@ -198,6 +199,7 @@ export function getNavigationForRole(experience: RoleExperience): NavItem[] {
       return [
         { label: 'Dashboard', href: '/app/dashboard', icon: LayoutDashboard },
         { label: 'Children', href: '/app/students', icon: Users },
+        { label: 'Books & Materials', href: '/app/curriculum?tab=materials', icon: BookOpen },
         { label: 'Schedule', href: '/app/scheduling', icon: Calendar },
         { label: 'Progress', href: '/app/progress', icon: TrendingUp },
         { label: 'Assessments', href: '/app/assessments', icon: CheckSquare },
@@ -209,6 +211,7 @@ export function getNavigationForRole(experience: RoleExperience): NavItem[] {
       return [
         { label: 'Dashboard', href: '/app/dashboard', icon: LayoutDashboard },
         { label: 'My Schedule', href: '/app/scheduling', icon: Calendar },
+        { label: 'Books & Materials', href: '/app/curriculum?tab=materials', icon: BookOpen },
         { label: 'My Learning', href: '/app/progress', icon: BookOpen },
         { label: 'Progress', href: '/app/progress', icon: TrendingUp },
         { label: 'Assessments', href: '/app/assessments', icon: CheckSquare },
@@ -300,7 +303,8 @@ export function canAccessRoute(
       pathname.startsWith('/app/students') ||
       pathname.startsWith('/app/assessments') ||
       pathname.startsWith('/app/progress') ||
-      pathname.startsWith('/app/payouts')
+      pathname.startsWith('/app/payouts') ||
+      pathname.startsWith('/app/curriculum')
     );
   }
 
@@ -313,7 +317,6 @@ export function canAccessRoute(
       pathname.startsWith('/app/pricing') ||
       (pathname.startsWith('/app/academy') && pathname !== '/app/academy/create') ||
       pathname.startsWith('/app/teachers') ||
-      pathname.startsWith('/app/curriculum') ||
       pathname.startsWith('/app/imports') ||
       pathname.startsWith('/app/audit') ||
       pathname.startsWith('/app/settings')
@@ -324,7 +327,8 @@ export function canAccessRoute(
       pathname.startsWith('/app/students') ||
       pathname.startsWith('/app/scheduling') ||
       pathname.startsWith('/app/progress') ||
-      pathname.startsWith('/app/assessments')
+      pathname.startsWith('/app/assessments') ||
+      pathname.startsWith('/app/curriculum')
     );
   }
 
@@ -336,7 +340,6 @@ export function canAccessRoute(
       pathname.startsWith('/app/payouts') ||
       (pathname.startsWith('/app/academy') && pathname !== '/app/academy/create') ||
       pathname.startsWith('/app/teachers') ||
-      pathname.startsWith('/app/curriculum') ||
       pathname.startsWith('/app/imports') ||
       pathname.startsWith('/app/audit') ||
       pathname.startsWith('/app/settings') ||
@@ -350,7 +353,8 @@ export function canAccessRoute(
       pathname.startsWith('/app/scheduling') ||
       pathname.startsWith('/app/progress') ||
       pathname.startsWith('/app/assessments') ||
-      pathname.startsWith('/app/pricing') // student may view own agreement/pricing
+      pathname.startsWith('/app/pricing') ||
+      pathname.startsWith('/app/curriculum')
     );
   }
 

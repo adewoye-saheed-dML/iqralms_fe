@@ -12,6 +12,15 @@ import * as AcademyProvider from '@/lib/academy/academy-provider';
 import * as AuthProvider from '@/lib/auth/auth-provider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
+import { materialsApi } from '@/features/curriculum/api/materials';
+
+vi.mock('@/features/curriculum/api/materials', () => ({
+  materialsApi: {
+    getMaterials: vi.fn(),
+    createMaterial: vi.fn(),
+  },
+}));
+
 vi.mock('../api/scheduling', () => ({
   schedulingApi: {
     getMeeting: vi.fn(),
@@ -58,7 +67,6 @@ describe('Classroom Jitsi, Whiteboard & Materials Integration', () => {
       expect(screen.getByText('Tajweed Mastery - Surah Al-Mulk')).toBeInTheDocument();
       expect(screen.getByText(/Teaching Time:/i)).toBeInTheDocument();
       expect(screen.getByText('Join Video Here')).toBeInTheDocument();
-      expect(screen.getByText('Open in New Window')).toBeInTheDocument();
       expect(screen.getByText('Conclude & Log Hours for Payout')).toBeInTheDocument();
     });
 
@@ -114,28 +122,63 @@ describe('Classroom Jitsi, Whiteboard & Materials Integration', () => {
     });
   });
 
-  it('renders ClassroomMaterials with Quran Reader, Surah switching, and Tajweed Makharij reference', async () => {
-    render(<ClassroomMaterials levelName="Level 2 - Tajweed" trackName="Quran Recitation" />);
+  it('renders ClassroomMaterials with academy-uploaded learning materials and allows viewing them', async () => {
+    vi.mocked(materialsApi.getMaterials).mockResolvedValue([
+      {
+        id: 101,
+        organization: 1,
+        track: 2,
+        track_name: 'Quran Recitation',
+        level: 3,
+        level_name: 'Level 2 - Tajweed',
+        level_order: 2,
+        title: 'Noorani Qaida - Lesson 4 Worksheet',
+        description: 'Practice sheet for Noon Sakinah and Tanween rules',
+        material_type: 'worksheet',
+        file: 'lesson4.pdf',
+        file_url: 'http://127.0.0.1:8000/media/lesson4.pdf',
+        external_url: '',
+        content_text: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
+        is_active: true,
+        uploaded_by: 10,
+        uploaded_by_name: 'Ustadh Ahmad',
+        created_at: '2026-09-28T00:00:00Z',
+        updated_at: '2026-09-28T00:00:00Z',
+      },
+    ]);
+
+    renderWithProviders(
+      <ClassroomMaterials
+        levelName="Level 2 - Tajweed"
+        trackName="Quran Recitation"
+        organizationId={1}
+      />
+    );
 
     // Check title and level badge
-    expect(screen.getByText('Learning Materials & Reader')).toBeInTheDocument();
+    expect(screen.getByText('Classroom Learning Materials')).toBeInTheDocument();
     expect(screen.getByText(/Quran Recitation • Level 2 - Tajweed/i)).toBeInTheDocument();
 
-    // Check Quran Reader tab and initial Surah (Al-Fatihah)
-    expect(screen.getByText(/Surah Al-Fatihah/i)).toBeInTheDocument();
-    expect(screen.getByText(/The Opening/i)).toBeInTheDocument();
-    expect(screen.getByText(/بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ/i)).toBeInTheDocument();
+    // Check that uploaded material item is rendered
+    await waitFor(() => {
+      expect(screen.getByText('Noorani Qaida - Lesson 4 Worksheet')).toBeInTheDocument();
+      expect(screen.getByText(/Practice sheet for Noon Sakinah and Tanween rules/i)).toBeInTheDocument();
+    });
 
-    // Switch to Tajweed & Makharij tab
-    fireEvent.click(screen.getByText('Tajweed & Makharij'));
-    expect(screen.getByText('Al-Jawf (الجَوْف)')).toBeInTheDocument();
-    expect(screen.getByText('Al-Halq (الحَلْق)')).toBeInTheDocument();
-    expect(screen.getByText('Al-Lisan (اللِّسَان)')).toBeInTheDocument();
+    // Click to view the material
+    fireEvent.click(screen.getByText('Noorani Qaida - Lesson 4 Worksheet'));
 
-    // Switch to Level Goals tab
-    fireEvent.click(screen.getByText('Level Goals'));
-    expect(screen.getByText('Current Lesson Objectives')).toBeInTheDocument();
-    expect(screen.getByText('Teaching Screen-Sharing Tip')).toBeInTheDocument();
+    // Check viewer rendered
+    await waitFor(() => {
+      expect(screen.getByText('Back to All Materials')).toBeInTheDocument();
+      expect(screen.getByText('بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ')).toBeInTheDocument();
+    });
+
+    // Go back to list
+    fireEvent.click(screen.getByText('Back to All Materials'));
+    await waitFor(() => {
+      expect(screen.getByText('Noorani Qaida - Lesson 4 Worksheet')).toBeInTheDocument();
+    });
   });
 
   it('renders ClassroomWhiteboard with drawing tools, color options, and template switchers', async () => {

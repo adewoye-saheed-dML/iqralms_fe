@@ -1,4 +1,5 @@
-import { apiClient } from '@/lib/api/client';
+import { getToken } from '@/lib/auth/token';
+import { ApiError, normalizeErrorMessage } from '@/lib/api/errors';
 
 export type MaterialType = 'pdf' | 'book' | 'worksheet' | 'image' | 'audio' | 'link' | 'text';
 
@@ -36,6 +37,62 @@ export interface LearningMaterialInput {
   is_active?: boolean;
 }
 
+function getApiBaseUrl(): string {
+  const url = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://127.0.0.1:8000');
+  return url.replace(/\/+$/, '');
+}
+
+export function resolveMaterialFileUrl(url: string | null): string | null {
+  if (!url) return null;
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  const baseUrl = getApiBaseUrl();
+  return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+}
+
+function formatMaterial(item: any): LearningMaterial {
+  return {
+    ...item,
+    file_url: resolveMaterialFileUrl(item.file_url),
+  };
+}
+
+async function requestJson(url: string, init?: RequestInit): Promise<any> {
+  const token = getToken();
+  const headers: Record<string, string> = {
+    'Accept': 'application/json',
+    ...(init?.headers as Record<string, string> || {}),
+  };
+  if (token) {
+    headers['Authorization'] = `Token ${token}`;
+  }
+
+  const response = await fetch(url, {
+    ...init,
+    headers,
+  });
+
+  if (!response.ok) {
+    let data: unknown;
+    try {
+      data = await response.clone().json();
+    } catch {
+      try {
+        data = await response.clone().text();
+      } catch {
+        data = undefined;
+      }
+    }
+    const message = normalizeErrorMessage(response.status, data, response.statusText);
+    throw new ApiError(response.status, message, data);
+  }
+
+  if (response.status === 204) {
+    return null;
+  }
+
+  return response.json();
+}
+
 export const materialsApi = {
   getMaterials: async (
     organizationId: number,
@@ -55,44 +112,23 @@ export const materialsApi = {
     if (params?.is_active !== undefined) searchParams.append('is_active', String(params.is_active));
 
     const qs = searchParams.toString();
-    const endpoint = `/api/curriculum/organizations/${organizationId}/materials/${qs ? `?${qs}` : ''}`;
+    const endpoint = `${getApiBaseUrl()}/api/curriculum/organizations/${organizationId}/materials/${qs ? `?${qs}` : ''}`;
     
-    const response = await fetch(endpoint, {
-      headers: {
-        'Accept': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const errorBody = await response.text();
-      throw new Error(`Failed to load materials: ${response.status} ${errorBody}`);
-    }
-
-    return response.json();
+    const data = await requestJson(endpoint);
+    return Array.isArray(data) ? data.map(formatMaterial) : [];
   },
 
   getMaterial: async (organizationId: number, materialId: number): Promise<LearningMaterial> => {
-    const endpoint = `/api/curriculum/organizations/${organizationId}/materials/${materialId}/`;
-    const response = await fetch(endpoint, {
-      headers: {
-        'Accept': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to load material #${materialId}`);
-    }
-
-    return response.json();
+    const endpoint = `${getApiBaseUrl()}/api/curriculum/organizations/${organizationId}/materials/${materialId}/`;
+    const data = await requestJson(endpoint);
+    return formatMaterial(data);
   },
 
   createMaterial: async (organizationId: number, input: LearningMaterialInput): Promise<LearningMaterial> => {
-    const endpoint = `/api/curriculum/organizations/${organizationId}/materials/`;
+    const endpoint = `${getApiBaseUrl()}/api/curriculum/organizations/${organizationId}/materials/`;
     
     let body: BodyInit;
-    const headers: Record<string, string> = {
-      'Accept': 'application/json',
-    };
+    const customHeaders: Record<string, string> = {};
 
     if (input.file) {
       const formData = new FormData();
@@ -107,7 +143,7 @@ export const materialsApi = {
       formData.append('file', input.file);
       body = formData;
     } else {
-      headers['Content-Type'] = 'application/json';
+      customHeaders['Content-Type'] = 'application/json';
       body = JSON.stringify({
         title: input.title,
         description: input.description ?? '',
@@ -120,18 +156,13 @@ export const materialsApi = {
       });
     }
 
-    const response = await fetch(endpoint, {
+    const data = await requestJson(endpoint, {
       method: 'POST',
-      headers,
+      headers: customHeaders,
       body,
     });
 
-    if (!response.ok) {
-      const errorBody = await response.text();
-      throw new Error(`Failed to create material: ${response.status} ${errorBody}`);
-    }
-
-    return response.json();
+    return formatMaterial(data);
   },
 
   updateMaterial: async (
@@ -139,12 +170,10 @@ export const materialsApi = {
     materialId: number,
     input: Partial<LearningMaterialInput>
   ): Promise<LearningMaterial> => {
-    const endpoint = `/api/curriculum/organizations/${organizationId}/materials/${materialId}/`;
+    const endpoint = `${getApiBaseUrl()}/api/curriculum/organizations/${organizationId}/materials/${materialId}/`;
     
     let body: BodyInit;
-    const headers: Record<string, string> = {
-      'Accept': 'application/json',
-    };
+    const customHeaders: Record<string, string> = {};
 
     if (input.file) {
       const formData = new FormData();
@@ -159,7 +188,7 @@ export const materialsApi = {
       formData.append('file', input.file);
       body = formData;
     } else {
-      headers['Content-Type'] = 'application/json';
+      customHeaders['Content-Type'] = 'application/json';
       const payload: Record<string, any> = {};
       if (input.title !== undefined) payload.title = input.title;
       if (input.description !== undefined) payload.description = input.description;
@@ -172,31 +201,19 @@ export const materialsApi = {
       body = JSON.stringify(payload);
     }
 
-    const response = await fetch(endpoint, {
+    const data = await requestJson(endpoint, {
       method: 'PATCH',
-      headers,
+      headers: customHeaders,
       body,
     });
 
-    if (!response.ok) {
-      const errorBody = await response.text();
-      throw new Error(`Failed to update material: ${response.status} ${errorBody}`);
-    }
-
-    return response.json();
+    return formatMaterial(data);
   },
 
   deleteMaterial: async (organizationId: number, materialId: number): Promise<void> => {
-    const endpoint = `/api/curriculum/organizations/${organizationId}/materials/${materialId}/`;
-    const response = await fetch(endpoint, {
+    const endpoint = `${getApiBaseUrl()}/api/curriculum/organizations/${organizationId}/materials/${materialId}/`;
+    await requestJson(endpoint, {
       method: 'DELETE',
-      headers: {
-        'Accept': 'application/json',
-      },
     });
-
-    if (!response.ok) {
-      throw new Error(`Failed to delete material #${materialId}`);
-    }
   },
 };
