@@ -44,9 +44,17 @@ function getApiBaseUrl(): string {
 
 export function resolveMaterialFileUrl(url: string | null): string | null {
   if (!url) return null;
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
   const baseUrl = getApiBaseUrl();
-  return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+  const token = getToken();
+  let fullUrl = url.startsWith('http://') || url.startsWith('https://')
+    ? url
+    : `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+
+  if (token && !fullUrl.includes('token=')) {
+    const separator = fullUrl.includes('?') ? '&' : '?';
+    fullUrl = `${fullUrl}${separator}token=${encodeURIComponent(token)}`;
+  }
+  return fullUrl;
 }
 
 function formatMaterial(item: any): LearningMaterial {
