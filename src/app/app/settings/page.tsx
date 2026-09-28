@@ -36,10 +36,9 @@ export default function SettingsPage() {
         <CardContent className="space-y-4">
           <Alert className="border-blue-200 bg-blue-50/50 text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
             <Info className="h-4 w-4" />
-            <AlertTitle className="font-semibold text-xs">Settings Modification Contract</AlertTitle>
+            <AlertTitle className="font-semibold text-xs">Organization Profile</AlertTitle>
             <AlertDescription className="text-xs mt-0.5">
-              Academy mutation endpoint: <span className="font-semibold">BACKEND CONTRACT REQUIRED</span>.
-              Organization details are currently read-only once created.
+              Core academy parameters are set during institution registration. Contact support to request organization name or domain changes.
             </AlertDescription>
           </Alert>
 
@@ -49,10 +48,10 @@ export default function SettingsPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="slug">Slug / Identifier</Label>
+            <Label htmlFor="slug">Slug / Web Identifier</Label>
             <Input id="slug" readOnly value={activeAcademy.slug} className="bg-muted" />
             <p className="text-xs text-muted-foreground">
-              Unique identifier used in URLs and tenant isolation.
+              Unique web address identifier for your academy portal.
             </p>
           </div>
 

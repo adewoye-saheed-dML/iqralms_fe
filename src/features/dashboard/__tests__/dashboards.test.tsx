@@ -234,10 +234,12 @@ describe('Role-Based Dashboards and SSoT Compliance', () => {
       fireEvent.click(membersTab);
 
       await waitFor(() => {
-        const studentFilterBtn = screen.getByRole('button', { name: /student \(2\)/i });
+        const studentFilterBtn = screen.getByRole('button', { name: /students \(2\)/i });
         expect(studentFilterBtn).toBeInTheDocument();
-        const teacherFilterBtn = screen.getByRole('button', { name: /teacher \(1\)/i });
+        const teacherFilterBtn = screen.getByRole('button', { name: /teachers \(1\)/i });
         expect(teacherFilterBtn).toBeInTheDocument();
+        const ownerFilterBtn = screen.getByRole('button', { name: /owner \(1\)/i });
+        expect(ownerFilterBtn).toBeInTheDocument();
       });
     }, 15000);
   });

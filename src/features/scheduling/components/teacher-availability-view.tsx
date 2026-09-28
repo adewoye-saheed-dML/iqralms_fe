@@ -322,7 +322,7 @@ export function TeacherAvailabilityView() {
             <div className="bg-amber-50/70 border border-amber-200 rounded-lg p-3 text-xs text-amber-900 flex items-start gap-2">
               <Info className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
               <div>
-                <span className="font-semibold">Schedule SSoT Notice:</span> Weekly teaching hours are established in the academy system.
+                <span className="font-semibold">Notice:</span> Weekly teaching hours are established in the academy system.
                 Session requests from students are matched against these windows to ensure you are never double-booked.
               </div>
             </div>
@@ -673,7 +673,7 @@ export function TeacherAvailabilityView() {
               <div className="bg-amber-50/70 border border-amber-200 rounded-lg p-3 text-xs text-amber-900 flex items-start gap-2 mb-4">
                 <Info className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
                 <div>
-                  <span className="font-semibold">Schedule SSoT Notice:</span> Weekly teaching hours are established in UTC with automatic local timezone conversion. Sessions booked or allocated must fall strictly within these windows.
+                  <span className="font-semibold">Notice:</span> Weekly teaching hours are automatically converted to your local timezone. Confirmed class sessions are scheduled within these windows.
                 </div>
               </div>
 

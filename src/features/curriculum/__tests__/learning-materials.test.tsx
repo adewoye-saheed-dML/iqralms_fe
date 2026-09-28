@@ -172,4 +172,19 @@ describe('Learning Materials Feature', () => {
       expect(screen.getByText(/بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ/)).toBeInTheDocument();
     });
   });
+
+  it('hides upload button for teacher role in directory', async () => {
+    vi.spyOn(AcademyProvider, 'useAcademy').mockReturnValue({
+      activeAcademy: mockAcademy,
+      activeRole: 'teacher',
+    } as any);
+
+    renderWithProviders(<LearningMaterialsManager />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Noorani Qaida Beginners Handbook')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('Upload New Material')).not.toBeInTheDocument();
+  });
 });

@@ -432,7 +432,12 @@ export function OwnerAdminDashboard() {
     return allMembersUnified.filter((m) => {
       const matchesSearch =
         m.username.toLowerCase().includes(memberSearch.toLowerCase());
-      const matchesRole = roleFilter === 'all' || m.role === roleFilter;
+      const matchesRole =
+        roleFilter === 'all'
+          ? true
+          : roleFilter === 'owner' || roleFilter === 'admin'
+          ? m.role === 'admin' || m.role === 'owner'
+          : m.role === roleFilter;
       return matchesSearch && matchesRole;
     });
   }, [allMembersUnified, memberSearch, roleFilter]);
@@ -1259,27 +1264,35 @@ export function OwnerAdminDashboard() {
               />
             </div>
             <div className="flex flex-wrap items-center gap-1.5 text-xs">
-              {['all', 'teacher', 'student', 'parent', 'admin', 'owner'].map((r) => {
+              {[
+                { key: 'all', label: 'All' },
+                { key: 'owner', label: 'Owner' },
+                { key: 'teacher', label: 'Teachers' },
+                { key: 'student', label: 'Students' },
+                { key: 'parent', label: 'Parents' },
+              ].map((opt) => {
                 const count =
-                  r === 'all'
+                  opt.key === 'all'
                     ? allMembersUnified.length
-                    : r === 'student'
+                    : opt.key === 'student'
                     ? allStudents.length
-                    : r === 'teacher'
+                    : opt.key === 'teacher'
                     ? allTeachers.length
-                    : allMembersUnified.filter((m) => m.role === r).length;
+                    : opt.key === 'owner'
+                    ? allMembersUnified.filter((m) => m.role === 'admin' || m.role === 'owner').length
+                    : allMembersUnified.filter((m) => m.role === opt.key).length;
                 return (
                   <Button
-                    key={r}
-                    variant={roleFilter === r ? 'default' : 'outline'}
+                    key={opt.key}
+                    variant={roleFilter === opt.key ? 'default' : 'outline'}
                     size="sm"
-                    className="h-8 text-xs capitalize"
+                    className="h-8 text-xs"
                     onClick={() => {
-                      setRoleFilter(r);
+                      setRoleFilter(opt.key);
                       setPage(1);
                     }}
                   >
-                    {r} {count > 0 && `(${count})`}
+                    {opt.label} {count > 0 && `(${count})`}
                   </Button>
                 );
               })}
@@ -1346,15 +1359,15 @@ export function OwnerAdminDashboard() {
                         <td className="p-3">
                           <Badge
                             variant={
-                              member.role === 'owner'
+                              member.role === 'owner' || member.role === 'admin'
                                 ? 'default'
-                                : member.role === 'admin'
-                                ? 'secondary'
                                 : 'outline'
                             }
                             className="text-[11px] capitalize font-medium"
                           >
-                            {member.role_display || member.role}
+                            {member.role === 'owner' || member.role === 'admin'
+                              ? 'Owner'
+                              : member.role_display || member.role}
                           </Badge>
                         </td>
                         <td className="p-3">
@@ -1381,7 +1394,7 @@ export function OwnerAdminDashboard() {
                             : 'N/A'}
                         </td>
                         <td className="p-3 text-right">
-                          {member.role === 'owner' ? (
+                          {member.role === 'owner' || member.role === 'admin' ? (
                             <span className="text-[11px] text-muted-foreground italic pr-2">
                               Academy Owner
                             </span>

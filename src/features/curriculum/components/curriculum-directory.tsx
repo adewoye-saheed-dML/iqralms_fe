@@ -96,9 +96,10 @@ export function CurriculumDirectory() {
 
   const tracks = data || [];
   const canManageCurriculum = can('manage_curriculum', { activeRole });
+  const isTeacher = activeRole === 'teacher';
 
-  // For students or parents who cannot manage curriculum, display their placements interface
-  if (!canManageCurriculum && activeRole !== 'teacher') {
+  // For students or parents, display Books & Materials and Placement Tests
+  if (!canManageCurriculum && !isTeacher) {
     return (
       <div className="space-y-6">
         <Tabs
@@ -129,9 +130,100 @@ export function CurriculumDirectory() {
     );
   }
 
+  // For teachers: Show Books & Materials and Subjects/Syllabus only (no teacher-student mapping)
+  if (isTeacher) {
+    return (
+      <div className="space-y-6">
+        <Tabs
+          value={activeTab === 'subjects' ? 'subjects' : 'materials'}
+          onValueChange={(val) => handleTabChange(val as any)}
+          className="space-y-6"
+        >
+          <TabsList className="grid w-full grid-cols-2 max-w-md bg-muted/60 p-1 rounded-xl">
+            <TabsTrigger value="materials" className="text-xs sm:text-sm font-medium flex items-center gap-2">
+              <BookOpen className="h-4 w-4" />
+              <span>Books &amp; Materials</span>
+            </TabsTrigger>
+            <TabsTrigger value="subjects" className="text-xs sm:text-sm font-medium flex items-center gap-2">
+              <BookOpen className="h-4 w-4 text-muted-foreground" />
+              <span>Syllabus &amp; Tracks</span>
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="materials" className="space-y-6">
+            <LearningMaterialsManager />
+          </TabsContent>
+
+          <TabsContent value="subjects" className="space-y-6">
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold tracking-tight">Curriculum Syllabus &amp; Tracks</h3>
+                <p className="text-xs text-muted-foreground">
+                  Browse the subjects and progressive levels taught in this academy.
+                </p>
+              </div>
+
+              {tracks.length === 0 ? (
+                <EmptyState
+                  icon={<BookOpen className="text-muted-foreground h-10 w-10" />}
+                  title="No tracks defined"
+                  description="No subjects have been defined for this academy yet."
+                />
+              ) : (
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {tracks.map((track) => {
+                    const trackLevels = levels
+                      .filter((l) => l.track === track.id)
+                      .sort((a, b) => a.order - b.order);
+
+                    return (
+                      <Card key={track.id} className="flex flex-col border border-border shadow-sm">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <CardTitle className="text-xl font-bold">{track.name}</CardTitle>
+                              <p className="text-muted-foreground mt-1 font-mono text-xs">{track.slug}</p>
+                            </div>
+                            <Badge variant="outline" className="text-xs">
+                              {trackLevels.length} {trackLevels.length === 1 ? 'Level' : 'Levels'}
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="flex-1 flex flex-col justify-between space-y-4">
+                          <div className="space-y-2.5">
+                            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                              Progressive Levels ({trackLevels.length})
+                            </h4>
+                            {trackLevels.length > 0 ? (
+                              <div className="flex flex-wrap gap-1.5">
+                                {trackLevels.map((level) => (
+                                  <Badge key={level.id} variant="secondary" className="text-xs">
+                                    {level.order}. {level.name}
+                                  </Badge>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-muted-foreground text-xs italic">
+                                No levels defined yet for this track.
+                              </p>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Top Level Curriculum Navigation Tabs */}
+      {/* Top Level Curriculum Navigation Tabs for Owners & Admins */}
       <Tabs
         value={activeTab}
         onValueChange={(val) => handleTabChange(val as 'subjects' | 'materials' | 'allocations' | 'placements')}
@@ -148,11 +240,11 @@ export function CurriculumDirectory() {
           </TabsTrigger>
           <TabsTrigger value="allocations" className="text-xs sm:text-sm font-medium flex items-center gap-2">
             <GraduationCap className="h-4 w-4" />
-            <span>Student-Teacher Mapping</span>
+            <span>Student Allocations</span>
           </TabsTrigger>
           <TabsTrigger value="placements" className="text-xs sm:text-sm font-medium flex items-center gap-2">
             <Headphones className="h-4 w-4" />
-            <span>Audio Placement Tests</span>
+            <span>Placement Tests</span>
           </TabsTrigger>
         </TabsList>
 

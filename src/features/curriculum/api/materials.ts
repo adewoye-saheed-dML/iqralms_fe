@@ -50,11 +50,52 @@ export function resolveMaterialFileUrl(url: string | null): string | null {
     ? url
     : `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
 
-  if (token && !fullUrl.includes('token=')) {
-    const separator = fullUrl.includes('?') ? '&' : '?';
-    fullUrl = `${fullUrl}${separator}token=${encodeURIComponent(token)}`;
+  if (token) {
+    try {
+      const parsed = new URL(fullUrl, baseUrl || 'http://127.0.0.1:8000');
+      parsed.searchParams.set('token', token);
+      fullUrl = parsed.toString();
+    } catch {
+      const separator = fullUrl.includes('?') ? '&' : '?';
+      fullUrl = `${fullUrl}${separator}token=${encodeURIComponent(token)}`;
+    }
   }
   return fullUrl;
+}
+
+export async function openMaterialFile(url: string | null): Promise<void> {
+  if (!url || typeof window === 'undefined') return;
+  const token = getToken();
+  const targetUrl = resolveMaterialFileUrl(url) || url;
+
+  if (token) {
+    try {
+      const headers: Record<string, string> = {
+        Authorization: `Token ${token}`,
+      };
+      const response = await fetch(targetUrl, { headers });
+      if (response.ok) {
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const newWindow = window.open(blobUrl, '_blank');
+        if (newWindow) {
+          return;
+        }
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        return;
+      }
+    } catch {
+      // Fall through to direct window.open
+    }
+  }
+
+  window.open(targetUrl, '_blank');
 }
 
 function formatMaterial(item: any): LearningMaterial {

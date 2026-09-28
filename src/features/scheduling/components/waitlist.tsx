@@ -284,7 +284,7 @@ export function Waitlist() {
                   <CalendarCheck className="h-5 w-5 text-primary" />
                   <CardTitle className="text-xl">Student Availability &amp; Teacher Allocation</CardTitle>
                   <Badge variant="outline" className="text-xs">
-                    SSoT Allocation Queue
+                    Session Requests Queue
                   </Badge>
                 </div>
                 <CardDescription className="mt-1 text-xs">

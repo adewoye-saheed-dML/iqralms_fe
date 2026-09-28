@@ -86,9 +86,9 @@ describe('OnboardingWizard (Explicit Steps)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Class Configuration/i }));
 
     await waitFor(() => {
-      expect(screen.getByText('OPEN / NOT YET CONTRACTED')).toBeInTheDocument();
+      expect(screen.getByText('Standard Default Configuration')).toBeInTheDocument();
       expect(
-        screen.getAllByText('Not available in the current academy setup').length
+        screen.getAllByText('Standard Configuration').length
       ).toBeGreaterThan(0);
     });
   });
@@ -183,10 +183,10 @@ describe('OnboardingWizard (Explicit Steps)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Ready/i }));
 
     await waitFor(() => {
-      // Ready step should still truthfully be uncontracted
-      expect(screen.getByText('OPEN / NOT YET CONTRACTED')).toBeInTheDocument();
+      // Ready step should still be standard configuration
+      expect(screen.getByText('Standard Default Configuration')).toBeInTheDocument();
       expect(
-        screen.getAllByText('Not available in the current academy setup').length
+        screen.getAllByText('Standard Configuration').length
       ).toBeGreaterThan(0);
       // Should NOT have false "Academy Ready" operational assertion
       expect(screen.queryByText('The academy is now operational!')).not.toBeInTheDocument();

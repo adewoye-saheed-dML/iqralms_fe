@@ -366,7 +366,7 @@ export function StudentDashboard() {
               <CardTitle className="text-base">Teacher Schedules &amp; Class Booking</CardTitle>
             </div>
             <Badge variant="outline" className="text-xs bg-background">
-              SSoT Availability Flow
+              Verified Availability
             </Badge>
           </div>
           <CardDescription className="text-xs">

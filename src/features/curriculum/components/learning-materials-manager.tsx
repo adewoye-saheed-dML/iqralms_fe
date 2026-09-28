@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAcademy } from '@/lib/academy/academy-provider';
-import { materialsApi, type LearningMaterial, type LearningMaterialInput, type MaterialType } from '../api/materials';
+import { materialsApi, resolveMaterialFileUrl, openMaterialFile, type LearningMaterial, type LearningMaterialInput, type MaterialType } from '../api/materials';
 import { curriculumApi, type TrackBrief, type Level } from '../api/curriculum';
 import { curriculumKeys } from '@/lib/api/query-keys';
 import { can } from '@/lib/permissions/capabilities';
@@ -85,9 +85,7 @@ export function LearningMaterialsManager({ initialTrackId, hideHeader = false }:
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
   const [isActive, setIsActive] = React.useState(true);
 
-  const canManage = can('manage_curriculum', { activeRole }) || activeRole === 'teacher';
-
-  // Fetch Tracks
+  const canManage = activeRole === 'owner' || activeRole === 'admin';
   const { data: tracks = [] } = useQuery<TrackBrief[]>({
     queryKey: curriculumKeys.tracks(activeAcademy?.id),
     queryFn: () => curriculumApi.getTracks(activeAcademy!.id),
@@ -432,7 +430,7 @@ export function LearningMaterialsManager({ initialTrackId, hideHeader = false }:
                         variant="outline"
                         size="sm"
                         className="h-8 text-xs gap-1.5"
-                        onClick={() => window.open(material.file_url!, '_blank')}
+                        onClick={() => openMaterialFile(material.file_url)}
                       >
                         <Eye className="h-3.5 w-3.5" />
                         Open File
@@ -637,9 +635,13 @@ export function LearningMaterialsManager({ initialTrackId, hideHeader = false }:
                 {editingMaterial?.file_url && (
                   <p className="text-[11px] text-muted-foreground">
                     Current file:{' '}
-                    <a href={editingMaterial.file_url} target="_blank" rel="noreferrer" className="text-primary underline">
+                    <button
+                      type="button"
+                      onClick={() => openMaterialFile(editingMaterial.file_url)}
+                      className="text-primary underline hover:text-primary/80 font-medium inline-block"
+                    >
                       View current attachment
-                    </a>
+                    </button>
                   </p>
                 )}
               </div>

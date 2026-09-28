@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAcademy } from '@/lib/academy/academy-provider';
-import { materialsApi, type LearningMaterial, type LearningMaterialInput, type MaterialType } from '@/features/curriculum/api/materials';
+import { materialsApi, resolveMaterialFileUrl, openMaterialFile, type LearningMaterial, type LearningMaterialInput, type MaterialType } from '@/features/curriculum/api/materials';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -71,7 +71,7 @@ export function ClassroomMaterials({
   const [newContentText, setNewContentText] = React.useState('');
   const [newFile, setNewFile] = React.useState<File | null>(null);
 
-  const canUpload = activeRole === 'owner' || activeRole === 'admin' || activeRole === 'teacher';
+  const canUpload = activeRole === 'owner' || activeRole === 'admin';
 
   // Fetch live academy materials
   const { data: liveMaterials = [], isLoading: isLoadingMaterials } = useQuery<LearningMaterial[]>({
@@ -226,7 +226,7 @@ export function ClassroomMaterials({
                     variant="outline"
                     size="sm"
                     className="h-7 text-xs gap-1"
-                    onClick={() => window.open(activeViewingMaterial.file_url!, '_blank')}
+                    onClick={() => openMaterialFile(activeViewingMaterial.file_url)}
                   >
                     <ExternalLink className="h-3 w-3" />
                     Open in New Tab
@@ -291,7 +291,7 @@ export function ClassroomMaterials({
                     <Button
                       size="sm"
                       className="gap-1.5"
-                      onClick={() => window.open(activeViewingMaterial.file_url!, '_blank')}
+                      onClick={() => openMaterialFile(activeViewingMaterial.file_url)}
                     >
                       <ExternalLink className="h-3.5 w-3.5" />
                       Open Full Document

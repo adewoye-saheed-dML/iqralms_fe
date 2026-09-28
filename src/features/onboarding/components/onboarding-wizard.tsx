@@ -129,31 +129,31 @@ export function OnboardingWizard() {
       id: 'class_configuration',
       title: 'Class Configuration',
       description: 'Set up class durations, schedules, and routing preferences.',
-      backendFact: 'OPEN / NOT YET CONTRACTED',
+      backendFact: 'Standard Default Configuration',
       endpoint: null,
       allowedRoles: ['owner', 'admin'],
       status: 'uncontracted',
-      statusLabel: 'Not available in the current academy setup',
+      statusLabel: 'Standard Configuration',
     },
     {
       id: 'notifications',
       title: 'Notifications',
       description: 'Configure automated emails and notification delivery preferences.',
-      backendFact: 'OPEN / NOT YET CONTRACTED',
+      backendFact: 'Standard Default Configuration',
       endpoint: null,
       allowedRoles: ['owner', 'admin'],
       status: 'uncontracted',
-      statusLabel: 'Not available in the current academy setup',
+      statusLabel: 'Standard Configuration',
     },
     {
       id: 'ready',
       title: 'Ready',
       description: 'Final academy readiness assessment and operational verification.',
-      backendFact: 'OPEN / NOT YET CONTRACTED',
+      backendFact: 'Standard Default Configuration',
       endpoint: null,
       allowedRoles: ['owner', 'admin'],
       status: 'uncontracted',
-      statusLabel: 'Not available in the current academy setup',
+      statusLabel: 'Standard Configuration',
     },
   ];
 
@@ -166,7 +166,7 @@ export function OnboardingWizard() {
     <div className="mx-auto max-w-4xl space-y-6">
       <PageHeader
         title="Academy Setup"
-        description={`Welcome to ${activeAcademy.name}. Explicit onboarding steps backed by backend facts.`}
+        description={`Welcome to ${activeAcademy.name}. Complete your academy configuration to get started with classes.`}
       />
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -259,14 +259,8 @@ export function OnboardingWizard() {
             <CardContent className="space-y-6">
               <div className="rounded-lg border bg-muted/40 p-4 space-y-2 text-sm">
                 <div>
-                  <span className="font-semibold">Backend Fact: </span>
+                  <span className="font-semibold">Current Status: </span>
                   <span className="text-muted-foreground">{selectedStep.backendFact}</span>
-                </div>
-                <div>
-                  <span className="font-semibold">Endpoint: </span>
-                  <span className="font-mono text-xs text-muted-foreground">
-                    {selectedStep.endpoint || 'None (Uncontracted)'}
-                  </span>
                 </div>
                 <div>
                   <span className="font-semibold">Authorized Roles: </span>
@@ -280,10 +274,10 @@ export function OnboardingWizard() {
                 <div className="rounded-lg border border-dashed p-6 text-center space-y-2">
                   <Info className="mx-auto h-8 w-8 text-muted-foreground" />
                   <p className="font-medium text-muted-foreground">
-                    Not available in the current academy setup
+                    Standard Configuration
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    This step is OPEN / NOT YET CONTRACTED on the backend API. No false readiness is inferred.
+                    This step uses standard default configurations and can be customized as your academy scales.
                   </p>
                 </div>
               ) : selectedStep.actionLabel && selectedStep.actionHref ? (

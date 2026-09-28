@@ -429,7 +429,7 @@ export function BookingForm() {
         <div className="flex items-center justify-between">
           <CardTitle>Schedule a Session</CardTitle>
           <Badge variant="outline" className="text-xs">
-            SSoT Verified
+            Live Availability
           </Badge>
         </div>
         <CardDescription>

@@ -90,8 +90,7 @@ describe('Navigation Policy per Role', () => {
     const labels = nav.map((item) => item.label);
     expect(labels).toContain('Dashboard');
     expect(labels).toContain('My Schedule');
-    expect(labels).toContain('My Learning');
-    expect(labels).toContain('Progress');
+    expect(labels).toContain('Progress & Learning');
     expect(labels).toContain('Assessments');
 
     expect(labels).not.toContain('Finance');
