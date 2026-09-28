@@ -45,6 +45,8 @@ vi.mock('@/features/scheduling/api/scheduling', () => ({
     getTeachingBookings: vi.fn(),
     getMyBookings: vi.fn(),
     getAvailability: vi.fn(),
+    getMyWaitlist: vi.fn().mockResolvedValue([]),
+    getTeacherWaitlist: vi.fn().mockResolvedValue([]),
   },
 }));
 
@@ -126,6 +128,7 @@ describe('Role-Based Dashboards and SSoT Compliance', () => {
       expect(screen.getByText('Academy Administration')).toBeInTheDocument();
       expect(screen.getByText('Furqan Academy')).toBeInTheDocument();
 
+      await waitFor(() => {
         expect(screen.getByText("Today's Classes & Live Sessions")).toBeInTheDocument();
         expect(screen.getByText('Level 1 Tajweed')).toBeInTheDocument();
         expect(screen.getByText('Student: Zayd · Teacher: Ali')).toBeInTheDocument();
@@ -351,6 +354,7 @@ describe('Role-Based Dashboards and SSoT Compliance', () => {
         expect(bookClassLink).toHaveAttribute('href', '/app/scheduling/book');
       });
     });
+  });
 
   describe('ParentDashboard', () => {
     it('calls parent-safe student and assessment queries and includes Join Class link', async () => {

@@ -15,7 +15,6 @@ import { ErrorState } from '@/components/ui/error-state';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   Video,
-  ExternalLink,
   CheckSquare,
   AlertTriangle,
   Clock,
@@ -279,15 +278,6 @@ export function ClassSession({ bookingId }: ClassSessionProps) {
                 <Video className="mr-2 h-4 w-4" />
                 {embedVideo ? 'Hide In-App Video' : 'Join Video Here'}
               </Button>
-
-              {meeting?.join_url && (
-                <Button variant="outline" asChild>
-                  <a href={meeting.join_url} target="_blank" rel="noreferrer">
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    Open in New Window
-                  </a>
-                </Button>
-              )}
             </div>
           </div>
         </CardHeader>
@@ -404,13 +394,6 @@ export function ClassSession({ bookingId }: ClassSessionProps) {
                 <Button onClick={handleToggleVideo} size="default">
                   <Video className="mr-2 h-4 w-4" /> Start In-App Video
                 </Button>
-                {meeting?.join_url && (
-                  <Button variant="outline" size="default" asChild>
-                    <a href={meeting.join_url} target="_blank" rel="noreferrer">
-                      <ExternalLink className="mr-2 h-4 w-4" /> Launch in External Window
-                    </a>
-                  </Button>
-                )}
               </div>
             </div>
           </CardContent>

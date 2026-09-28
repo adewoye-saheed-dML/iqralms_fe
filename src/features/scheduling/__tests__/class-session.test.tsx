@@ -53,7 +53,6 @@ describe('ClassSession', () => {
       expect(screen.getByText('Quran Track - Level 1 Session')).toBeInTheDocument();
       expect(screen.getByText(/jitsi/i)).toBeInTheDocument();
       expect(screen.getByText('Join Video Here')).toBeInTheDocument();
-      expect(screen.getByText('Open in New Window')).toBeInTheDocument();
     });
   });
 
@@ -185,7 +184,7 @@ describe('ClassSession', () => {
 
     await waitFor(() => {
       expect(screen.getByText("Child's Arabic Session")).toBeInTheDocument();
-      expect(screen.getByText('Open in New Window')).toBeInTheDocument();
+      expect(screen.getByText('Join Video Here')).toBeInTheDocument();
     });
   });
 });

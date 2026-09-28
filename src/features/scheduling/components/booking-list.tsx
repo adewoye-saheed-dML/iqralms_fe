@@ -241,28 +241,12 @@ export function BookingList({ type }: BookingListProps) {
                 {/* Actions */}
                 <div className="pt-3 border-t space-y-2">
                   {booking.status !== 'cancelled' && (
-                    <div className="flex flex-col gap-1.5">
-                      <Button asChild size="sm" className="w-full">
-                        <Link href={`/app/scheduling/${booking.id}`}>
-                          <Video className="mr-1.5 h-3.5 w-3.5" />
-                          Enter Class Session
-                        </Link>
-                      </Button>
-                      {(booking.video_join_url ||
-                        (booking as unknown as { join_url?: string }).join_url) && (
-                        <a
-                          href={
-                            booking.video_join_url ||
-                            (booking as unknown as { join_url?: string }).join_url
-                          }
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-xs text-center text-muted-foreground hover:text-primary transition-colors"
-                        >
-                          Join Session
-                        </a>
-                      )}
-                    </div>
+                    <Button asChild size="sm" className="w-full">
+                      <Link href={`/app/scheduling/${booking.id}`}>
+                        <Video className="mr-1.5 h-3.5 w-3.5" />
+                        Enter Class Session
+                      </Link>
+                    </Button>
                   )}
 
                   {booking.status === 'scheduled' && (

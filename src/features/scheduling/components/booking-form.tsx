@@ -405,7 +405,7 @@ export function BookingForm() {
             <div>
               <span className="font-medium text-foreground">What happens next?</span>
               <p className="mt-0.5">
-                The academy director and lead teacher review incoming student requests, compare with teacher availability, and allocate the class session. Both student and teacher will receive advance notifications once the session is confirmed.
+                The academy leadership reviews incoming student requests, compares with teacher availability, and allocates the class session. Both student and teacher will receive advance notifications once the session is confirmed.
               </p>
             </div>
           </div>

@@ -14,6 +14,10 @@ import {
   Video,
   CalendarCheck,
   User,
+  AlertCircle,
+  CheckCircle2,
+  Hourglass,
+  Plus,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -22,7 +26,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/auth/auth-provider';
 import { useAcademy } from '@/lib/academy/academy-provider';
 import { schedulingKeys, progressKeys, assessmentKeys } from '@/lib/api/query-keys';
-import { schedulingApi, type Booking } from '@/features/scheduling/api/scheduling';
+import { schedulingApi, type Booking, type WaitlistEntry } from '@/features/scheduling/api/scheduling';
 import { progressApi, type ProgressSnapshot } from '@/features/progress/api/progress';
 import { assessmentApi, type FamilyAssessment } from '@/features/assessment/api/assessment';
 
@@ -30,10 +34,17 @@ export function StudentDashboard() {
   const { user } = useAuth();
   const { activeAcademy } = useAcademy();
 
-  // Load student's upcoming bookings
+  // Load student's bookings
   const { data: bookings = [] } = useQuery<Booking[]>({
     queryKey: schedulingKeys.bookings(activeAcademy?.id),
     queryFn: () => schedulingApi.getMyBookings(activeAcademy!.id),
+    enabled: !!activeAcademy?.id,
+  });
+
+  // Load student's pending waitlist requests
+  const { data: myWaitlist = [] } = useQuery<WaitlistEntry[]>({
+    queryKey: schedulingKeys.waitlistMine(activeAcademy?.id),
+    queryFn: () => schedulingApi.getMyWaitlist(activeAcademy!.id),
     enabled: !!activeAcademy?.id,
   });
 
@@ -51,7 +62,34 @@ export function StudentDashboard() {
     enabled: !!activeAcademy?.id,
   });
 
-  const nextClass = bookings[0];
+  const [activeBookingTab, setActiveBookingTab] = React.useState<'upcoming' | 'pending' | 'past'>('upcoming');
+
+  const now = new Date();
+
+  const sortedBookings = React.useMemo(() => {
+    return [...bookings].sort(
+      (a, b) => new Date(a.start_time_utc).getTime() - new Date(b.start_time_utc).getTime()
+    );
+  }, [bookings]);
+
+  const upcomingBookings = React.useMemo(() => {
+    return sortedBookings.filter(
+      (b) => b.status !== 'cancelled' && new Date(b.start_time_utc).getTime() >= now.getTime() - 3600000
+    );
+  }, [sortedBookings, now]);
+
+  const pastBookings = React.useMemo(() => {
+    return sortedBookings
+      .filter((b) => b.status === 'completed' || new Date(b.start_time_utc).getTime() < now.getTime() - 3600000)
+      .reverse();
+  }, [sortedBookings, now]);
+
+  const openWaitlistEntries = React.useMemo(() => {
+    return myWaitlist.filter((w) => w.status === 'open');
+  }, [myWaitlist]);
+
+  // Next scheduled class: favor the first upcoming booking, or fallback to first booking
+  const nextClass = upcomingBookings[0] || (bookings.length > 0 ? bookings[0] : null);
 
   const myTeachers = React.useMemo(() => {
     const map = new Map<number, { id: number; name: string; username: string }>();
@@ -113,10 +151,210 @@ export function StudentDashboard() {
             </>
           ) : (
             <Button asChild size="sm">
-              <Link href="/app/scheduling/book">Book a Lesson</Link>
+              <Link href="/app/scheduling/book">
+                <Plus className="mr-1.5 h-4 w-4" /> Book a Lesson
+              </Link>
             </Button>
           )}
         </CardFooter>
+      </Card>
+
+      {/* Dedicated My Bookings & Schedule Section */}
+      <Card className="border shadow-xs">
+        <CardHeader className="pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-primary" />
+                <CardTitle className="text-lg">My Bookings &amp; Class Schedule</CardTitle>
+              </div>
+              <CardDescription className="text-xs mt-1">
+                Your confirmed recitation sessions, class links, and pending allocation requests.
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" asChild>
+                <Link href="/app/scheduling/book">
+                  <Plus className="mr-1.5 h-4 w-4" /> Book a Session
+                </Link>
+              </Button>
+            </div>
+          </div>
+
+          {/* Filter Pills */}
+          <div className="flex items-center gap-2 pt-3 border-t mt-3">
+            <Button
+              variant={activeBookingTab === 'upcoming' ? 'default' : 'outline'}
+              size="sm"
+              className="text-xs h-7 px-2.5"
+              onClick={() => setActiveBookingTab('upcoming')}
+            >
+              Upcoming Lessons ({upcomingBookings.length})
+            </Button>
+            <Button
+              variant={activeBookingTab === 'pending' ? 'default' : 'outline'}
+              size="sm"
+              className="text-xs h-7 px-2.5"
+              onClick={() => setActiveBookingTab('pending')}
+            >
+              Pending Requests ({openWaitlistEntries.length})
+            </Button>
+            <Button
+              variant={activeBookingTab === 'past' ? 'default' : 'outline'}
+              size="sm"
+              className="text-xs h-7 px-2.5"
+              onClick={() => setActiveBookingTab('past')}
+            >
+              Past Lessons ({pastBookings.length})
+            </Button>
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-3">
+          {activeBookingTab === 'upcoming' && (
+            upcomingBookings.length === 0 ? (
+              <div className="rounded-lg border border-dashed p-6 text-center text-xs text-muted-foreground space-y-2">
+                <CalendarCheck className="h-8 w-8 mx-auto text-muted-foreground/60" />
+                <p className="font-medium text-foreground">No upcoming recitation sessions scheduled.</p>
+                <p className="text-[11px]">Book a 1-on-1 session with an academy Ustadh to continue your memorization.</p>
+                <Button size="sm" asChild className="mt-2">
+                  <Link href="/app/scheduling/book">Book a Class Session</Link>
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {upcomingBookings.map((b) => {
+                  const teacherName = b.teacher?.first_name
+                    ? `${b.teacher.first_name} ${b.teacher.last_name || ''}`.trim()
+                    : b.teacher?.username || 'Ustadh';
+                  return (
+                    <div
+                      key={b.id}
+                      className="rounded-lg border p-3 bg-card hover:bg-muted/10 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-sm text-foreground">Ustadh {teacherName}</span>
+                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-300 text-[10px] px-1.5 py-0">
+                            <CheckCircle2 className="w-2.5 h-2.5 mr-1" /> Confirmed
+                          </Badge>
+                          {b.cohort && (
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                              Cohort Class
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-primary" />
+                            {b.start_time_local || new Date(b.start_time_utc).toLocaleString(undefined, {
+                              weekday: 'short',
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                          {b.level?.name && (
+                            <span className="flex items-center gap-1">
+                              <BookOpen className="w-3 h-3" />
+                              {b.level.name}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button asChild size="sm" className="h-8 text-xs">
+                          <Link href={`/app/scheduling/${b.id}`}>
+                            <Video className="w-3.5 h-3.5 mr-1.5" /> Enter Classroom
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )
+          )}
+
+          {activeBookingTab === 'pending' && (
+            openWaitlistEntries.length === 0 ? (
+              <div className="rounded-lg border border-dashed p-6 text-center text-xs text-muted-foreground">
+                No pending lesson requests waiting for allocation.
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {openWaitlistEntries.map((w) => {
+                  const reqTeacher = w.requested_teacher
+                    ? `Ustadh ${w.requested_teacher.first_name || w.requested_teacher.username}`
+                    : 'Any Available Instructor';
+                  return (
+                    <div
+                      key={w.id}
+                      className="rounded-lg border border-amber-200 bg-amber-50/40 dark:bg-amber-950/20 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-foreground">Requested: {reqTeacher}</span>
+                          <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300 text-[10px] px-1.5 py-0">
+                            <Hourglass className="w-2.5 h-2.5 mr-1" /> Pending Allocation
+                          </Badge>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">
+                          Requested Slot: {w.requested_start_utc ? new Date(w.requested_start_utc).toLocaleString(undefined, {
+                            weekday: 'short',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          }) : 'Flexible'} ({w.requested_duration_minutes || 30} mins)
+                        </p>
+                      </div>
+                      <div className="text-[11px] text-amber-800 dark:text-amber-300">
+                        Academy leadership is reviewing teacher capacity.
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )
+          )}
+
+          {activeBookingTab === 'past' && (
+            pastBookings.length === 0 ? (
+              <div className="rounded-lg border border-dashed p-6 text-center text-xs text-muted-foreground">
+                No past recitation lessons recorded yet.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {pastBookings.slice(0, 5).map((b) => {
+                  const teacherName = b.teacher?.first_name
+                    ? `${b.teacher.first_name} ${b.teacher.last_name || ''}`.trim()
+                    : b.teacher?.username || 'Ustadh';
+                  return (
+                    <div
+                      key={b.id}
+                      className="rounded-lg border p-2.5 bg-muted/20 flex items-center justify-between gap-3 text-xs"
+                    >
+                      <div>
+                        <span className="font-medium text-foreground">Ustadh {teacherName}</span>
+                        <div className="text-muted-foreground text-[11px]">
+                          {b.start_time_local || new Date(b.start_time_utc).toLocaleString(undefined, {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </div>
+                      </div>
+                      <Badge variant="secondary" className="text-[10px]">Completed</Badge>
+                    </div>
+                  );
+                })}
+              </div>
+            )
+          )}
+        </CardContent>
       </Card>
 
       {/* Teacher Availability & Class Booking Section */}

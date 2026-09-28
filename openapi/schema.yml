@@ -3590,7 +3590,7 @@ paths:
         schema:
           type: integer
         description: Whose availability to list.
-        required: true
+        required: false
       tags:
       - scheduling
       security:
@@ -3605,6 +3605,58 @@ paths:
                 items:
                   $ref: '#/components/schemas/Availability'
           description: ''
+    post:
+      operationId: scheduling_organizations_availability_create
+      description: POST /api/scheduling/organizations/{id}/availability/ — declare availability windows.
+      parameters:
+      - in: path
+        name: organization_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - scheduling
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AvailabilityCreate'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Availability'
+          description: ''
+  /api/scheduling/organizations/{organization_pk}/availability/{id}/:
+    delete:
+      operationId: scheduling_organizations_availability_destroy
+      description: DELETE /api/scheduling/organizations/{id}/availability/{id}/ — delete a declared window.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: organization_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - scheduling
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/scheduling/organizations/{organization_pk}/bookings/:
     post:
       operationId: scheduling_organizations_bookings_create
@@ -4052,6 +4104,36 @@ paths:
             outside their hours or over their cap to avoid this. For a ``preferred_teacher``
             request this is also the waitlisted outcome: ``considered.waitlist`` carries
             the entry, and no other teacher has been assigned.'
+  /api/scheduling/organizations/{organization_pk}/waitlist/:
+    get:
+      operationId: scheduling_organizations_waitlist_list
+      description: GET /api/scheduling/organizations/{id}/waitlist/ — all open student requests across academy.
+      parameters:
+      - in: path
+        name: organization_pk
+        schema:
+          type: integer
+        required: true
+      - in: query
+        name: teacher_id
+        schema:
+          type: integer
+        description: Filter by requested teacher ID.
+        required: false
+      tags:
+      - scheduling
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WaitlistEntry'
+          description: ''
   /api/scheduling/organizations/{organization_pk}/waitlist/{id}/promote/:
     post:
       operationId: scheduling_organizations_waitlist_promote_create
@@ -6565,6 +6647,9 @@ components:
         level_id:
           type: integer
           nullable: true
+        teacher_id:
+          type: integer
+          nullable: true
     PatchedTeacherTrackUpdate:
       type: object
       description: |-
@@ -7491,12 +7576,16 @@ components:
         level_id:
           type: integer
           nullable: true
+        teacher_id:
+          type: integer
+          nullable: true
       required:
       - user
     StudentEnrollmentUpdateStatusEnum:
       enum:
       - active
       - inactive
+      - waitlisted
       type: string
       description: |-
         * `active` - Active
@@ -7539,6 +7628,14 @@ components:
           nullable: true
         level_id:
           type: integer
+          readOnly: true
+          nullable: true
+        teacher_id:
+          type: integer
+          readOnly: true
+          nullable: true
+        teacher_name:
+          type: string
           readOnly: true
           nullable: true
         created_at:
@@ -8308,6 +8405,26 @@ components:
         duration_minutes:
           type: integer
           minimum: 1
+        teacher_id:
+          type: integer
+    AvailabilityCreate:
+      type: object
+      description: Payload to declare a weekly teaching availability window.
+      properties:
+        weekday:
+          type: integer
+        start_time:
+          type: string
+          format: time
+        end_time:
+          type: string
+          format: time
+        teacher_id:
+          type: integer
+      required:
+      - weekday
+      - start_time
+      - end_time
     WeekdayEnum:
       enum:
       - 0

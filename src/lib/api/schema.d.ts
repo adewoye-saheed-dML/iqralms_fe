@@ -1910,8 +1910,26 @@ export interface paths {
         /** @description GET /api/scheduling/organizations/{id}/availability/?teacher_id= — one teacher's hours. */
         get: operations["scheduling_organizations_availability_list"];
         put?: never;
-        post?: never;
+        /** @description POST /api/scheduling/organizations/{id}/availability/ — declare availability windows. */
+        post: operations["scheduling_organizations_availability_create"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scheduling/organizations/{organization_pk}/availability/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description DELETE /api/scheduling/organizations/{id}/availability/{id}/ — delete a declared window. */
+        delete: operations["scheduling_organizations_availability_destroy"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2134,6 +2152,23 @@ export interface paths {
          *     on Ustadh's list" reads one extra key.
          */
         post: operations["scheduling_organizations_route_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scheduling/organizations/{organization_pk}/waitlist/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description GET /api/scheduling/organizations/{id}/waitlist/ — all open student requests across academy. */
+        get: operations["scheduling_organizations_waitlist_list"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3855,8 +3890,6 @@ export interface components {
             readonly enrollment_status: string;
             readonly track_id: number | null;
             readonly level_id: number | null;
-            readonly teacher_id: number | null;
-            readonly teacher_name: string | null;
             /** Format: date-time */
             readonly created_at: string;
             /** Format: date-time */
@@ -3874,7 +3907,7 @@ export interface components {
          *     * `inactive` - Inactive
          * @enum {string}
          */
-        StudentEnrollmentUpdateStatusEnum: "active" | "inactive";
+        StudentEnrollmentUpdateStatusEnum: "active" | "inactive" | "waitlisted";
         /** @description A student's enrollment, as seen in the academy's list. */
         StudentList: {
             readonly id: number;
@@ -3889,8 +3922,8 @@ export interface components {
             readonly enrollment_status: string;
             readonly track_id: number | null;
             readonly level_id: number | null;
-            readonly teacher_id: number | null;
-            readonly teacher_name: string | null;
+            readonly teacher_id?: number | null;
+            readonly teacher_name?: string | null;
             /** Format: date-time */
             readonly created_at: string;
             /** Format: date-time */
@@ -4226,6 +4259,16 @@ export interface components {
             /** Format: date-time */
             start_time_utc?: string;
             duration_minutes?: number;
+            teacher_id?: number;
+        };
+        /** @description Payload to declare a weekly teaching availability window. */
+        AvailabilityCreate: {
+            weekday: number;
+            /** Format: time */
+            start_time: string;
+            /** Format: time */
+            end_time: string;
+            teacher_id?: number;
         };
         /**
          * @description * `0` - Monday
@@ -7491,9 +7534,9 @@ export interface operations {
     };
     scheduling_organizations_availability_list: {
         parameters: {
-            query: {
+            query?: {
                 /** @description Whose availability to list. */
-                teacher_id: number;
+                teacher_id?: number;
             };
             header?: never;
             path: {
@@ -7510,6 +7553,52 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Availability"][];
                 };
+            };
+        };
+    };
+    scheduling_organizations_availability_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_pk: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AvailabilityCreate"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Availability"][];
+                };
+            };
+        };
+    };
+    scheduling_organizations_availability_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                organization_pk: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -7896,6 +7985,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NoCapacity"];
+                };
+            };
+        };
+    };
+    scheduling_organizations_waitlist_list: {
+        parameters: {
+            query?: {
+                /** @description Filter by requested teacher ID. */
+                teacher_id?: number;
+            };
+            header?: never;
+            path: {
+                organization_pk: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaitlistEntry"][];
                 };
             };
         };

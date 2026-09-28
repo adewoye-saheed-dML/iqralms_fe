@@ -154,7 +154,7 @@ export function TeacherDashboard() {
                 </p>
               </div>
               <Button size="sm" asChild className="shrink-0">
-                <Link href="/app/scheduling?tab=availability">
+                <Link href="/app/scheduling?tab=availability&declare=true">
                   <CalendarCheck className="mr-1.5 h-4 w-4" /> Declare My Hours
                 </Link>
               </Button>

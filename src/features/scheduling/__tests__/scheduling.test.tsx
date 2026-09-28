@@ -99,7 +99,7 @@ describe('Scheduling Feature', () => {
         expect(screen.getByText('Level 1')).toBeInTheDocument();
         expect(screen.getByText(/Teacher: Ahmed/i)).toBeInTheDocument();
         expect(screen.getByText('scheduled')).toBeInTheDocument();
-        expect(screen.getByText('Join Session')).toBeInTheDocument();
+        expect(screen.getByText(/Enter Class Session/i)).toBeInTheDocument();
       });
     });
 

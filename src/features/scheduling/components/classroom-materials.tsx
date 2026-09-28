@@ -1,14 +1,46 @@
 'use client';
 
 import * as React from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAcademy } from '@/lib/academy/academy-provider';
+import { materialsApi, type LearningMaterial, type LearningMaterialInput, type MaterialType } from '@/features/curriculum/api/materials';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { QuranText } from '@/components/ui/quran-text';
 import { ArabicText } from '@/components/ui/arabic-text';
-import { BookOpen, Search, ZoomIn, ZoomOut, CheckCircle, Sparkles, HelpCircle } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  BookOpen,
+  Search,
+  ZoomIn,
+  ZoomOut,
+  CheckCircle,
+  Sparkles,
+  HelpCircle,
+  FileText,
+  FileCode,
+  Image as ImageIcon,
+  Headphones,
+  Link as LinkIcon,
+  ExternalLink,
+  Plus,
+  Layers,
+  ArrowLeft,
+  AlertCircle,
+} from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface SurahData {
   number: number;
@@ -20,7 +52,7 @@ interface SurahData {
   verses: { number: number; text: string; translation?: string }[];
 }
 
-// Sample authentic Qur'anic selections frequently taught in classes
+// Authentic Qur'anic selections frequently taught in classes
 const POPULAR_SURAHS: SurahData[] = [
   {
     number: 1,
@@ -170,17 +202,101 @@ const TAJWEED_MAKHARIJ = [
 ];
 
 interface ClassroomMaterialsProps {
+  organizationId?: number;
   levelName?: string;
   trackName?: string;
+  trackId?: number;
+  levelId?: number;
 }
 
-export function ClassroomMaterials({ levelName, trackName }: ClassroomMaterialsProps) {
+export function ClassroomMaterials({
+  organizationId,
+  levelName,
+  trackName,
+  trackId,
+  levelId,
+}: ClassroomMaterialsProps) {
+  const { activeAcademy, activeRole } = useAcademy();
+  const queryClient = useQueryClient();
+
+  const orgId = organizationId ?? activeAcademy?.id;
+
   const [selectedSurahIndex, setSelectedSurahIndex] = React.useState(0);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [fontSizeClass, setFontSizeClass] = React.useState<'text-xl' | 'text-2xl' | 'text-3xl' | 'text-4xl'>('text-2xl');
   const [activeVerseHighlight, setActiveVerseHighlight] = React.useState<number | null>(null);
 
-  const [activeTab, setActiveTab] = React.useState<'quran' | 'tajweed' | 'syllabus'>('quran');
+  const [activeTab, setActiveTab] = React.useState<'materials' | 'quran' | 'tajweed' | 'syllabus'>('materials');
+  const [materialFilterType, setMaterialFilterType] = React.useState<string>('all');
+  const [activeViewingMaterial, setActiveViewingMaterial] = React.useState<LearningMaterial | null>(null);
+
+  // In-classroom quick upload modal
+  const [isUploadOpen, setIsUploadOpen] = React.useState(false);
+  const [newTitle, setNewTitle] = React.useState('');
+  const [newDescription, setNewDescription] = React.useState('');
+  const [newType, setNewType] = React.useState<MaterialType>('pdf');
+  const [newExternalUrl, setNewExternalUrl] = React.useState('');
+  const [newContentText, setNewContentText] = React.useState('');
+  const [newFile, setNewFile] = React.useState<File | null>(null);
+
+  const canUpload = activeRole === 'owner' || activeRole === 'admin' || activeRole === 'teacher';
+
+  // Fetch live academy materials
+  const { data: liveMaterials = [], isLoading: isLoadingMaterials } = useQuery<LearningMaterial[]>({
+    queryKey: ['curriculum', 'materials', orgId, trackId, levelId],
+    queryFn: () =>
+      materialsApi.getMaterials(orgId!, {
+        track_id: trackId,
+        level_id: levelId,
+        include_general: true,
+        is_active: true,
+      }),
+    enabled: !!orgId,
+  });
+
+  const [uploadError, setUploadError] = React.useState<string | null>(null);
+
+  // Upload Mutation
+  const uploadMutation = useMutation({
+    mutationFn: async (payload: LearningMaterialInput) => {
+      return materialsApi.createMaterial(orgId!, payload);
+    },
+    onSuccess: (newMaterial) => {
+      queryClient.invalidateQueries({ queryKey: ['curriculum', 'materials', orgId] });
+      setIsUploadOpen(false);
+      setNewTitle('');
+      setNewDescription('');
+      setNewExternalUrl('');
+      setNewContentText('');
+      setNewFile(null);
+      setUploadError(null);
+      setActiveViewingMaterial(newMaterial);
+    },
+    onError: (err: any) => {
+      setUploadError(err.message || 'Failed to upload material');
+    },
+  });
+
+  const handleUploadSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setUploadError(null);
+    if (!newTitle.trim()) {
+      setUploadError('Please enter a title');
+      return;
+    }
+
+    uploadMutation.mutate({
+      title: newTitle.trim(),
+      description: newDescription.trim(),
+      material_type: newType,
+      track: trackId ?? null,
+      level: levelId ?? null,
+      external_url: newExternalUrl.trim(),
+      content_text: newContentText.trim(),
+      file: newFile,
+      is_active: true,
+    });
+  };
 
   const filteredSurahs = React.useMemo(() => {
     if (!searchQuery.trim()) return POPULAR_SURAHS;
@@ -207,13 +323,41 @@ export function ClassroomMaterials({ levelName, trackName }: ClassroomMaterialsP
     else if (fontSizeClass === 'text-2xl') setFontSizeClass('text-xl');
   };
 
+  const filteredMaterials = React.useMemo(() => {
+    return liveMaterials.filter((mat) => {
+      if (materialFilterType !== 'all' && mat.material_type !== materialFilterType) return false;
+      return true;
+    });
+  }, [liveMaterials, materialFilterType]);
+
+  const getMaterialIcon = (type: MaterialType) => {
+    switch (type) {
+      case 'book':
+        return <BookOpen className="h-4 w-4 text-emerald-600" />;
+      case 'pdf':
+        return <FileText className="h-4 w-4 text-blue-600" />;
+      case 'worksheet':
+        return <FileCode className="h-4 w-4 text-purple-600" />;
+      case 'image':
+        return <ImageIcon className="h-4 w-4 text-amber-600" />;
+      case 'audio':
+        return <Headphones className="h-4 w-4 text-rose-600" />;
+      case 'link':
+        return <LinkIcon className="h-4 w-4 text-cyan-600" />;
+      case 'text':
+        return <Sparkles className="h-4 w-4 text-indigo-600" />;
+      default:
+        return <FileText className="h-4 w-4 text-muted-foreground" />;
+    }
+  };
+
   return (
     <Card className="h-full flex flex-col border shadow-sm bg-card overflow-hidden">
-      <CardHeader className="py-3 px-4 border-b bg-muted/30">
+      <CardHeader className="py-2.5 px-4 border-b bg-muted/30">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <BookOpen className="h-4 w-4 text-primary" />
-            <CardTitle className="text-base font-semibold">Learning Materials & Reader</CardTitle>
+            <CardTitle className="text-sm font-semibold">Classroom Materials &amp; Reader</CardTitle>
           </div>
           {levelName && (
             <Badge variant="outline" className="text-xs bg-background">
@@ -226,14 +370,198 @@ export function ClassroomMaterials({ levelName, trackName }: ClassroomMaterialsP
       <CardContent className="p-0 flex-1 flex flex-col overflow-hidden">
         <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as any)} className="flex-1 flex flex-col h-full">
           <div className="px-3 pt-2 border-b bg-muted/10">
-            <TabsList className="grid grid-cols-3 w-full h-8 text-xs">
-              <TabsTrigger value="quran" onClick={() => setActiveTab('quran')} className="text-xs py-1">Quran Reader</TabsTrigger>
-              <TabsTrigger value="tajweed" onClick={() => setActiveTab('tajweed')} className="text-xs py-1">Tajweed & Makharij</TabsTrigger>
-              <TabsTrigger value="syllabus" onClick={() => setActiveTab('syllabus')} className="text-xs py-1">Level Goals</TabsTrigger>
+            <TabsList className="grid grid-cols-4 w-full h-8 text-xs">
+              <TabsTrigger value="materials" className="text-xs py-1">
+                Books ({liveMaterials.length})
+              </TabsTrigger>
+              <TabsTrigger value="quran" className="text-xs py-1">Quran Reader</TabsTrigger>
+              <TabsTrigger value="tajweed" className="text-xs py-1">Tajweed</TabsTrigger>
+              <TabsTrigger value="syllabus" className="text-xs py-1">Level Goals</TabsTrigger>
             </TabsList>
           </div>
 
-          {/* TAB 1: QURAN READER */}
+          {/* TAB 1: ACADEMY-UPLOADED BOOKS & MATERIALS */}
+          <TabsContent value="materials" className="flex-1 flex flex-col m-0 p-0 overflow-hidden">
+            {activeViewingMaterial ? (
+              /* Inline Material Viewer */
+              <div className="flex-1 flex flex-col h-full overflow-hidden bg-background">
+                <div className="p-2 border-b flex items-center justify-between bg-muted/30">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs gap-1"
+                    onClick={() => setActiveViewingMaterial(null)}
+                  >
+                    <ArrowLeft className="h-3.5 w-3.5" />
+                    Back to All Materials
+                  </Button>
+
+                  <div className="flex items-center gap-2">
+                    {activeViewingMaterial.file_url && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs gap-1"
+                        onClick={() => window.open(activeViewingMaterial.file_url!, '_blank')}
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        Open in New Tab
+                      </Button>
+                    )}
+                    {activeViewingMaterial.content_text && (
+                      <div className="flex items-center gap-1">
+                        <Button variant="outline" size="icon" className="h-7 w-7" onClick={decreaseFontSize}>
+                          <ZoomOut className="h-3 w-3" />
+                        </Button>
+                        <Button variant="outline" size="icon" className="h-7 w-7" onClick={increaseFontSize}>
+                          <ZoomIn className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="p-3 border-b bg-card">
+                  <div className="flex items-center gap-2">
+                    {getMaterialIcon(activeViewingMaterial.material_type)}
+                    <h3 className="text-sm font-semibold">{activeViewingMaterial.title}</h3>
+                    <Badge variant="outline" className="text-[10px] capitalize">
+                      {activeViewingMaterial.material_type}
+                    </Badge>
+                  </div>
+                  {activeViewingMaterial.description && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {activeViewingMaterial.description}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4">
+                  {activeViewingMaterial.content_text ? (
+                    <div className={`p-4 rounded-lg bg-muted/20 border whitespace-pre-wrap leading-loose font-arabic ${fontSizeClass}`}>
+                      {activeViewingMaterial.content_text}
+                    </div>
+                  ) : activeViewingMaterial.file_url ? (
+                    activeViewingMaterial.material_type === 'image' ? (
+                      <div className="flex justify-center p-2">
+                        <img
+                          src={activeViewingMaterial.file_url}
+                          alt={activeViewingMaterial.title}
+                          className="max-w-full rounded-lg shadow-sm"
+                        />
+                      </div>
+                    ) : activeViewingMaterial.material_type === 'audio' ? (
+                      <div className="p-6 text-center space-y-4">
+                        <Headphones className="h-12 w-12 text-primary mx-auto" />
+                        <audio controls src={activeViewingMaterial.file_url} className="w-full max-w-md mx-auto" />
+                      </div>
+                    ) : (
+                      <iframe
+                        src={activeViewingMaterial.file_url}
+                        title={activeViewingMaterial.title}
+                        className="w-full h-full min-h-[450px] rounded border"
+                      />
+                    )
+                  ) : activeViewingMaterial.external_url ? (
+                    <div className="p-8 text-center space-y-3">
+                      <ExternalLink className="h-10 w-10 text-primary mx-auto" />
+                      <p className="text-sm font-medium">External Web Resource</p>
+                      <Button asChild size="sm">
+                        <a href={activeViewingMaterial.external_url} target="_blank" rel="noreferrer">
+                          Visit External Resource
+                        </a>
+                      </Button>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            ) : (
+              /* Materials List */
+              <div className="flex-1 flex flex-col h-full overflow-hidden">
+                <div className="p-2 border-b flex items-center justify-between gap-2 bg-background">
+                  <div className="flex gap-1 overflow-x-auto no-scrollbar text-xs">
+                    {['all', 'book', 'pdf', 'worksheet', 'text', 'link'].map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => setMaterialFilterType(type)}
+                        className={`px-2 py-1 rounded text-xs font-medium capitalize transition-colors ${
+                          materialFilterType === type
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted/60 text-muted-foreground hover:bg-muted'
+                        }`}
+                      >
+                        {type === 'all' ? 'All' : type}
+                      </button>
+                    ))}
+                  </div>
+
+                  {canUpload && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs gap-1 shrink-0"
+                      onClick={() => setIsUploadOpen(true)}
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Upload
+                    </Button>
+                  )}
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
+                  {isLoadingMaterials ? (
+                    <p className="text-xs text-center text-muted-foreground py-8">Loading materials...</p>
+                  ) : filteredMaterials.length === 0 ? (
+                    <div className="text-center py-10 space-y-2">
+                      <BookOpen className="h-8 w-8 text-muted-foreground mx-auto" />
+                      <p className="text-xs font-medium text-foreground">No academy materials found</p>
+                      <p className="text-[11px] text-muted-foreground max-w-xs mx-auto">
+                        {canUpload
+                          ? 'Click the "+ Upload" button above to attach a book, PDF, worksheet, or study notes for this class.'
+                          : 'No specific materials have been uploaded by the academy for this track yet.'}
+                      </p>
+                      {canUpload && (
+                        <Button size="sm" variant="default" className="text-xs h-8 gap-1.5 mt-2" onClick={() => setIsUploadOpen(true)}>
+                          <Plus className="h-3.5 w-3.5" />
+                          Upload Material
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    filteredMaterials.map((mat) => (
+                      <div
+                        key={mat.id}
+                        onClick={() => setActiveViewingMaterial(mat)}
+                        className="p-3 rounded-lg border bg-card hover:bg-muted/40 cursor-pointer transition-colors space-y-1.5 shadow-2xs"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            {getMaterialIcon(mat.material_type)}
+                            <span className="font-semibold text-xs text-foreground line-clamp-1">{mat.title}</span>
+                          </div>
+                          <Badge variant="outline" className="text-[10px] capitalize shrink-0">
+                            {mat.material_type}
+                          </Badge>
+                        </div>
+
+                        {mat.description && (
+                          <p className="text-[11px] text-muted-foreground line-clamp-2">{mat.description}</p>
+                        )}
+
+                        <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1">
+                          <span>{mat.track_name ? `${mat.track_name}${mat.level_name ? ` • ${mat.level_name}` : ''}` : 'Academy-wide'}</span>
+                          <span className="text-primary font-medium">Click to view &rarr;</span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* TAB 2: QURAN READER */}
           <TabsContent value="quran" className="flex-1 flex flex-col m-0 p-0 overflow-hidden">
             {/* Toolbar */}
             <div className="p-2 border-b flex flex-wrap items-center justify-between gap-2 bg-background">
@@ -337,15 +665,15 @@ export function ClassroomMaterials({ levelName, trackName }: ClassroomMaterialsP
             </div>
           </TabsContent>
 
-          {/* TAB 2: TAJWEED & MAKHARIJ */}
+          {/* TAB 3: TAJWEED & MAKHARIJ */}
           <TabsContent value="tajweed" className="flex-1 overflow-y-auto p-3 space-y-3 m-0">
             <div className="bg-primary/5 border border-primary/20 rounded-md p-2.5 text-xs text-primary">
               <span className="font-semibold flex items-center gap-1">
                 <Sparkles className="h-3.5 w-3.5" />
-                Tajweed & Makharij Reference for Teaching
+                Tajweed &amp; Makharij Reference
               </span>
               <p className="text-muted-foreground mt-0.5">
-                Use these articulation targets to guide student pronunciation, tongue placement, and rule application.
+                Targeted articulation points to guide pronunciation, tongue placement, and rule application.
               </p>
             </div>
 
@@ -368,7 +696,7 @@ export function ClassroomMaterials({ levelName, trackName }: ClassroomMaterialsP
             </div>
           </TabsContent>
 
-          {/* TAB 3: LEVEL SYLLABUS & GOALS */}
+          {/* TAB 4: LEVEL SYLLABUS & GOALS */}
           <TabsContent value="syllabus" className="flex-1 overflow-y-auto p-4 space-y-3 m-0">
             <div className="border rounded-lg p-3 bg-card space-y-2">
               <h4 className="text-sm font-semibold flex items-center gap-1.5">
@@ -377,7 +705,7 @@ export function ClassroomMaterials({ levelName, trackName }: ClassroomMaterialsP
               </h4>
               <ul className="text-xs text-muted-foreground space-y-1.5 list-disc list-inside">
                 <li>Demonstrate accurate Makharij for throat and tongue letters.</li>
-                <li>Apply Noon Sakinah & Tanween rules without pausing mid-word.</li>
+                <li>Apply Noon Sakinah &amp; Tanween rules without pausing mid-word.</li>
                 <li>Recite assigned Surah portions with consistent rhythmic pace (Tarteel).</li>
                 <li>Recognize Waqf (stopping signs) and sustain Madd length correctly.</li>
               </ul>
@@ -389,12 +717,124 @@ export function ClassroomMaterials({ levelName, trackName }: ClassroomMaterialsP
                 Teaching Screen-Sharing Tip
               </h4>
               <p className="text-muted-foreground">
-                To share these materials with the student, select <strong>Share Screen</strong> in the video classroom and choose this browser window or tab. The font zoom controls will keep Arabic glyphs legible for the student on any screen size.
+                To share books or surahs with the student, select <strong>Share Screen</strong> in the video classroom and choose this tab. The font zoom controls will keep Arabic glyphs legible for the student on any device.
               </p>
             </div>
           </TabsContent>
         </Tabs>
       </CardContent>
+
+      {/* In-Classroom Quick Upload Dialog */}
+      <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Upload Material to Classroom</DialogTitle>
+            <DialogDescription>
+              Upload a book, PDF, worksheet, or study text to use during this session.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleUploadSubmit} className="space-y-3 pt-2">
+            {uploadError && (
+              <Alert variant="destructive" className="py-2">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs">{uploadError}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="space-y-1">
+              <Label htmlFor="quick-title" className="text-xs">Title *</Label>
+              <Input
+                id="quick-title"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder="e.g. Lesson 4 Worksheet, Surah Reading Notes"
+                className="h-8 text-xs"
+                required
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="quick-type" className="text-xs">Type</Label>
+              <select
+                id="quick-type"
+                value={newType}
+                onChange={(e) => setNewType(e.target.value as MaterialType)}
+                className="w-full h-8 px-2 border rounded text-xs bg-background"
+              >
+                <option value="pdf">PDF Document</option>
+                <option value="book">Book / Textbook</option>
+                <option value="worksheet">Worksheet</option>
+                <option value="image">Image</option>
+                <option value="text">Arabic Text / Ayah Notes</option>
+                <option value="link">Web Resource Link</option>
+              </select>
+            </div>
+
+            {newType === 'link' ? (
+              <div className="space-y-1">
+                <Label htmlFor="quick-url" className="text-xs">URL *</Label>
+                <Input
+                  id="quick-url"
+                  type="url"
+                  value={newExternalUrl}
+                  onChange={(e) => setNewExternalUrl(e.target.value)}
+                  placeholder="https://..."
+                  className="h-8 text-xs"
+                  required
+                />
+              </div>
+            ) : newType === 'text' ? (
+              <div className="space-y-1">
+                <Label htmlFor="quick-text" className="text-xs">Arabic Text / Notes *</Label>
+                <Textarea
+                  id="quick-text"
+                  value={newContentText}
+                  onChange={(e) => setNewContentText(e.target.value)}
+                  placeholder="Enter study text here..."
+                  className="font-arabic text-xs"
+                  rows={4}
+                  required
+                />
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <Label htmlFor="quick-file" className="text-xs">File *</Label>
+                <Input
+                  id="quick-file"
+                  type="file"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) setNewFile(f);
+                  }}
+                  className="h-8 text-xs"
+                  required
+                />
+              </div>
+            )}
+
+            <div className="space-y-1">
+              <Label htmlFor="quick-desc" className="text-xs">Notes / Description</Label>
+              <Input
+                id="quick-desc"
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+                placeholder="Optional instructions..."
+                className="h-8 text-xs"
+              />
+            </div>
+
+            <DialogFooter className="pt-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => setIsUploadOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" size="sm" disabled={uploadMutation.isPending}>
+                {uploadMutation.isPending ? 'Uploading...' : 'Save & Attach'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

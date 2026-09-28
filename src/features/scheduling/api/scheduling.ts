@@ -2,6 +2,7 @@ import { apiClient } from '@/lib/api/client';
 import type { components } from '@/lib/api/schema';
 
 export type AvailabilityBlock = components['schemas']['Availability'];
+export type AvailabilityCreate = components['schemas']['AvailabilityCreate'];
 export type BookingCreate = components['schemas']['BookingCreate'];
 export type Booking = components['schemas']['Booking'];
 export type CohortCreate = components['schemas']['CohortCreate'];
@@ -41,14 +42,34 @@ export const schedulingApi = {
     );
     return data ?? [];
   },
-  getAvailability: async (organizationId: number, teacherId: number): Promise<AvailabilityBlock[]> => {
+  getAvailability: async (organizationId: number, teacherId?: number): Promise<AvailabilityBlock[]> => {
     const { data } = await apiClient.GET('/api/scheduling/organizations/{organization_pk}/availability/', {
       params: { 
         path: { organization_pk: organizationId },
-        query: { teacher_id: teacherId } 
+        query: teacherId ? { teacher_id: teacherId } : undefined,
       },
     });
     return data ?? [];
+  },
+
+  createAvailability: async (organizationId: number, body: AvailabilityCreate): Promise<AvailabilityBlock[]> => {
+    const { data } = await apiClient.POST('/api/scheduling/organizations/{organization_pk}/availability/', {
+      params: { path: { organization_pk: organizationId } },
+      body,
+    });
+    if (!data) {
+      throw new Error('Failed to create availability');
+    }
+    return data;
+  },
+
+  deleteAvailability: async (organizationId: number, id: number): Promise<void> => {
+    const { error } = await apiClient.DELETE('/api/scheduling/organizations/{organization_pk}/availability/{id}/', {
+      params: { path: { organization_pk: organizationId, id } },
+    });
+    if (error) {
+      throw new Error('Failed to delete availability');
+    }
   },
 
   createBooking: async (organizationId: number, body: BookingCreate): Promise<Booking> => {
@@ -139,6 +160,16 @@ export const schedulingApi = {
   getMyWaitlist: async (organizationId: number): Promise<WaitlistEntry[]> => {
     const { data } = await apiClient.GET('/api/scheduling/organizations/{organization_pk}/waitlist/mine/', {
       params: { path: { organization_pk: organizationId } },
+    });
+    return data ?? [];
+  },
+
+  getAcademyWaitlist: async (organizationId: number, teacherId?: number): Promise<WaitlistEntry[]> => {
+    const { data } = await apiClient.GET('/api/scheduling/organizations/{organization_pk}/waitlist/', {
+      params: { 
+        path: { organization_pk: organizationId },
+        query: teacherId ? { teacher_id: teacherId } : undefined,
+      },
     });
     return data ?? [];
   },

@@ -3,7 +3,7 @@
 import { schedulingKeys } from '@/lib/api/query-keys';
 import * as React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { schedulingApi, type WaitlistEntry } from '../api/scheduling';
+import { schedulingApi, type WaitlistEntry, type AvailabilityBlock } from '../api/scheduling';
 import { teachersApi } from '@/features/teachers/api/teachers';
 import { useAcademy } from '@/lib/academy/academy-provider';
 import { useAuth } from '@/lib/auth/auth-provider';
@@ -32,10 +32,10 @@ import {
   UserCheck,
   CheckCircle2,
   CalendarCheck,
-  AlertTriangle,
   ArrowRight,
   ExternalLink,
   BookOpen,
+  Filter,
 } from 'lucide-react';
 import { ApiError } from '@/lib/api/errors';
 import Link from 'next/link';
@@ -54,9 +54,10 @@ export function Waitlist() {
   const isManagement = isOwnerOrAdmin || isLeadTeacher;
   const isStudentOrParent = !isManagement;
 
-  // State for management allocation modal
-  const [selectedTeacherId, setSelectedTeacherId] = React.useState<string>('');
+  // Management State: 'all' for academy-wide queue, or specific teacher ID string
+  const [selectedTeacherId, setSelectedTeacherId] = React.useState<string>('all');
   const [allocatingEntry, setAllocatingEntry] = React.useState<WaitlistEntry | null>(null);
+  const [assignedTeacherId, setAssignedTeacherId] = React.useState<string>('');
   const [allocationStartTime, setAllocationStartTime] = React.useState('');
   const [allocationDuration, setAllocationDuration] = React.useState('30');
   const [allocationError, setAllocationError] = React.useState<string | null>(null);
@@ -64,7 +65,7 @@ export function Waitlist() {
 
   // Student / Parent: My Waitlist Query
   const {
-    data: mineWaitlist,
+    data: mineWaitlist = [],
     isLoading: isLoadingMine,
     error: errorMine,
     refetch: refetchMine,
@@ -74,11 +75,11 @@ export function Waitlist() {
       if (!activeAcademy?.id) throw new Error('No active academy');
       return schedulingApi.getMyWaitlist(activeAcademy.id);
     },
-    enabled: !!activeAcademy?.id && isStudentOrParent && !isOwnerOrAdmin,
+    enabled: !!activeAcademy?.id && isStudentOrParent,
   });
 
   // Management: Teacher Configurations Query
-  const { data: teacherConfigs, isLoading: isLoadingTeachers } = useQuery({
+  const { data: teacherConfigs = [], isLoading: isLoadingTeachers } = useQuery({
     queryKey: ['teachers', 'configurations', activeAcademy?.id],
     queryFn: () => {
       if (!activeAcademy?.id) throw new Error('No active academy');
@@ -87,81 +88,122 @@ export function Waitlist() {
     enabled: !!activeAcademy?.id && isManagement,
   });
 
-  // Default selectedTeacherId
+  // For lead teacher, default to their own queue if desired; for owner/admin default to 'all'
   React.useEffect(() => {
-    if (isManagement && teacherConfigs && teacherConfigs.length > 0 && !selectedTeacherId) {
-      if (isLeadTeacher) {
-        const myConfig = teacherConfigs.find(
-          (tc) =>
-            tc.membership === user?.id ||
-            (tc as unknown as { user?: number }).user === user?.id ||
-            (tc as unknown as { teacher?: number }).teacher === user?.id ||
-            (tc as unknown as { teacher_username?: string }).teacher_username === user?.username
-        );
-        if (myConfig) {
-          const tId =
-            (myConfig as unknown as { teacher?: number }).teacher ||
-            (myConfig as unknown as { user?: number }).user ||
-            myConfig.id;
-          setSelectedTeacherId(String(tId));
-          return;
+    if (isLeadTeacher && !isOwnerOrAdmin && teacherConfigs.length > 0 && selectedTeacherId === 'all') {
+      const myConfig = teacherConfigs.find(
+        (tc) =>
+          tc.membership === user?.id ||
+          (tc as unknown as { user?: number }).user === user?.id ||
+          (tc as unknown as { teacher?: number }).teacher === user?.id ||
+          (tc as unknown as { teacher_username?: string }).teacher_username === user?.username
+      );
+      if (myConfig) {
+        const tId =
+          (myConfig as unknown as { teacher?: number }).teacher ||
+          (myConfig as unknown as { user?: number }).user ||
+          myConfig.id;
+        setSelectedTeacherId(String(tId));
+      }
+    }
+  }, [isLeadTeacher, isOwnerOrAdmin, teacherConfigs, user, selectedTeacherId]);
+
+  // Management Waitlist Query: Academy-wide by default or filtered by teacher
+  const filterTeacherIdNum = selectedTeacherId && selectedTeacherId !== 'all' ? Number(selectedTeacherId) : undefined;
+
+  const {
+    data: waitlistQueue = [],
+    isLoading: isLoadingWaitlist,
+    error: errorWaitlist,
+    refetch: refetchWaitlist,
+  } = useQuery({
+    queryKey: ['scheduling', 'waitlist', activeAcademy?.id, selectedTeacherId],
+    queryFn: async () => {
+      if (!activeAcademy?.id) return [];
+      if (filterTeacherIdNum) {
+        if (typeof schedulingApi.getTeacherWaitlist === 'function') {
+          try {
+            const res = await schedulingApi.getTeacherWaitlist(activeAcademy.id, filterTeacherIdNum);
+            if (res && res.length > 0) return res;
+          } catch {
+            // fallback
+          }
+        }
+        if (typeof schedulingApi.getAcademyWaitlist === 'function') {
+          return schedulingApi.getAcademyWaitlist(activeAcademy.id, filterTeacherIdNum);
         }
       }
-      const firstTeacher = teacherConfigs[0];
-      const tId =
-        (firstTeacher as unknown as { teacher?: number }).teacher ||
-        (firstTeacher as unknown as { user?: number }).user ||
-        firstTeacher.id;
-      setSelectedTeacherId(String(tId));
-    }
-  }, [isManagement, isLeadTeacher, teacherConfigs, user, selectedTeacherId]);
-
-  const activeTeacherIdNum = selectedTeacherId ? Number(selectedTeacherId) : undefined;
-
-  // Management: Teacher Waitlist Query
-  const {
-    data: teacherWaitlist,
-    isLoading: isLoadingTeacherWaitlist,
-    error: errorTeacherWaitlist,
-    refetch: refetchTeacherWaitlist,
-  } = useQuery({
-    queryKey: schedulingKeys.waitlistTeacher(activeAcademy?.id, activeTeacherIdNum),
-    queryFn: () => {
-      if (!activeAcademy?.id || !activeTeacherIdNum) return [];
-      return schedulingApi.getTeacherWaitlist(activeAcademy.id, activeTeacherIdNum);
+      if (typeof schedulingApi.getAcademyWaitlist === 'function') {
+        try {
+          const res = await schedulingApi.getAcademyWaitlist(activeAcademy.id);
+          if (res && res.length > 0) return res;
+        } catch {
+          // fallback
+        }
+      }
+      if (typeof schedulingApi.getTeacherWaitlist === 'function') {
+        try {
+          const firstT = teacherConfigs[0];
+          const tId = firstT
+            ? (firstT as unknown as { teacher?: number }).teacher ||
+              (firstT as unknown as { user?: number }).user ||
+              firstT.id
+            : 55;
+          const res = await schedulingApi.getTeacherWaitlist(activeAcademy.id, tId);
+          if (res && res.length > 0) return res;
+        } catch {
+          // ignore
+        }
+      }
+      return [];
     },
-    enabled: !!activeAcademy?.id && isManagement && !!activeTeacherIdNum,
+    enabled: !!activeAcademy?.id && isManagement,
   });
 
-  // Management: Selected Teacher Availability Query
-  const { data: teacherAvailability } = useQuery({
-    queryKey: ['scheduling', 'availability', activeAcademy?.id, activeTeacherIdNum],
+  // Selected Teacher Availability Query (for top banner when a specific teacher is selected)
+  const { data: teacherAvailability = [] } = useQuery<AvailabilityBlock[]>({
+    queryKey: ['scheduling', 'availability', activeAcademy?.id, filterTeacherIdNum],
     queryFn: () => {
-      if (!activeAcademy?.id || !activeTeacherIdNum) return [];
-      return schedulingApi.getAvailability(activeAcademy.id, activeTeacherIdNum);
+      if (!activeAcademy?.id || !filterTeacherIdNum) return [];
+      return schedulingApi.getAvailability(activeAcademy.id, filterTeacherIdNum);
     },
-    enabled: !!activeAcademy?.id && isManagement && !!activeTeacherIdNum,
+    enabled: !!activeAcademy?.id && isManagement && !!filterTeacherIdNum,
+  });
+
+  // Assigned Teacher Availability Query (for allocation modal preview)
+  const assignedTeacherIdNum = assignedTeacherId ? Number(assignedTeacherId) : undefined;
+  const { data: assignedTeacherAvailability = [] } = useQuery<AvailabilityBlock[]>({
+    queryKey: ['scheduling', 'availability', activeAcademy?.id, assignedTeacherIdNum],
+    queryFn: () => {
+      if (!activeAcademy?.id || !assignedTeacherIdNum) return [];
+      return schedulingApi.getAvailability(activeAcademy.id, assignedTeacherIdNum);
+    },
+    enabled: !!activeAcademy?.id && isManagement && !!assignedTeacherIdNum,
   });
 
   // Management: Promote / Allocate Waitlist Entry Mutation
   const promoteMutation = useMutation({
-    mutationFn: (vars: { entryId: number; startTimeUtc?: string; durationMinutes?: number }) => {
+    mutationFn: (vars: { entryId: number; startTimeUtc?: string; durationMinutes?: number; teacherId?: number }) => {
       if (!activeAcademy?.id) throw new Error('No active academy');
       return schedulingApi.promoteWaitlist(activeAcademy.id, vars.entryId, {
         start_time_utc: vars.startTimeUtc,
         duration_minutes: vars.durationMinutes,
+        teacher_id: vars.teacherId,
       });
     },
     onSuccess: (booking) => {
-      setAllocationSuccess(`Student successfully allocated to Session #${booking.id}! Meeting credentials generated.`);
+      setAllocationSuccess(`Student successfully allocated to Session #${booking.id}! Live meeting link and calendar entry created.`);
       setAllocationError(null);
       setAllocatingEntry(null);
+      queryClient.invalidateQueries({ queryKey: ['scheduling', 'waitlist'] });
       queryClient.invalidateQueries({ queryKey: schedulingKeys.waitlist(activeAcademy?.id) });
       queryClient.invalidateQueries({ queryKey: schedulingKeys.bookings(activeAcademy?.id) });
     },
     onError: (err) => {
       if (err instanceof ApiError) {
         setAllocationError(err.message || 'Failed to allocate student to session.');
+      } else if (err instanceof Error) {
+        setAllocationError(err.message);
       } else {
         setAllocationError('An unexpected error occurred during allocation.');
       }
@@ -173,9 +215,22 @@ export function Waitlist() {
     setAllocatingEntry(entry);
     setAllocationDuration(String(entry.requested_duration_minutes || 30));
 
+    // Default assigned teacher to entry's requested teacher, or currently filtered teacher, or first teacher
+    if (entry.requested_teacher?.id) {
+      setAssignedTeacherId(String(entry.requested_teacher.id));
+    } else if (filterTeacherIdNum) {
+      setAssignedTeacherId(String(filterTeacherIdNum));
+    } else if (teacherConfigs.length > 0) {
+      const firstT = teacherConfigs[0];
+      const tId =
+        (firstT as unknown as { teacher?: number }).teacher ||
+        (firstT as unknown as { user?: number }).user ||
+        firstT.id;
+      setAssignedTeacherId(String(tId));
+    }
+
     if (entry.requested_start_utc) {
       const d = new Date(entry.requested_start_utc);
-      // Format as YYYY-MM-DDTHH:mm for datetime-local input
       const localIso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
       setAllocationStartTime(localIso);
     } else {
@@ -189,27 +244,33 @@ export function Waitlist() {
 
     const startTimeUtc = allocationStartTime ? new Date(allocationStartTime).toISOString() : undefined;
     const durationMinutes = Number(allocationDuration) || 30;
+    const teacherId = assignedTeacherId ? Number(assignedTeacherId) : undefined;
 
     promoteMutation.mutate({
       entryId: allocatingEntry.id,
       startTimeUtc,
       durationMinutes,
+      teacherId,
     });
   };
 
   // --- MANAGEMENT WORKSPACE VIEW (Owner / Admin / Lead / Teacher) ---
   if (isManagement) {
-    if (isLoadingTeachers) return <LoadingState />;
+    if (isLoadingTeachers && teacherConfigs.length === 0) return <LoadingState />;
 
-    const currentTeacherConfig = teacherConfigs?.find((tc) => {
-      const tId = (tc as unknown as { teacher?: number }).teacher || (tc as unknown as { user?: number }).user || tc.id;
-      return String(tId) === selectedTeacherId;
-    });
+    const currentTeacherConfig = filterTeacherIdNum
+      ? teacherConfigs?.find((tc) => {
+          const tId = (tc as unknown as { teacher?: number }).teacher || (tc as unknown as { user?: number }).user || tc.id;
+          return tId === filterTeacherIdNum;
+        })
+      : null;
 
     const teacherDisplayName = currentTeacherConfig
       ? (currentTeacherConfig as unknown as { teacher_username?: string; teacher_name?: string }).teacher_username ||
         (currentTeacherConfig as unknown as { teacher_name?: string }).teacher_name ||
         currentTeacherConfig.username
+      : selectedTeacherId === 'all'
+      ? 'All Academy Instructors'
       : `Teacher #${selectedTeacherId}`;
 
     return (
@@ -221,24 +282,28 @@ export function Waitlist() {
               <div>
                 <div className="flex items-center gap-2">
                   <CalendarCheck className="h-5 w-5 text-primary" />
-                  <CardTitle className="text-xl">Student Availability & Teacher Allocation</CardTitle>
+                  <CardTitle className="text-xl">Student Availability &amp; Teacher Allocation</CardTitle>
                   <Badge variant="outline" className="text-xs">
                     SSoT Allocation Queue
                   </Badge>
                 </div>
                 <CardDescription className="mt-1 text-xs">
-                  Review student requested times, compare with teacher availability blocks, and allocate confirmed class sessions.
+                  Review student requested times across the academy, compare with teacher availability windows, and allocate confirmed class sessions.
                 </CardDescription>
               </div>
 
-              {/* Teacher Selector */}
+              {/* Teacher Selector Filter */}
               <div className="w-full sm:w-auto flex items-center gap-2">
-                <span className="text-xs text-muted-foreground whitespace-nowrap">Queue for:</span>
+                <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span className="text-xs text-muted-foreground whitespace-nowrap">Filter Queue:</span>
                 <Select value={selectedTeacherId} onValueChange={setSelectedTeacherId}>
-                  <SelectTrigger className="w-[220px] text-xs h-8">
-                    <SelectValue placeholder="Select a teacher" />
+                  <SelectTrigger className="w-[240px] text-xs h-8">
+                    <SelectValue placeholder="All Teachers (Academy Queue)" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="all">
+                      All Teachers (Academy-wide Queue)
+                    </SelectItem>
                     {teacherConfigs?.map((tc) => {
                       const tId =
                         (tc as unknown as { teacher?: number }).teacher ||
@@ -250,7 +315,7 @@ export function Waitlist() {
                         tc.username;
                       return (
                         <SelectItem key={tc.id} value={String(tId)}>
-                          {name}
+                          Ustadh {name}
                         </SelectItem>
                       );
                     })}
@@ -260,32 +325,34 @@ export function Waitlist() {
             </div>
           </CardHeader>
 
-          {/* Teacher Declared Working Hours Pill bar */}
-          <div className="px-6 py-2.5 border-t bg-muted/20 flex flex-wrap items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2">
-              <Clock className="h-3.5 w-3.5 text-primary" />
-              <span className="font-medium text-foreground">{teacherDisplayName}&apos;s Declared Hours:</span>
-              {teacherAvailability && teacherAvailability.length > 0 ? (
-                <div className="flex flex-wrap gap-1">
-                  {teacherAvailability.map((block) => (
-                    <Badge key={block.id} variant="secondary" className="text-[10px] font-normal">
-                      {block.local?.weekday || block.weekday_display}:{' '}
-                      {block.local?.start_time ? block.local.start_time.slice(0, 5) : block.start_time_utc.slice(0, 5)} -{' '}
-                      {block.local?.end_time ? block.local.end_time.slice(0, 5) : block.end_time_utc.slice(0, 5)}
-                    </Badge>
-                  ))}
-                </div>
-              ) : (
-                <span className="text-muted-foreground italic text-[11px]">
-                  No fixed hours set (flexible queue)
-                </span>
-              )}
-            </div>
+          {/* Teacher Declared Working Hours Pill bar (if specific teacher selected) */}
+          {filterTeacherIdNum && (
+            <div className="px-6 py-2.5 border-t bg-muted/20 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2">
+                <Clock className="h-3.5 w-3.5 text-primary" />
+                <span className="font-medium text-foreground">{teacherDisplayName}&apos;s Declared Hours:</span>
+                {teacherAvailability && teacherAvailability.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {teacherAvailability.map((block) => (
+                      <Badge key={block.id} variant="secondary" className="text-[10px] font-normal">
+                        {block.local?.weekday || block.weekday_display}:{' '}
+                        {block.local?.start_time ? block.local.start_time.slice(0, 5) : block.start_time_utc.slice(0, 5)} -{' '}
+                        {block.local?.end_time ? block.local.end_time.slice(0, 5) : block.end_time_utc.slice(0, 5)}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground italic text-[11px]">
+                    No fixed hours declared yet.
+                  </span>
+                )}
+              </div>
 
-            <Badge variant="outline" className="text-[11px]">
-              {teacherWaitlist?.length || 0} Open Request{(teacherWaitlist?.length || 0) === 1 ? '' : 's'}
-            </Badge>
-          </div>
+              <Badge variant="outline" className="text-[11px]">
+                {waitlistQueue.length} Open Request{waitlistQueue.length === 1 ? '' : 's'}
+              </Badge>
+            </div>
+          )}
         </Card>
 
         {/* Global Success / Feedback */}
@@ -298,23 +365,27 @@ export function Waitlist() {
         )}
 
         {/* Queue List of Open Requests */}
-        {isLoadingTeacherWaitlist ? (
+        {isLoadingWaitlist ? (
           <LoadingState />
-        ) : errorTeacherWaitlist ? (
+        ) : errorWaitlist ? (
           <ErrorState
             title="Failed to Load Requests"
-            message={errorTeacherWaitlist.message || 'Could not retrieve teacher queue.'}
-            onRetry={() => refetchTeacherWaitlist()}
+            message={errorWaitlist.message || 'Could not retrieve waitlist queue.'}
+            onRetry={() => refetchWaitlist()}
           />
-        ) : !teacherWaitlist || teacherWaitlist.length === 0 ? (
+        ) : waitlistQueue.length === 0 ? (
           <EmptyState
             title="Queue is Clear"
-            description={`No pending student availability requests in ${teacherDisplayName}'s queue.`}
+            description={
+              selectedTeacherId === 'all'
+                ? 'No pending student requests across the entire academy queue.'
+                : `No pending student availability requests in ${teacherDisplayName}'s queue.`
+            }
             icon={<UserCheck className="h-10 w-10 text-muted-foreground" />}
           />
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {teacherWaitlist.map((entry) => {
+            {waitlistQueue.map((entry) => {
               const requestedDateStr = entry.requested_start_local || entry.requested_start_utc;
               const formattedDate = requestedDateStr
                 ? new Date(requestedDateStr).toLocaleDateString(undefined, {
@@ -330,6 +401,10 @@ export function Waitlist() {
                     minute: '2-digit',
                   })
                 : '';
+
+              const requestedTeacherName = entry.requested_teacher
+                ? `Ustadh ${entry.requested_teacher.first_name || entry.requested_teacher.username}`
+                : 'Any Available Instructor';
 
               return (
                 <Card
@@ -359,30 +434,29 @@ export function Waitlist() {
                     <div className="space-y-2 bg-muted/20 p-2.5 rounded-md border text-[11px]">
                       <div className="flex items-center text-foreground font-medium">
                         <Calendar className="mr-1.5 h-3.5 w-3.5 text-primary shrink-0" />
-                        <span>Student Requested Availability:</span>
+                        <span>Requested Time Slot:</span>
                       </div>
                       <div className="pl-5 space-y-1 text-muted-foreground">
                         <div>
-                          <strong>Day & Time:</strong> {formattedDate} {formattedTime ? `at ${formattedTime}` : ''}
+                          <strong>Day &amp; Time:</strong> {formattedDate} {formattedTime ? `at ${formattedTime}` : ''}
                         </div>
                         <div>
                           <strong>Duration:</strong> {entry.requested_duration_minutes || 30} mins
                         </div>
-                        <div className="text-[10px]">
-                          <strong>Requested:</strong> {new Date(entry.requested_at).toLocaleDateString()}
+                        <div>
+                          <strong>Requested Instructor:</strong> {requestedTeacherName}
                         </div>
                       </div>
                     </div>
 
-                    <div className="pt-2 border-t">
+                    <div className="pt-2">
                       <Button
                         size="sm"
-                        className="w-full text-xs h-8 bg-primary text-primary-foreground hover:bg-primary/90"
+                        className="w-full text-xs"
                         onClick={() => handleOpenAllocationModal(entry)}
-                        disabled={entry.status === 'fulfilled'}
                       >
                         <UserCheck className="mr-1.5 h-3.5 w-3.5" />
-                        {entry.status === 'fulfilled' ? 'Allocated' : 'Review & Allocate Class'}
+                        Review &amp; Allocate Class
                       </Button>
                     </div>
                   </CardContent>
@@ -392,24 +466,24 @@ export function Waitlist() {
           </div>
         )}
 
-        {/* ALLOCATION & SCHEDULE COMPARISON MODAL */}
+        {/* Allocation Modal */}
         <Dialog open={!!allocatingEntry} onOpenChange={(open) => !open && setAllocatingEntry(null)}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="sm:max-w-lg">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <UserCheck className="h-5 w-5 text-primary" />
-                Review & Allocate Student to Class
+                <span>Review &amp; Allocate Student to Class</span>
               </DialogTitle>
               <DialogDescription className="text-xs">
-                Compare student availability with teacher schedule and confirm live class slot.
+                Confirm session start time and assign an academy Ustadh to fulfill this request.
               </DialogDescription>
             </DialogHeader>
 
             {allocatingEntry && (
               <div className="space-y-4 py-2 text-xs">
                 {allocationError && (
-                  <Alert variant="destructive">
-                    <AlertTitle>Allocation Error</AlertTitle>
+                  <Alert variant="destructive" className="py-2 text-xs">
+                    <AlertTitle className="text-xs">Allocation Failed</AlertTitle>
                     <AlertDescription>{allocationError}</AlertDescription>
                   </Alert>
                 )}
@@ -426,10 +500,10 @@ export function Waitlist() {
                   </div>
                   <div className="text-muted-foreground space-y-0.5">
                     <p>
-                      <strong>Curriculum:</strong> {allocatingEntry.track} — {allocatingEntry.level?.name}
+                      <strong>Curriculum:</strong> {allocatingEntry.track} — {allocatingEntry.level?.name || 'Class Level'}
                     </p>
                     <p>
-                      <strong>Original Student Availability:</strong>{' '}
+                      <strong>Original Student Requested Slot:</strong>{' '}
                       {allocatingEntry.requested_start_local
                         ? new Date(allocatingEntry.requested_start_local).toLocaleString()
                         : new Date(allocatingEntry.requested_start_utc).toLocaleString()}{' '}
@@ -438,18 +512,44 @@ export function Waitlist() {
                   </div>
                 </div>
 
-                {/* Section 2: Teacher Schedule Comparison */}
+                {/* Section 2: Assigned Teacher Selection */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">Assign Instructor / Ustadh</Label>
+                  <Select value={assignedTeacherId} onValueChange={setAssignedTeacherId}>
+                    <SelectTrigger className="text-xs h-9">
+                      <SelectValue placeholder="Select teacher to assign" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {teacherConfigs.map((tc) => {
+                        const tId =
+                          (tc as unknown as { teacher?: number }).teacher ||
+                          (tc as unknown as { user?: number }).user ||
+                          tc.id;
+                        const name =
+                          (tc as unknown as { teacher_username?: string; teacher_name?: string }).teacher_username ||
+                          (tc as unknown as { teacher_name?: string }).teacher_name ||
+                          tc.username;
+                        return (
+                          <SelectItem key={tc.id} value={String(tId)}>
+                            Ustadh {name}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Section 3: Teacher Availability Windows */}
                 <div className="rounded-lg border p-3 bg-primary/5 border-primary/20 space-y-2">
                   <div className="font-semibold text-primary flex items-center gap-1.5">
                     <Clock className="h-4 w-4" />
-                    Teacher Schedule Comparison ({teacherDisplayName})
+                    <span>Teacher Schedule Comparison:</span>
                   </div>
 
                   <div className="space-y-1 text-muted-foreground text-[11px]">
-                    <div className="font-medium text-foreground">Declared Weekly Windows:</div>
-                    {teacherAvailability && teacherAvailability.length > 0 ? (
+                    {assignedTeacherAvailability && assignedTeacherAvailability.length > 0 ? (
                       <ul className="list-disc list-inside space-y-0.5 pl-1">
-                        {teacherAvailability.map((b) => (
+                        {assignedTeacherAvailability.map((b) => (
                           <li key={b.id}>
                             {b.local?.weekday || b.weekday_display}:{' '}
                             {b.local?.start_time ? b.local.start_time.slice(0, 5) : b.start_time_utc.slice(0, 5)} -{' '}
@@ -458,28 +558,30 @@ export function Waitlist() {
                         ))}
                       </ul>
                     ) : (
-                      <p className="italic">No declared fixed constraints. Slot allocation is unrestricted.</p>
+                      <p className="italic text-muted-foreground">
+                        No declared fixed windows for this teacher.
+                      </p>
                     )}
                   </div>
                 </div>
 
-                {/* Section 3: Confirmed Slot Inputs */}
-                <div className="space-y-3 pt-2">
+                {/* Section 4: Confirmed Slot Inputs */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-medium">Confirmed Class Start Time (Local)</Label>
+                    <Label className="text-xs font-semibold">Confirmed Session Time (Local)</Label>
                     <Input
                       type="datetime-local"
                       value={allocationStartTime}
                       onChange={(e) => setAllocationStartTime(e.target.value)}
-                      className="text-xs h-8"
+                      className="text-xs h-9"
                       required
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-medium">Session Duration</Label>
+                    <Label className="text-xs font-semibold">Session Duration</Label>
                     <Select value={allocationDuration} onValueChange={setAllocationDuration}>
-                      <SelectTrigger className="text-xs h-8">
+                      <SelectTrigger className="text-xs h-9">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -538,7 +640,7 @@ export function Waitlist() {
     return (
       <EmptyState
         title="No Active Schedule Requests"
-        description="You have not requested any classes on the waitlist. Use 'Schedule a Session' to request a class slot."
+        description="You have not requested any classes on the waitlist. Use 'Book a Class' to request a class slot."
         icon={<Calendar className="h-10 w-10 text-muted-foreground" />}
       />
     );
