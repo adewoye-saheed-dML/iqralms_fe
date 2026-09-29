@@ -20,7 +20,14 @@ export function AppSidebar({ className }: { className?: string }) {
   const experience = resolveRoleExperience({ activeRole, userRole: user.role });
   const roleNavItems = getNavigationForRole(experience);
 
+  // Minor students without parent confirmation only see Dashboard, Notifications, Profile
+  const isRestrictedMinor = user.is_minor && !user.is_fully_active;
+  const restrictedPaths = new Set(['/app/dashboard', '/app/notifications', '/app/profile']);
+
   const visibleNavItems = roleNavItems.filter((item) => {
+    if (isRestrictedMinor && !restrictedPaths.has(item.href)) {
+      return false;
+    }
     if (item.requiredCapability) {
       return can(item.requiredCapability, { userRole: user.role, activeRole });
     }

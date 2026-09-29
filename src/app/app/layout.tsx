@@ -65,7 +65,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   // Check if current route is forbidden using central route access policy
-  const isForbidden = !canAccessRoute(pathname, { activeRole, userRole: user?.role });
+  const isForbidden = !canAccessRoute(pathname, { activeRole, userRole: user?.role, isMinor: user?.is_minor, isFullyActive: user?.is_fully_active });
 
   if (isForbidden && !isAcademyCreateRoute) {
     return (

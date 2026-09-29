@@ -106,25 +106,56 @@ export function StudentDashboard() {
     return Array.from(map.values());
   }, [bookings]);
 
+  // Minor student restriction: block dashboard when parent hasn't confirmed
+  if (user?.is_minor && !user?.is_fully_active) {
+    return (
+      <div className="space-y-8">
+        <PageHeader
+          title="Student Learning Portal"
+          description={`Assalamu Alaikum, ${user?.first_name || user?.username}! Your account is pending parent/guardian verification.`}
+        />
+
+        <Card className="border-amber-300 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/40">
+          <CardHeader className="text-center pb-3">
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-300">
+              <AlertCircle className="h-7 w-7" />
+            </div>
+            <CardTitle className="text-xl text-amber-900 dark:text-amber-200">
+              Parent / Guardian Verification Required
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-center">
+            <p className="text-sm text-amber-800 dark:text-amber-300">
+              As a minor student, your account requires a linked parent or guardian before you can access your learning portal. An invitation has been sent to your parent&apos;s email address.
+            </p>
+            <p className="text-xs text-amber-700 dark:text-amber-400">
+              Your parent needs to sign in and enter your Student Code to complete the linking process. Once your parent confirms, you will have full access to your dashboard, schedule, books, and all learning materials.
+            </p>
+            {user?.signup_code && (
+              <div className="rounded-lg border border-amber-300 bg-white dark:bg-amber-950/60 p-4 mx-auto max-w-sm">
+                <p className="text-xs text-amber-600 dark:text-amber-400 mb-1">Share this code with your parent/guardian:</p>
+                <p className="font-mono text-2xl font-bold text-amber-900 dark:text-amber-200 tracking-widest">
+                  {user.signup_code}
+                </p>
+              </div>
+            )}
+          </CardContent>
+          <CardFooter className="justify-center pt-0">
+            <Button variant="outline" asChild size="sm">
+              <Link href="/app/profile">View My Profile</Link>
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <PageHeader
         title="Student Learning Portal"
         description={`Assalamu Alaikum, ${user?.first_name || user?.username}! Continue your Quranic journey at ${activeAcademy?.name || 'the academy'}.`}
       />
-
-      {user?.is_minor && !user?.is_fully_active && (
-        <Alert className="border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-          <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-          <AlertTitle className="font-semibold text-sm">Parent / Guardian Verification Pending</AlertTitle>
-          <AlertDescription className="text-xs mt-1">
-            As a minor student, your account requires a linked parent or guardian. An invitation has been sent to your parent. Your student account will be fully activated as soon as your parent confirms the link.
-            {user?.signup_code && (
-              <span className="block mt-1 font-mono font-medium">Your Student Code: {user.signup_code}</span>
-            )}
-          </AlertDescription>
-        </Alert>
-      )}
 
       {/* Next Class Hero */}
       <Card className="border-primary/50 bg-gradient-to-r from-primary/5 via-background to-background">

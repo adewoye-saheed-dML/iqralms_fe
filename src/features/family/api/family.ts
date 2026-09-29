@@ -3,6 +3,7 @@ import type { components } from '@/lib/api/schema';
 
 export type LinkedStudent = components['schemas']['LinkedStudent'];
 export type ParentLinkCreate = components['schemas']['ParentLinkCreate'];
+export type ParentLinkRequest = Pick<ParentLinkCreate, 'student_code'>;
 
 export const familyApi = {
   getMyChildren: async (): Promise<LinkedStudent[]> => {
@@ -17,9 +18,9 @@ export const familyApi = {
     return data ?? [];
   },
 
-  createParentLink: async (body: ParentLinkCreate): Promise<ParentLinkCreate> => {
+  createParentLink: async (body: ParentLinkRequest): Promise<ParentLinkCreate> => {
     const { data } = await apiClient.POST('/api/accounts/parent-links/', {
-      body,
+      body: body as ParentLinkCreate,
     });
     if (!data) {
       throw new Error('Failed to link student');

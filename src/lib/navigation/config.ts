@@ -239,8 +239,19 @@ export function getNavigationForRole(experience: RoleExperience): NavItem[] {
  */
 export function canAccessRoute(
   pathname: string,
-  context: { activeRole?: AcademyMembershipRole | OrgRole | string | null; userRole?: GlobalAccountRole | UserRole | string | null; academyId?: number | null }
+  context: { activeRole?: AcademyMembershipRole | OrgRole | string | null; userRole?: GlobalAccountRole | UserRole | string | null; academyId?: number | null; isMinor?: boolean; isFullyActive?: boolean }
 ): boolean {
+  // Inactive minor students can only access dashboard, notifications, profile
+  if (context.isMinor && !context.isFullyActive) {
+    return (
+      pathname === '/app/dashboard' ||
+      pathname === '/app/notifications' ||
+      pathname.startsWith('/app/notifications') ||
+      pathname === '/app/profile' ||
+      pathname.startsWith('/app/profile')
+    );
+  }
+
   const experience = resolveRoleExperience(context);
 
   // Common routes accessible to all authenticated roles

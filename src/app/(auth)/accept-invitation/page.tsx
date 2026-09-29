@@ -21,7 +21,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CheckCircle2, AlertCircle, Mail, LogIn, ArrowRight } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Mail, LogIn, ArrowRight, Link2, Users } from 'lucide-react';
+import { familyApi } from '@/features/family/api/family';
 
 function formatRole(role?: string | null): string {
   if (!role) return '';
@@ -74,6 +75,12 @@ function AcceptInvitationForm() {
   const [error, setError] = React.useState<string | null>(null);
   const [accountExistsError, setAccountExistsError] = React.useState(false);
 
+  // Student code linking state (for parent role)
+  const [studentCode, setStudentCode] = React.useState('');
+  const [isLinkingChild, setIsLinkingChild] = React.useState(false);
+  const [childLinked, setChildLinked] = React.useState(false);
+  const [linkError, setLinkError] = React.useState<string | null>(null);
+
   // Load invitation preview
   React.useEffect(() => {
     const parsedOrgId = Number(orgId);
@@ -118,6 +125,60 @@ function AcceptInvitationForm() {
   // Construct return URL for sign-in redirect
   const returnUrl = `/accept-invitation?token=${encodeURIComponent(token.trim())}&org=${encodeURIComponent(orgId.trim())}`;
   const signInUrl = `/login?returnUrl=${encodeURIComponent(returnUrl)}`;
+
+  // Handle student code linking for parent role
+  const handleLinkChild = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setLinkError(null);
+
+    if (!studentCode.trim()) {
+      setLinkError('Please enter the student code provided by your child.');
+      return;
+    }
+
+    setIsLinkingChild(true);
+
+    try {
+      await familyApi.createParentLink({ student_code: studentCode.trim() });
+      setChildLinked(true);
+      await refreshAuth();
+    } catch (err: unknown) {
+      if (err instanceof ApiError) {
+        const msg = err.message || '';
+        const errData = err.data as Record<string, unknown> | undefined;
+        const errDataStr = errData ? JSON.stringify(errData).toLowerCase() : '';
+        const isAlreadyLinked =
+          msg.toLowerCase().includes('already exists') ||
+          msg.toLowerCase().includes('already linked') ||
+          errDataStr.includes('already exists') ||
+          errDataStr.includes('already linked');
+
+        if (isAlreadyLinked) {
+          setChildLinked(true);
+          await refreshAuth();
+          return;
+        }
+
+        if (err.status === 404 || msg.toLowerCase().includes('not found')) {
+          setLinkError('No student found with that code. Please check the code and try again.');
+        } else {
+          setLinkError(msg || 'Failed to link student. Please try again.');
+        }
+      } else if (err instanceof Error) {
+        const msg = err.message;
+        if (msg.toLowerCase().includes('already exists') || msg.toLowerCase().includes('already linked')) {
+          setChildLinked(true);
+          await refreshAuth();
+          return;
+        }
+        setLinkError(err.message);
+      } else {
+        setLinkError('An unexpected error occurred while linking the student.');
+      }
+    } finally {
+      setIsLinkingChild(false);
+    }
+  };
 
   // Handle first-time registration and invitation acceptance
   const handleRegister = async (event: React.FormEvent) => {
@@ -242,9 +303,21 @@ function AcceptInvitationForm() {
 
     try {
       const membership = await invitationsApi.accept(parsedOrgId, { token: token.trim() });
-      setSuccessRole(formatRole(membership.role_display || membership.role));
+      const roleName = formatRole(membership.role_display || membership.role);
+      setSuccessRole(roleName);
       await refreshAcademies();
       setActiveAcademy(parsedOrgId);
+
+      if (roleName.toLowerCase() === 'parent') {
+        try {
+          const kids = await familyApi.getMyChildren();
+          if (kids.length > 0) {
+            setChildLinked(true);
+          }
+        } catch {
+          // ignore
+        }
+      }
     } catch (err: unknown) {
       if (err instanceof ApiError) {
         setError(
@@ -273,6 +346,8 @@ function AcceptInvitationForm() {
 
   // State: Invitation Accepted successfully (authenticated flow)
   if (successRole) {
+    const isParentRole = successRole.toLowerCase() === 'parent';
+
     return (
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
@@ -284,16 +359,82 @@ function AcceptInvitationForm() {
             You are now a member of {preview?.organization_name || 'the academy'}.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4 text-center text-sm">
-          <div className="rounded-lg bg-muted p-4">
+        <CardContent className="space-y-4 text-sm">
+          <div className="rounded-lg bg-muted p-4 text-center">
             <p className="text-xs text-muted-foreground">Assigned Role</p>
             <p className="mt-0.5 text-lg font-semibold capitalize text-foreground">{successRole}</p>
           </div>
+
+          {/* Parent: Student code linking step */}
+          {isParentRole && !childLinked && (
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+              <div className="flex items-center gap-2 font-medium text-foreground text-sm">
+                <Link2 className="h-5 w-5 text-primary" />
+                Link Your Child&apos;s Account
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Enter the <strong>Student Code</strong> provided by your child to link their account. This code was given to them during registration and is visible on their dashboard.
+              </p>
+
+              {linkError && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-xs">{linkError}</AlertDescription>
+                </Alert>
+              )}
+
+              <form onSubmit={handleLinkChild} className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="studentCode">Student Code</Label>
+                  <Input
+                    id="studentCode"
+                    type="text"
+                    required
+                    placeholder="e.g. ABC123XY"
+                    value={studentCode}
+                    onChange={(e) => setStudentCode(e.target.value.toUpperCase())}
+                    disabled={isLinkingChild}
+                    className="font-mono tracking-wider text-center text-lg"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isLinkingChild || !studentCode.trim()}
+                >
+                  {isLinkingChild ? 'Linking...' : 'Link Child Account'}
+                </Button>
+              </form>
+            </div>
+          )}
+
+          {/* Parent: Child linked successfully */}
+          {isParentRole && childLinked && (
+            <div className="rounded-lg border border-emerald-300 bg-emerald-50 dark:bg-emerald-950/30 p-4 space-y-2">
+              <div className="flex items-center gap-2 font-medium text-emerald-700 dark:text-emerald-300 text-sm">
+                <Users className="h-5 w-5" />
+                Child Account Linked Successfully!
+              </div>
+              <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                Your child&apos;s student account is now verified and fully activated. You can view their progress, schedule, and assessments from your parent dashboard.
+              </p>
+            </div>
+          )}
         </CardContent>
-        <CardFooter>
+        <CardFooter className="flex flex-col gap-2">
           <Button className="w-full" onClick={() => router.push('/app/dashboard')}>
             Go to Your Dashboard <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
+          {isParentRole && !childLinked && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs text-muted-foreground"
+              onClick={() => router.push('/app/dashboard')}
+            >
+              Skip — I&apos;ll link later from the dashboard
+            </Button>
+          )}
         </CardFooter>
       </Card>
     );

@@ -3,8 +3,10 @@
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAcademy } from '@/lib/academy/academy-provider';
+import { useOptionalAuth } from '@/lib/auth/auth-provider';
 import { studentKeys, curriculumKeys } from '@/lib/api/query-keys';
 import { studentsApi } from '../api/students';
+import { familyApi } from '@/features/family/api/family';
 import { membershipsApi, type Membership } from '@/features/memberships/api/memberships';
 import {
   curriculumApi,
@@ -27,12 +29,21 @@ import { Users, Mail, FileUp, BookOpen } from 'lucide-react';
 
 export function StudentDirectory() {
   const { activeAcademy, activeRole } = useAcademy();
+  const auth = useOptionalAuth();
+  const user = auth?.user;
 
   const isOwnerAdmin = activeRole === 'owner' || activeRole === 'admin';
+  const isParent = activeRole === 'parent' || user?.role === 'parent';
   const canManage = isOwnerAdmin;
 
   const [selectedStudentToPlace, setSelectedStudentToPlace] =
     React.useState<AllocatableStudent | null>(null);
+
+  const { data: myLinkedChildren = [] } = useQuery({
+    queryKey: ['family', 'my-children'],
+    queryFn: () => familyApi.getMyChildren(),
+    enabled: isParent,
+  });
 
   const queryKey = isOwnerAdmin
     ? studentKeys.list(activeAcademy?.id)
@@ -156,10 +167,30 @@ export function StudentDirectory() {
           });
         }
       }
+    } else if (isParent) {
+      for (const kid of myLinkedChildren) {
+        const exists = list.some(
+          (s) => s.username.toLowerCase() === kid.username.toLowerCase() || s.userId === kid.id
+        );
+        if (!exists) {
+          list.push({
+            id: `child-${kid.id}`,
+            userId: kid.id,
+            username: kid.username,
+            displayName: kid.first_name ? `${kid.first_name} ${kid.last_name || ''}`.trim() : kid.username,
+            email: kid.email,
+            status: kid.is_fully_active ? 'active' : 'pending',
+            hasEnrollment: false,
+            appliedTrackName: null,
+            appliedLevelName: null,
+            appliedAsBeginner: false,
+          });
+        }
+      }
     }
 
     return list;
-  }, [data, members, isOwnerAdmin, pendingPlacements]);
+  }, [data, members, isOwnerAdmin, isParent, myLinkedChildren, pendingPlacements]);
 
   if (!activeAcademy) {
     return <EmptyState title="No Academy Context" description="Please select an academy." />;
