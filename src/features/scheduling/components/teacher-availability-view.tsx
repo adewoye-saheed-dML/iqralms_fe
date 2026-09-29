@@ -40,6 +40,11 @@ import {
   Zap,
   Check,
   SlidersHorizontal,
+  User,
+  CalendarCheck,
+  ArrowRight,
+  GraduationCap,
+  CalendarDays,
 } from 'lucide-react';
 
 const WEEKDAYS = [
@@ -51,6 +56,8 @@ const WEEKDAYS = [
   'Saturday',
   'Sunday',
 ];
+
+const WEEKDAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export function TeacherAvailabilityView() {
   const { activeAcademy, activeRole } = useAcademy();
@@ -84,6 +91,14 @@ export function TeacherAvailabilityView() {
     }
   }, [searchParams]);
 
+  // Set selected teacher if URL has ?teacher_id=...
+  React.useEffect(() => {
+    const tid = searchParams.get('teacher_id');
+    if (tid) {
+      setSelectedTeacherId(tid);
+    }
+  }, [searchParams]);
+
   // Fetch teacher configurations for owner/admin
   const { data: teacherConfigs = [], isLoading: isLoadingConfigs } = useQuery({
     queryKey: ['teachers', 'configurations', activeAcademy?.id],
@@ -106,8 +121,8 @@ export function TeacherAvailabilityView() {
     }
   }, [isOwnerOrAdmin, teacherConfigs, selectedTeacherId]);
 
-  // For student/parent, fetch bookings to discover their teachers
-  const { data: myBookings = [] } = useQuery({
+  // For student/parent, fetch bookings & waitlist to discover their teachers
+  const { data: myBookings = [], isLoading: isLoadingBookings } = useQuery({
     queryKey: ['scheduling', 'bookings', activeAcademy?.id, 'mine'],
     queryFn: () => {
       if (!activeAcademy?.id) return [];
@@ -116,18 +131,54 @@ export function TeacherAvailabilityView() {
     enabled: !!activeAcademy?.id && !isTeacher && !isOwnerOrAdmin,
   });
 
+  const { data: myWaitlist = [] } = useQuery({
+    queryKey: ['scheduling', 'waitlist', activeAcademy?.id, 'mine'],
+    queryFn: () => {
+      if (!activeAcademy?.id) return [];
+      return schedulingApi.getMyWaitlist(activeAcademy.id);
+    },
+    enabled: !!activeAcademy?.id && !isTeacher && !isOwnerOrAdmin,
+  });
+
   const studentTeachers = React.useMemo(() => {
-    const map = new Map<number, { id: number; name: string }>();
+    const map = new Map<
+      number,
+      { id: number; name: string; username?: string; sessionsCount: number; trackName?: string }
+    >();
+
     myBookings.forEach((b) => {
       if (b.teacher?.id) {
+        const id = b.teacher.id;
         const name = b.teacher.first_name
           ? `${b.teacher.first_name} ${b.teacher.last_name || ''}`.trim()
           : b.teacher.username || `Teacher #${b.teacher.id}`;
-        map.set(b.teacher.id, { id: b.teacher.id, name });
+        const existing = map.get(id);
+        const count = (existing?.sessionsCount || 0) + 1;
+        const trackName = existing?.trackName || (typeof b.track === 'string' ? b.track : (b.track as { name?: string })?.name) || (b.level ? `Level ${b.level.name}` : undefined);
+        map.set(id, { id, name, username: b.teacher.username, sessionsCount: count, trackName });
       }
     });
+
+    myWaitlist.forEach((w) => {
+      if (w.requested_teacher?.id) {
+        const id = w.requested_teacher.id;
+        const name = w.requested_teacher.first_name
+          ? `${w.requested_teacher.first_name} ${w.requested_teacher.last_name || ''}`.trim()
+          : w.requested_teacher.username || `Teacher #${w.requested_teacher.id}`;
+        if (!map.has(id)) {
+          map.set(id, {
+            id,
+            name,
+            username: w.requested_teacher.username,
+            sessionsCount: 0,
+            trackName: typeof w.track === 'string' ? w.track : (w.level ? `Level ${w.level.name}` : undefined),
+          });
+        }
+      }
+    });
+
     return Array.from(map.values());
-  }, [myBookings]);
+  }, [myBookings, myWaitlist]);
 
   // Resolve initial active teacher ID for student/parent
   React.useEffect(() => {
@@ -138,9 +189,12 @@ export function TeacherAvailabilityView() {
 
   // For a teacher, their teacher ID is user.id.
   // For owner/admin or student, use the selected teacher.
-  const teacherIdNum = isTeacher && !isOwnerOrAdmin
-    ? user?.id
-    : (selectedTeacherId ? Number(selectedTeacherId) : null);
+  const teacherIdNum =
+    isTeacher && !isOwnerOrAdmin
+      ? user?.id
+      : selectedTeacherId
+      ? Number(selectedTeacherId)
+      : null;
 
   const { data: availabilityList = [], isLoading: isLoadingAvailability } = useQuery({
     queryKey: ['scheduling', 'availability', activeAcademy?.id, teacherIdNum],
@@ -215,7 +269,8 @@ export function TeacherAvailabilityView() {
   // Filtered teachers list for management
   const filteredTeachers = React.useMemo(() => {
     return teacherConfigs.filter((tc) => {
-      const username = tc.username || (tc as unknown as { teacher_username?: string }).teacher_username || '';
+      const username =
+        tc.username || (tc as unknown as { teacher_username?: string }).teacher_username || '';
       const name = (tc as unknown as { teacher_name?: string }).teacher_name || '';
       const matchesSearch =
         username.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -239,29 +294,63 @@ export function TeacherAvailabilityView() {
       })
     : null;
 
-  const teacherDisplayName = isTeacher && !isOwnerOrAdmin
-    ? user?.first_name
-      ? `${user.first_name} ${user.last_name || ''}`.trim()
-      : user?.username || 'Teacher'
-    : selectedTeacherConfig
-    ? (selectedTeacherConfig as unknown as { teacher_username?: string; teacher_name?: string }).teacher_username ||
-      (selectedTeacherConfig as unknown as { teacher_name?: string }).teacher_name ||
-      selectedTeacherConfig.username ||
-      `Teacher #${selectedTeacherId}`
-    : (!isTeacher && !isOwnerOrAdmin && studentTeachers.length > 0)
-    ? (studentTeachers.find((st) => String(st.id) === selectedTeacherId)?.name || 'Teacher')
-    : selectedTeacherId
-    ? `Teacher #${selectedTeacherId}`
-    : 'Teacher';
+  const selectedStudentTeacher = !isTeacher && !isOwnerOrAdmin
+    ? studentTeachers.find((st) => String(st.id) === selectedTeacherId)
+    : null;
 
-  // Group availability by weekday
+  const teacherDisplayName =
+    isTeacher && !isOwnerOrAdmin
+      ? user?.first_name
+        ? `${user.first_name} ${user.last_name || ''}`.trim()
+        : user?.username || 'Teacher'
+      : selectedTeacherConfig
+      ? (selectedTeacherConfig as unknown as { teacher_username?: string; teacher_name?: string })
+          .teacher_username ||
+        (selectedTeacherConfig as unknown as { teacher_name?: string }).teacher_name ||
+        selectedTeacherConfig.username ||
+        `Teacher #${selectedTeacherId}`
+      : selectedStudentTeacher
+      ? selectedStudentTeacher.name
+      : selectedTeacherId
+      ? `Teacher #${selectedTeacherId}`
+      : 'Teacher';
+
+  // Group availability by weekday (0 = Monday, ..., 6 = Sunday)
   const groupedByDay = React.useMemo(() => {
     const map: Record<number, AvailabilityBlock[]> = {};
     for (let i = 0; i < 7; i++) {
       map[i] = [];
     }
     availabilityList.forEach((block) => {
-      const day = block.weekday ?? 0;
+      let day = 0;
+      const rawWeekday = (block as unknown as { weekday?: unknown }).weekday;
+      if (typeof rawWeekday === 'number') {
+        day = rawWeekday % 7;
+      } else if (typeof rawWeekday === 'string') {
+        const parsed = parseInt(rawWeekday, 10);
+        if (!isNaN(parsed)) {
+          day = parsed % 7;
+        } else {
+          const lower = rawWeekday.toLowerCase();
+          const dayMap: Record<string, number> = {
+            mon: 0,
+            monday: 0,
+            tue: 1,
+            tuesday: 1,
+            wed: 2,
+            wednesday: 2,
+            thu: 3,
+            thursday: 3,
+            fri: 4,
+            friday: 4,
+            sat: 5,
+            saturday: 5,
+            sun: 6,
+            sunday: 6,
+          };
+          if (lower in dayMap) day = dayMap[lower];
+        }
+      }
       if (!map[day]) map[day] = [];
       map[day].push(block);
     });
@@ -283,7 +372,10 @@ export function TeacherAvailabilityView() {
 
   const totalWeeklyHours = (totalWeeklyMinutes / 60).toFixed(1);
   const maxWeeklyHours = selectedTeacherConfig?.max_weekly_hours || 20;
-  const capacityPercent = Math.min(100, Math.round((Number(totalWeeklyHours) / maxWeeklyHours) * 100));
+  const capacityPercent = Math.min(
+    100,
+    Math.round((Number(totalWeeklyHours) / maxWeeklyHours) * 100)
+  );
 
   const canManageCurrentTeacher = isTeacher || isOwnerOrAdmin;
 
@@ -291,7 +383,9 @@ export function TeacherAvailabilityView() {
     return <LoadingState />;
   }
 
-  // --- TEACHER INDIVIDUAL VIEW (Simple & Clean) ---
+  // =========================================================================
+  // VIEW 1: TEACHER INDIVIDUAL VIEW (Simple & Clean)
+  // =========================================================================
   if (isTeacher && !isOwnerOrAdmin) {
     return (
       <div className="space-y-6">
@@ -306,7 +400,10 @@ export function TeacherAvailabilityView() {
                 <Badge variant="secondary" className="text-xs">
                   {totalWeeklyHours} Hours / Week
                 </Badge>
-                <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200">
+                <Badge
+                  variant="outline"
+                  className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200"
+                >
                   <CheckCircle2 className="w-3 h-3 mr-1" /> Active Schedule
                 </Badge>
                 <Button size="sm" onClick={() => setIsDeclareOpen(true)} className="ml-2">
@@ -315,15 +412,17 @@ export function TeacherAvailabilityView() {
               </div>
             </div>
             <CardDescription className="text-xs">
-              These weekly time windows declare when you are available for recitation classes in this academy. Lessons can only be booked during your declared hours.
+              These weekly time windows declare when you are available for recitation classes in
+              this academy. Lessons can only be booked during your declared hours.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="bg-amber-50/70 border border-amber-200 rounded-lg p-3 text-xs text-amber-900 flex items-start gap-2">
               <Info className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
               <div>
-                <span className="font-semibold">Notice:</span> Weekly teaching hours are established in the academy system.
-                Session requests from students are matched against these windows to ensure you are never double-booked.
+                <span className="font-semibold">Notice:</span> Weekly teaching hours are established
+                in the academy system. Session requests from students are matched against these
+                windows to ensure you are never double-booked.
               </div>
             </div>
           </CardContent>
@@ -336,41 +435,52 @@ export function TeacherAvailabilityView() {
             <AlertCircle className="h-8 w-8 text-muted-foreground mx-auto" />
             <h4 className="font-medium text-sm">No Availability Windows Declared</h4>
             <p className="text-xs text-muted-foreground max-w-md mx-auto">
-              No recurring weekly teaching hours have been declared yet for your profile in {activeAcademy?.name || 'this academy'}. Declare your available hours now so students and academy management can schedule classes with you.
+              No recurring weekly teaching hours have been declared yet for your profile in{' '}
+              {activeAcademy?.name || 'this academy'}. Declare your available hours now so students
+              and academy management can schedule classes with you.
             </p>
             <Button size="sm" onClick={() => setIsDeclareOpen(true)} className="mt-2">
               <Plus className="mr-1.5 h-4 w-4" /> Declare My Hours Now
             </Button>
           </Card>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-7">
             {WEEKDAYS.map((dayName, idx) => {
               const blocks = groupedByDay[idx] || [];
               const hasBlocks = blocks.length > 0;
               return (
-                <Card key={dayName} className={hasBlocks ? 'border-primary/20 shadow-xs' : 'opacity-70 bg-muted/20'}>
-                  <CardHeader className="py-3 px-4 border-b">
+                <Card
+                  key={dayName}
+                  className={
+                    hasBlocks
+                      ? 'border-primary/20 shadow-xs flex flex-col justify-between'
+                      : 'opacity-70 bg-muted/20 flex flex-col justify-between'
+                  }
+                >
+                  <CardHeader className="py-2.5 px-3 border-b">
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-sm">{dayName}</span>
-                      <Badge variant={hasBlocks ? 'default' : 'outline'} className="text-[10px] px-2 py-0">
-                        {hasBlocks ? `${blocks.length} slot${blocks.length > 1 ? 's' : ''}` : 'Off'}
+                      <span className="font-semibold text-xs">{WEEKDAY_SHORT[idx]}</span>
+                      <Badge
+                        variant={hasBlocks ? 'default' : 'outline'}
+                        className="text-[10px] px-1.5 py-0"
+                      >
+                        {hasBlocks ? `${blocks.length}` : 'Off'}
                       </Badge>
                     </div>
                   </CardHeader>
-                  <CardContent className="p-4 space-y-2.5">
+                  <CardContent className="p-3 space-y-2 flex-1">
                     {hasBlocks ? (
                       blocks.map((block) => (
                         <div
                           key={block.id}
-                          className="rounded-md border bg-card p-2.5 text-xs space-y-1 shadow-2xs group relative"
+                          className="rounded-md border bg-card p-2 text-xs space-y-1 shadow-2xs group relative"
                         >
                           <div className="flex items-center justify-between font-medium">
-                            <span className="text-primary flex items-center gap-1">
+                            <span className="text-primary flex items-center gap-1 text-[11px]">
                               <Clock className="w-3 h-3" />
                               {block.start_time_utc?.slice(0, 5)} – {block.end_time_utc?.slice(0, 5)}
                             </span>
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-[10px] text-muted-foreground font-mono">UTC</span>
+                            <div className="flex items-center gap-1">
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -384,15 +494,16 @@ export function TeacherAvailabilityView() {
                             </div>
                           </div>
                           {block.local && (
-                            <div className="text-[11px] text-muted-foreground">
-                              Local: {block.local.start_time?.slice(0, 5)} – {block.local.end_time?.slice(0, 5)} ({block.local.timezone || 'Local'})
+                            <div className="text-[10px] text-muted-foreground">
+                              Local: {block.local.start_time?.slice(0, 5)} –{' '}
+                              {block.local.end_time?.slice(0, 5)}
                             </div>
                           )}
                         </div>
                       ))
                     ) : (
-                      <div className="text-xs text-muted-foreground py-2 text-center italic">
-                        No teaching hours scheduled
+                      <div className="text-[11px] text-muted-foreground py-2 text-center italic">
+                        Off
                       </div>
                     )}
                   </CardContent>
@@ -424,195 +535,507 @@ export function TeacherAvailabilityView() {
     );
   }
 
-  // --- MANAGEMENT (OWNER / ADMIN / LEAD) MASTER-DETAIL SCALABLE WORKSPACE ---
+  // =========================================================================
+  // VIEW 2: STUDENT & PARENT VIEW (Aligned, Clean & Scales for 5-6+ Teachers)
+  // =========================================================================
+  if (!isTeacher && !isOwnerOrAdmin) {
+    const [studentTeacherSearch, setStudentTeacherSearch] = React.useState('');
+
+    const filteredStudentTeachers = studentTeachers.filter((t) =>
+      t.name.toLowerCase().includes(studentTeacherSearch.toLowerCase())
+    );
+
+    return (
+      <div className="space-y-6">
+        {/* Top Header Card */}
+        <Card className="border-primary/20 bg-muted/10 shadow-2xs">
+          <CardHeader className="pb-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <CalendarCheck className="h-5 w-5 text-primary" />
+                  <CardTitle className="text-base sm:text-lg font-bold">
+                    Teacher Schedules &amp; Available Windows
+                  </CardTitle>
+                </div>
+                <CardDescription className="text-xs">
+                  Review your Ustadhs&apos; weekly working hours to book recitation classes and
+                  one-on-one sessions in {activeAcademy?.name || 'this academy'}.
+                </CardDescription>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <Button size="sm" asChild>
+                  <Link
+                    href={`/app/scheduling/book${
+                      selectedTeacherId ? `?teacher_id=${selectedTeacherId}` : ''
+                    }`}
+                  >
+                    <Plus className="mr-1.5 h-4 w-4" /> Book a Class / Request Slot
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+
+        {/* Loading state for student bookings */}
+        {isLoadingBookings ? (
+          <LoadingState />
+        ) : studentTeachers.length === 0 ? (
+          /* Empty State when student has no teachers yet */
+          <Card className="border-dashed p-8 text-center space-y-3 bg-muted/10">
+            <AlertCircle className="h-10 w-10 text-muted-foreground mx-auto" />
+            <h4 className="font-semibold text-base">No Teacher Schedules Available Yet</h4>
+            <p className="text-xs text-muted-foreground max-w-md mx-auto">
+              You do not have any assigned Ustadhs or previous session bookings yet in{' '}
+              {activeAcademy?.name || 'this academy'}. Book your first class or submit a schedule
+              request to get matched with an instructor.
+            </p>
+            <div className="pt-2">
+              <Button size="sm" asChild>
+                <Link href="/app/scheduling/book">
+                  <CalendarCheck className="mr-1.5 h-4 w-4" /> Book Your First Session
+                </Link>
+              </Button>
+            </div>
+          </Card>
+        ) : (
+          <div className="space-y-6">
+            {/* TEACHER SELECTOR: Scalable, clean card grid handling 1 to 6+ teachers */}
+            <div className="space-y-2.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-primary" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Your Instructors ({studentTeachers.length})
+                  </span>
+                </div>
+
+                {/* Search bar when there are 4+ teachers */}
+                {studentTeachers.length >= 4 && (
+                  <div className="relative w-full sm:w-64">
+                    <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      placeholder="Search your Ustadhs..."
+                      value={studentTeacherSearch}
+                      onChange={(e) => setStudentTeacherSearch(e.target.value)}
+                      className="pl-8 h-8 text-xs bg-background"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Interactive Teacher Chips / Selector Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2.5">
+                {filteredStudentTeachers.map((t) => {
+                  const isSelected = String(t.id) === selectedTeacherId;
+                  const initial = t.name.charAt(0).toUpperCase();
+
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setSelectedTeacherId(String(t.id))}
+                      className={`text-left p-3 rounded-xl border transition-all flex flex-col justify-between gap-2 relative ${
+                        isSelected
+                          ? 'border-primary bg-primary/10 shadow-xs ring-2 ring-primary/20'
+                          : 'border-border bg-card hover:bg-muted/50 hover:border-primary/40'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2 w-full">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div
+                            className={`h-8 w-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                              isSelected
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-primary/10 text-primary'
+                            }`}
+                          >
+                            {initial}
+                          </div>
+                          <div className="min-w-0">
+                            <h4
+                              className={`text-xs font-bold truncate ${
+                                isSelected ? 'text-primary' : 'text-foreground'
+                              }`}
+                              title={t.name}
+                            >
+                              Ustadh {t.name}
+                            </h4>
+                            <p className="text-[10px] text-muted-foreground truncate">
+                              {t.trackName || 'Recitation Instructor'}
+                            </p>
+                          </div>
+                        </div>
+
+                        {isSelected && (
+                          <div className="h-4 w-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
+                            <Check className="h-2.5 w-2.5" />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-border/50 w-full">
+                        <span>
+                          {t.sessionsCount > 0
+                            ? `${t.sessionsCount} session${t.sessionsCount > 1 ? 's' : ''}`
+                            : 'Instructor'}
+                        </span>
+                        <span className="font-medium text-primary text-[10px]">
+                          {isSelected ? 'Viewing' : 'Select'}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* SELECTED TEACHER'S SCHEDULE CONTAINER */}
+            <Card className="shadow-2xs border">
+              <CardHeader className="pb-3 border-b bg-muted/10">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
+                      {teacherDisplayName.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <CardTitle className="text-base font-bold">
+                        Ustadh {teacherDisplayName}&apos;s Weekly Schedule
+                      </CardTitle>
+                      <CardDescription className="text-xs">
+                        Open teaching windows converted automatically to your local time.
+                      </CardDescription>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="secondary" className="text-xs px-2.5 py-1">
+                      <Clock className="w-3.5 h-3.5 mr-1 text-primary" />
+                      {totalWeeklyHours} Hours / Week Available
+                    </Badge>
+                    <Button size="sm" asChild>
+                      <Link
+                        href={`/app/scheduling/book${
+                          selectedTeacherId ? `?teacher_id=${selectedTeacherId}` : ''
+                        }`}
+                      >
+                        <CalendarCheck className="w-3.5 h-3.5 mr-1.5" /> Book with Ustadh{' '}
+                        {teacherDisplayName.split(' ')[0]}
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+
+              <CardContent className="pt-4">
+                {isLoadingAvailability ? (
+                  <LoadingState />
+                ) : availabilityList.length === 0 ? (
+                  <div className="border border-dashed rounded-lg p-8 text-center space-y-3 bg-muted/10">
+                    <AlertCircle className="h-8 w-8 text-muted-foreground mx-auto" />
+                    <h4 className="font-medium text-sm">No Open Schedule Declared</h4>
+                    <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                      Ustadh {teacherDisplayName} has not declared recurring weekly hours for this
+                      academy yet. You can still submit a preferred class request via the booking
+                      page.
+                    </p>
+                    <div className="pt-2">
+                      <Button size="sm" variant="outline" asChild>
+                        <Link
+                          href={`/app/scheduling/book${
+                            selectedTeacherId ? `?teacher_id=${selectedTeacherId}` : ''
+                          }`}
+                        >
+                          Submit Class Request
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  /* PERFECTLY ALIGNED 7-DAY WEEKLY SCHEDULE GRID */
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
+                    {WEEKDAYS.map((dayName, idx) => {
+                      const blocks = groupedByDay[idx] || [];
+                      const hasBlocks = blocks.length > 0;
+
+                      return (
+                        <div
+                          key={dayName}
+                          className={`rounded-xl border flex flex-col justify-between transition-all ${
+                            hasBlocks
+                              ? 'border-primary/20 bg-card shadow-2xs'
+                              : 'opacity-60 bg-muted/20 border-dashed'
+                          }`}
+                        >
+                          {/* Day Header */}
+                          <div className="p-3 border-b bg-muted/20 flex items-center justify-between">
+                            <span className="font-bold text-xs text-foreground">
+                              {WEEKDAY_SHORT[idx]}
+                            </span>
+                            <Badge
+                              variant={hasBlocks ? 'default' : 'outline'}
+                              className="text-[10px] px-1.5 py-0 h-4"
+                            >
+                              {hasBlocks ? `${blocks.length} slot${blocks.length > 1 ? 's' : ''}` : 'Off'}
+                            </Badge>
+                          </div>
+
+                          {/* Day Slots */}
+                          <div className="p-2.5 space-y-2 flex-1">
+                            {hasBlocks ? (
+                              blocks.map((block) => (
+                                <div
+                                  key={block.id}
+                                  className="rounded-lg border bg-background p-2 text-xs space-y-1 shadow-2xs hover:border-primary/50 transition-colors"
+                                >
+                                  <div className="flex items-center justify-between font-semibold text-primary text-[11px]">
+                                    <span className="flex items-center gap-1">
+                                      <Clock className="w-3 h-3 shrink-0" />
+                                      {block.start_time_utc?.slice(0, 5)} – {block.end_time_utc?.slice(0, 5)}
+                                    </span>
+                                    <span className="text-[9px] text-muted-foreground font-mono">
+                                      UTC
+                                    </span>
+                                  </div>
+
+                                  {block.local && (
+                                    <div className="text-[10px] text-muted-foreground">
+                                      Local: {block.local.start_time?.slice(0, 5)} –{' '}
+                                      {block.local.end_time?.slice(0, 5)}
+                                    </div>
+                                  )}
+
+                                  <div className="pt-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 w-full text-[10px] text-primary hover:bg-primary/10 px-1 py-0 justify-center font-medium"
+                                      asChild
+                                    >
+                                      <Link
+                                        href={`/app/scheduling/book?teacher_id=${selectedTeacherId}&weekday=${idx}`}
+                                      >
+                                        Book this time <ArrowRight className="h-2.5 w-2.5 ml-1" />
+                                      </Link>
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="text-[11px] text-muted-foreground py-4 text-center italic">
+                                No classes
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // VIEW 3: MANAGEMENT (OWNER / ADMIN / LEAD) MASTER-DETAIL SCALABLE WORKSPACE
+  // =========================================================================
   return (
     <div className="space-y-6">
       {/* Top Academy Capacity Summary Metrics */}
-      {isOwnerOrAdmin && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card className="bg-card shadow-2xs">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Faculty Roster</p>
-                <h3 className="text-xl font-bold mt-1">{teacherConfigs.length} Teachers</h3>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {teacherConfigs.filter((t) => t.approved).length} active & approved
-                </p>
-              </div>
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                <Users className="h-5 w-5" />
-              </div>
-            </CardContent>
-          </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card className="bg-card shadow-2xs">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase text-muted-foreground">Faculty Roster</p>
+              <h3 className="text-xl font-bold mt-1">{teacherConfigs.length} Teachers</h3>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                {teacherConfigs.filter((t) => t.approved).length} active &amp; approved
+              </p>
+            </div>
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+              <Users className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card className="bg-card shadow-2xs">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Current Ustadh Hours</p>
-                <h3 className="text-xl font-bold mt-1">{totalWeeklyHours} hrs / wk</h3>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  Cap: {maxWeeklyHours} hrs/wk ({capacityPercent}% allocated)
-                </p>
-              </div>
-              <div className="h-10 w-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600">
-                <Clock className="h-5 w-5" />
-              </div>
-            </CardContent>
-          </Card>
+        <Card className="bg-card shadow-2xs">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase text-muted-foreground">Current Ustadh Hours</p>
+              <h3 className="text-xl font-bold mt-1">{totalWeeklyHours} hrs / wk</h3>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Cap: {maxWeeklyHours} hrs/wk ({capacityPercent}% allocated)
+              </p>
+            </div>
+            <div className="h-10 w-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+              <Clock className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card className="bg-card shadow-2xs">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Selected Instructor</p>
-                <h3 className="text-base font-bold mt-1 truncate max-w-[170px]" title={teacherDisplayName}>
-                  Ustadh {teacherDisplayName}
-                </h3>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {selectedTeacherConfig?.approved ? '✓ Approved to teach' : 'Pending configuration'}
-                </p>
-              </div>
-              <Button size="sm" onClick={() => setIsDeclareOpen(true)} className="shrink-0">
-                <Plus className="h-4 w-4 mr-1" /> Add Slots
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+        <Card className="bg-card shadow-2xs">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase text-muted-foreground">Selected Instructor</p>
+              <h3 className="text-base font-bold mt-1 truncate max-w-[170px]" title={teacherDisplayName}>
+                Ustadh {teacherDisplayName}
+              </h3>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                {selectedTeacherConfig?.approved ? '✓ Approved to teach' : 'Pending configuration'}
+              </p>
+            </div>
+            <Button size="sm" onClick={() => setIsDeclareOpen(true)} className="shrink-0">
+              <Plus className="h-4 w-4 mr-1" /> Add Slots
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Two-Column Master-Detail Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* LEFT COLUMN: Faculty Directory & Selector (4 cols on lg) */}
-        {isOwnerOrAdmin && (
-          <Card className="lg:col-span-4 xl:col-span-3.5 shadow-2xs overflow-hidden">
-            <CardHeader className="p-4 border-b bg-muted/20 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-primary" />
-                  <CardTitle className="text-sm font-bold">Faculty Directory</CardTitle>
-                </div>
-                <Badge variant="outline" className="text-[11px]">
-                  {filteredTeachers.length} of {teacherConfigs.length}
-                </Badge>
+        <Card className="lg:col-span-4 xl:col-span-3.5 shadow-2xs overflow-hidden">
+          <CardHeader className="p-4 border-b bg-muted/20 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                <CardTitle className="text-sm font-bold">Faculty Directory</CardTitle>
               </div>
+              <Badge variant="outline" className="text-[11px]">
+                {filteredTeachers.length} of {teacherConfigs.length}
+              </Badge>
+            </div>
 
-              {/* Search Bar */}
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                <Input
-                  placeholder="Search faculty by name..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-8 h-8 text-xs bg-background"
-                />
+            {/* Search Bar */}
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Search faculty by name..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 h-8 text-xs bg-background"
+              />
+            </div>
+
+            {/* Status Filter Pills */}
+            <div className="flex items-center gap-1.5 pt-1">
+              <Button
+                variant={filterStatus === 'all' ? 'default' : 'outline'}
+                size="sm"
+                className="h-6 text-[10px] px-2.5 rounded-full"
+                onClick={() => setFilterStatus('all')}
+              >
+                All ({teacherConfigs.length})
+              </Button>
+              <Button
+                variant={filterStatus === 'approved' ? 'default' : 'outline'}
+                size="sm"
+                className="h-6 text-[10px] px-2.5 rounded-full"
+                onClick={() => setFilterStatus('approved')}
+              >
+                Approved
+              </Button>
+              <Button
+                variant={filterStatus === 'unapproved' ? 'default' : 'outline'}
+                size="sm"
+                className="h-6 text-[10px] px-2.5 rounded-full"
+                onClick={() => setFilterStatus('unapproved')}
+              >
+                Pending
+              </Button>
+            </div>
+          </CardHeader>
+
+          <CardContent className="p-0 max-h-[600px] overflow-y-auto divide-y">
+            {filteredTeachers.length === 0 ? (
+              <div className="p-6 text-center text-xs text-muted-foreground space-y-1">
+                <p className="font-semibold">No teachers found</p>
+                <p>Try adjusting your search query or filters.</p>
               </div>
+            ) : (
+              filteredTeachers.map((tc) => {
+                const tId =
+                  (tc as unknown as { teacher?: number }).teacher ||
+                  (tc as unknown as { user?: number }).user ||
+                  tc.id;
+                const isSelected = String(tId) === selectedTeacherId;
+                const name =
+                  (tc as unknown as { teacher_username?: string; teacher_name?: string })
+                    .teacher_username ||
+                  (tc as unknown as { teacher_name?: string }).teacher_name ||
+                  tc.username ||
+                  `Teacher #${tId}`;
+                const maxHours = tc.max_weekly_hours || 20;
+                const rate = tc.hourly_payout_rate
+                  ? `$${tc.hourly_payout_rate}/hr`
+                  : 'Standard Rate';
 
-              {/* Status Filter Pills */}
-              <div className="flex items-center gap-1.5 pt-1">
-                <Button
-                  variant={filterStatus === 'all' ? 'default' : 'outline'}
-                  size="sm"
-                  className="h-6 text-[10px] px-2.5 rounded-full"
-                  onClick={() => setFilterStatus('all')}
-                >
-                  All ({teacherConfigs.length})
-                </Button>
-                <Button
-                  variant={filterStatus === 'approved' ? 'default' : 'outline'}
-                  size="sm"
-                  className="h-6 text-[10px] px-2.5 rounded-full"
-                  onClick={() => setFilterStatus('approved')}
-                >
-                  Approved
-                </Button>
-                <Button
-                  variant={filterStatus === 'unapproved' ? 'default' : 'outline'}
-                  size="sm"
-                  className="h-6 text-[10px] px-2.5 rounded-full"
-                  onClick={() => setFilterStatus('unapproved')}
-                >
-                  Pending
-                </Button>
-              </div>
-            </CardHeader>
-
-            <CardContent className="p-0 max-h-[600px] overflow-y-auto divide-y">
-              {filteredTeachers.length === 0 ? (
-                <div className="p-6 text-center text-xs text-muted-foreground space-y-1">
-                  <p className="font-semibold">No teachers found</p>
-                  <p>Try adjusting your search query or filters.</p>
-                </div>
-              ) : (
-                filteredTeachers.map((tc) => {
-                  const tId =
-                    (tc as unknown as { teacher?: number }).teacher ||
-                    (tc as unknown as { user?: number }).user ||
-                    tc.id;
-                  const isSelected = String(tId) === selectedTeacherId;
-                  const name =
-                    (tc as unknown as { teacher_username?: string; teacher_name?: string }).teacher_username ||
-                    (tc as unknown as { teacher_name?: string }).teacher_name ||
-                    tc.username ||
-                    `Teacher #${tId}`;
-                  const maxHours = tc.max_weekly_hours || 20;
-                  const rate = tc.hourly_payout_rate ? `$${tc.hourly_payout_rate}/hr` : 'Standard Rate';
-
-                  return (
-                    <button
-                      key={tId}
-                      type="button"
-                      onClick={() => setSelectedTeacherId(String(tId))}
-                      className={`w-full text-left p-3.5 transition-all flex items-start justify-between gap-3 hover:bg-muted/50 ${
-                        isSelected
-                          ? 'bg-primary/10 border-l-4 border-l-primary font-medium'
-                          : 'border-l-4 border-l-transparent'
-                      }`}
-                    >
-                      <div className="space-y-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className={`text-xs font-semibold truncate ${isSelected ? 'text-primary' : 'text-foreground'}`}>
-                            Ustadh {name}
+                return (
+                  <button
+                    key={tId}
+                    type="button"
+                    onClick={() => setSelectedTeacherId(String(tId))}
+                    className={`w-full text-left p-3.5 transition-all flex items-start justify-between gap-3 hover:bg-muted/50 ${
+                      isSelected
+                        ? 'bg-primary/10 border-l-4 border-l-primary font-medium'
+                        : 'border-l-4 border-l-transparent'
+                    }`}
+                  >
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={`text-xs font-semibold truncate ${
+                            isSelected ? 'text-primary' : 'text-foreground'
+                          }`}
+                        >
+                          Ustadh {name}
+                        </span>
+                        {tc.approved && (
+                          <span title="Approved to teach in this academy">
+                            <ShieldCheck className="h-3 w-3 text-emerald-600 shrink-0" />
                           </span>
-                          {tc.approved && (
-                            <span title="Approved to teach in this academy">
-                              <ShieldCheck className="h-3 w-3 text-emerald-600 shrink-0" />
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                          <span>Max {maxHours}h/wk</span>
-                          <span>•</span>
-                          <span>{rate}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col items-end gap-1 shrink-0">
-                        {isSelected ? (
-                          <Badge variant="default" className="text-[10px] px-1.5 py-0 h-4">
-                            Selected
-                          </Badge>
-                        ) : (
-                          <Badge
-                            variant="outline"
-                            className={`text-[10px] px-1.5 py-0 h-4 ${
-                              tc.approved
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                : 'bg-amber-50 text-amber-700 border-amber-200'
-                            }`}
-                          >
-                            {tc.approved ? 'Active' : 'Setup'}
-                          </Badge>
                         )}
                       </div>
-                    </button>
-                  );
-                })
-              )}
-            </CardContent>
-          </Card>
-        )}
+                      <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                        <span>Max {maxHours}h/wk</span>
+                        <span>•</span>
+                        <span>{rate}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      {isSelected ? (
+                        <Badge variant="default" className="text-[10px] px-1.5 py-0 h-4">
+                          Selected
+                        </Badge>
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className={`text-[10px] px-1.5 py-0 h-4 ${
+                            tc.approved
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              : 'bg-amber-50 text-amber-700 border-amber-200'
+                          }`}
+                        >
+                          {tc.approved ? 'Active' : 'Setup'}
+                        </Badge>
+                      )}
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </CardContent>
+        </Card>
 
         {/* RIGHT COLUMN: Selected Teacher's Weekly Schedule & Details (8 cols on lg) */}
-        <div className={`space-y-4 ${isOwnerOrAdmin ? 'lg:col-span-8 xl:col-span-8.5' : 'w-full'}`}>
+        <div className="space-y-4 lg:col-span-8 xl:col-span-8.5">
           {/* Schedule Detail Card */}
           <Card className="shadow-2xs">
             <CardHeader className="pb-3 border-b">
@@ -621,15 +1044,12 @@ export function TeacherAvailabilityView() {
                   <div className="flex items-center gap-2">
                     <Calendar className="h-5 w-5 text-primary" />
                     <CardTitle className="text-base sm:text-lg">
-                      {isOwnerOrAdmin
-                        ? `Teaching Availability — Ustadh ${teacherDisplayName}`
-                        : !isTeacher
-                        ? `Ustadh ${teacherDisplayName}'s Teaching Schedule`
-                        : 'My Declared Teaching Availability'}
+                      Teaching Availability — Ustadh {teacherDisplayName}
                     </CardTitle>
                   </div>
                   <CardDescription className="text-xs">
-                    Recurring weekly availability for student routing and session allocation in {activeAcademy?.name || 'this academy'}.
+                    Recurring weekly availability for student routing and session allocation in{' '}
+                    {activeAcademy?.name || 'this academy'}.
                   </CardDescription>
                 </div>
 
@@ -673,7 +1093,9 @@ export function TeacherAvailabilityView() {
               <div className="bg-amber-50/70 border border-amber-200 rounded-lg p-3 text-xs text-amber-900 flex items-start gap-2 mb-4">
                 <Info className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
                 <div>
-                  <span className="font-semibold">Notice:</span> Weekly teaching hours are automatically converted to your local timezone. Confirmed class sessions are scheduled within these windows.
+                  <span className="font-semibold">Notice:</span> Weekly teaching hours are automatically
+                  converted to your local timezone. Confirmed class sessions are scheduled within
+                  these windows.
                 </div>
               </div>
 
@@ -685,7 +1107,9 @@ export function TeacherAvailabilityView() {
                   <AlertCircle className="h-8 w-8 text-muted-foreground mx-auto" />
                   <h4 className="font-medium text-sm">No Availability Windows Declared</h4>
                   <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                    No recurring weekly working hours have been registered for Ustadh {teacherDisplayName}. Declare availability windows now to enable automated student routing and allocation.
+                    No recurring weekly working hours have been registered for Ustadh{' '}
+                    {teacherDisplayName}. Declare availability windows now to enable automated
+                    student routing and allocation.
                   </p>
                   {canManageCurrentTeacher && (
                     <div className="flex items-center justify-center gap-2 pt-2">
@@ -717,7 +1141,9 @@ export function TeacherAvailabilityView() {
                       <Card
                         key={dayName}
                         className={`transition-all ${
-                          hasBlocks ? 'border-primary/20 shadow-2xs bg-card' : 'opacity-60 bg-muted/20 border-dashed'
+                          hasBlocks
+                            ? 'border-primary/20 shadow-2xs bg-card'
+                            : 'opacity-60 bg-muted/20 border-dashed'
                         }`}
                       >
                         <CardHeader className="py-2.5 px-3.5 border-b bg-muted/10">
@@ -727,7 +1153,9 @@ export function TeacherAvailabilityView() {
                               variant={hasBlocks ? 'default' : 'outline'}
                               className="text-[10px] px-1.5 py-0 h-4"
                             >
-                              {hasBlocks ? `${blocks.length} slot${blocks.length > 1 ? 's' : ''}` : 'Off'}
+                              {hasBlocks
+                                ? `${blocks.length} slot${blocks.length > 1 ? 's' : ''}`
+                                : 'Off'}
                             </Badge>
                           </div>
                         </CardHeader>
@@ -741,10 +1169,13 @@ export function TeacherAvailabilityView() {
                                 <div className="flex items-center justify-between font-medium">
                                   <span className="text-primary flex items-center gap-1">
                                     <Clock className="w-3 h-3" />
-                                    {block.start_time_utc?.slice(0, 5)} – {block.end_time_utc?.slice(0, 5)}
+                                    {block.start_time_utc?.slice(0, 5)} –{' '}
+                                    {block.end_time_utc?.slice(0, 5)}
                                   </span>
                                   <div className="flex items-center gap-1">
-                                    <span className="text-[10px] text-muted-foreground font-mono">UTC</span>
+                                    <span className="text-[10px] text-muted-foreground font-mono">
+                                      UTC
+                                    </span>
                                     {canManageCurrentTeacher && (
                                       <Button
                                         variant="ghost"
@@ -761,7 +1192,8 @@ export function TeacherAvailabilityView() {
                                 </div>
                                 {block.local && (
                                   <div className="text-[11px] text-muted-foreground">
-                                    Local: {block.local.start_time?.slice(0, 5)} – {block.local.end_time?.slice(0, 5)} ({block.local.timezone || 'Local'})
+                                    Local: {block.local.start_time?.slice(0, 5)} –{' '}
+                                    {block.local.end_time?.slice(0, 5)} ({block.local.timezone || 'Local'})
                                   </div>
                                 )}
                               </div>
@@ -854,7 +1286,8 @@ function DeclareDialog({
               </span>
             </DialogTitle>
             <DialogDescription className="text-xs">
-              Register recurring weekly windows when the teacher is available. Times are entered in local timezone and automatically converted for students worldwide.
+              Register recurring weekly windows when the teacher is available. Times are entered in
+              local timezone and automatically converted for students worldwide.
             </DialogDescription>
           </DialogHeader>
 
@@ -868,7 +1301,9 @@ function DeclareDialog({
 
             {/* Day of Week */}
             <div className="space-y-1.5">
-              <Label htmlFor="weekday" className="text-xs font-semibold">Day of the Week</Label>
+              <Label htmlFor="weekday" className="text-xs font-semibold">
+                Day of the Week
+              </Label>
               <Select value={declareWeekday} onValueChange={setDeclareWeekday}>
                 <SelectTrigger id="weekday" className="h-9">
                   <SelectValue placeholder="Select day" />
@@ -886,7 +1321,9 @@ function DeclareDialog({
             {/* Time Range */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="start-time" className="text-xs font-semibold">Start Time (Local)</Label>
+                <Label htmlFor="start-time" className="text-xs font-semibold">
+                  Start Time (Local)
+                </Label>
                 <Input
                   id="start-time"
                   type="time"
@@ -897,7 +1334,9 @@ function DeclareDialog({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="end-time" className="text-xs font-semibold">End Time (Local)</Label>
+                <Label htmlFor="end-time" className="text-xs font-semibold">
+                  End Time (Local)
+                </Label>
                 <Input
                   id="end-time"
                   type="time"
@@ -938,11 +1377,7 @@ function DeclareDialog({
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              size="sm"
-              disabled={createPending || isBulkLoading}
-            >
+            <Button type="submit" size="sm" disabled={createPending || isBulkLoading}>
               {createPending ? (
                 <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
               ) : (

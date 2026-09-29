@@ -11,6 +11,7 @@ import { BookingList } from './booking-list';
 import { Waitlist } from './waitlist';
 import { CohortList } from './cohort-list';
 import { TeacherAvailabilityView } from './teacher-availability-view';
+import { SessionRecordingsView } from './session-recordings-view';
 import { can } from '@/lib/permissions/capabilities';
 
 export function SchedulingDashboard() {
@@ -127,6 +128,9 @@ function SchedulingDashboardInner() {
               {canAllocate ? 'Requests & Allocation' : 'Requests & Waitlist'}
             </TabsTrigger>
           )}
+          {isOwnerOrAdminUser && (
+            <TabsTrigger value="recordings">Class Recordings & Audit</TabsTrigger>
+          )}
         </TabsList>
 
         {isOwnerOrAdminUser && (
@@ -158,6 +162,12 @@ function SchedulingDashboardInner() {
         {(canAllocate || isStudentOrParent) && (
           <TabsContent value="waitlist" className="pt-4">
             <Waitlist />
+          </TabsContent>
+        )}
+
+        {isOwnerOrAdminUser && (
+          <TabsContent value="recordings" className="pt-4">
+            <SessionRecordingsView />
           </TabsContent>
         )}
       </Tabs>

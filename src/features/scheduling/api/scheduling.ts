@@ -194,4 +194,61 @@ export const schedulingApi = {
     }
     return data;
   },
+
+  getAcademyRecordings: async (
+    organizationId: number,
+    queryParams?: { teacher_id?: number; student_id?: number; search?: string }
+  ): Promise<SessionRecording[]> => {
+    const { data } = await apiClient.GET(
+      '/api/scheduling/organizations/{organization_pk}/recordings/' as any,
+      {
+        params: {
+          path: { organization_pk: organizationId },
+          query: queryParams,
+        },
+      }
+    );
+    return (data as any) ?? [];
+  },
+
+  deleteSessionRecording: async (organizationId: number, recordingId: number): Promise<void> => {
+    const { error } = await apiClient.DELETE(
+      '/api/scheduling/organizations/{organization_pk}/recordings/{id}/' as any,
+      {
+        params: { path: { organization_pk: organizationId, id: recordingId } },
+      }
+    );
+    if (error) {
+      throw new Error('Failed to delete session recording');
+    }
+  },
 };
+
+export interface SessionRecordingUser {
+  id: number;
+  email: string;
+  username: string;
+  first_name: string;
+  last_name: string;
+  role: string;
+}
+
+export interface SessionRecording {
+  id: number;
+  booking_id: number;
+  organization: number;
+  student: SessionRecordingUser;
+  teacher: SessionRecordingUser;
+  track_title: string;
+  level_name: string;
+  title: string;
+  video_room_name: string;
+  recording_url: string;
+  duration_minutes: number;
+  recorded_at: string;
+  expires_at: string;
+  status: 'ready' | 'processing' | 'purged';
+  is_expired: boolean;
+  days_until_expiry: number;
+  created_at: string;
+}

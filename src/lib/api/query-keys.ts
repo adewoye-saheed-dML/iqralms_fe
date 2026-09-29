@@ -53,6 +53,8 @@ export const schedulingKeys = {
     [...schedulingKeys.waitlist(academyId), 'teacher', teacherId] as const,
   availability: (academyId: AcademyId, teacherId?: number | string) =>
     [...schedulingKeys.all(academyId), 'availability', teacherId] as const,
+  recordings: (academyId: AcademyId, filters?: Record<string, unknown>) =>
+    [...schedulingKeys.all(academyId), 'recordings', filters] as const,
 };
 
 export const assessmentKeys = {

@@ -294,6 +294,82 @@ describe('Student Availability Request & Teacher Allocation Workflow', () => {
         expect(screen.getByText(/Teacher: Ahmad/i)).toBeInTheDocument();
       });
     });
+
+    it('renders aligned 7-day schedule and scalable selector when student has 5-6 teachers', async () => {
+      vi.spyOn(AcademyProvider, 'useAcademy').mockReturnValue({
+        activeAcademy: { id: 1, name: 'Darul Quran Academy' },
+        activeRole: 'student',
+      } as any);
+      vi.spyOn(AuthProvider, 'useAuth').mockReturnValue({
+        user: { id: 101, role: 'student', username: 'student_ali' },
+      } as any);
+
+      // Student has 5 teachers from different track bookings
+      vi.mocked(schedulingApi.getMyBookings).mockResolvedValue([
+        {
+          id: 1,
+          teacher: { id: 51, first_name: 'Ahmad', last_name: 'Al-Masri', username: 'ahmad' } as any,
+          track: 'Quran Memorization',
+        } as any,
+        {
+          id: 2,
+          teacher: { id: 52, first_name: 'Bilal', last_name: 'Habashi', username: 'bilal' } as any,
+          track: 'Tajweed Rules',
+        } as any,
+        {
+          id: 3,
+          teacher: { id: 53, first_name: 'Omar', last_name: 'Farooq', username: 'omar' } as any,
+          track: 'Arabic Language',
+        } as any,
+        {
+          id: 4,
+          teacher: { id: 54, first_name: 'Yusuf', last_name: 'Kandhlawi', username: 'yusuf' } as any,
+          track: 'Islamic Studies',
+        } as any,
+        {
+          id: 5,
+          teacher: { id: 55, first_name: 'Tariq', last_name: 'Jameel', username: 'tariq' } as any,
+          track: 'Tafseer',
+        } as any,
+      ]);
+
+      vi.mocked(schedulingApi.getMyWaitlist).mockResolvedValue([]);
+
+      vi.mocked(schedulingApi.getAvailability).mockResolvedValue([
+        {
+          id: 101,
+          teacher: 51,
+          weekday: 0, // Monday
+          start_time_utc: '09:00:00',
+          end_time_utc: '11:00:00',
+          local: { start_time: '09:00:00', end_time: '11:00:00' },
+        } as any,
+        {
+          id: 102,
+          teacher: 51,
+          weekday: 2, // Wednesday
+          start_time_utc: '14:00:00',
+          end_time_utc: '16:00:00',
+          local: { start_time: '14:00:00', end_time: '16:00:00' },
+        } as any,
+      ]);
+
+      renderWithProviders(<TeacherAvailabilityView />);
+
+      expect(await screen.findByText('Teacher Schedules & Available Windows')).toBeInTheDocument();
+      expect(await screen.findByText('Your Instructors (5)')).toBeInTheDocument();
+      expect(screen.getByText('Ustadh Bilal Habashi')).toBeInTheDocument();
+      expect(screen.getByText('Ustadh Omar Farooq')).toBeInTheDocument();
+      expect(screen.getByText('Ustadh Yusuf Kandhlawi')).toBeInTheDocument();
+      expect(screen.getByText('Ustadh Tariq Jameel')).toBeInTheDocument();
+      expect(await screen.findByText("Ustadh Ahmad Al-Masri's Weekly Schedule")).toBeInTheDocument();
+      expect(screen.getByText('Mon')).toBeInTheDocument();
+      expect(screen.getByText('Sun')).toBeInTheDocument();
+
+      // Switching teacher updates schedule
+      fireEvent.click(screen.getByText('Ustadh Bilal Habashi'));
+      expect(await screen.findByText("Ustadh Bilal Habashi's Weekly Schedule")).toBeInTheDocument();
+    });
   });
 
   describe('Teacher Scheduling & Availability Flow', () => {

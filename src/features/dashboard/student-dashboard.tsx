@@ -411,7 +411,7 @@ export function StudentDashboard() {
               <CardTitle className="text-base">Teacher Schedules &amp; Class Booking</CardTitle>
             </div>
             <Badge variant="outline" className="text-xs bg-background">
-              Verified Availability
+              {myTeachers.length > 0 ? `${myTeachers.length} ${myTeachers.length === 1 ? 'Instructor' : 'Instructors'}` : 'Verified Availability'}
             </Badge>
           </div>
           <CardDescription className="text-xs">
@@ -421,13 +421,27 @@ export function StudentDashboard() {
         <CardContent className="space-y-3 pt-0">
           {myTeachers.length > 0 ? (
             <div className="rounded-lg border bg-background p-3 text-xs space-y-2">
-              <span className="font-semibold text-foreground">Your Ustadhs &amp; Instructors:</span>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-foreground">Your Ustadhs &amp; Instructors:</span>
+                <span className="text-[11px] text-muted-foreground">Click to view weekly schedule</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 pt-1">
                 {myTeachers.map((t) => (
-                  <Badge key={t.id} variant="secondary" className="text-xs py-1 px-2.5 flex items-center gap-1.5">
-                    <User className="h-3 w-3 text-primary" />
-                    <span>Ustadh {t.name}</span>
-                  </Badge>
+                  <Link
+                    key={t.id}
+                    href={`/app/scheduling?tab=availability&teacher_id=${t.id}`}
+                    className="flex items-center justify-between p-2 rounded-lg border bg-card hover:bg-muted/60 hover:border-primary/40 transition-colors group"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[11px] shrink-0">
+                        {t.name.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="font-medium text-xs truncate group-hover:text-primary transition-colors">
+                        Ustadh {t.name}
+                      </span>
+                    </div>
+                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                  </Link>
                 ))}
               </div>
             </div>
@@ -443,8 +457,8 @@ export function StudentDashboard() {
               </Link>
             </Button>
             <Button variant="outline" size="sm" asChild>
-              <Link href="/app/scheduling">
-                <Calendar className="mr-1.5 h-4 w-4" /> My Bookings &amp; Schedule
+              <Link href="/app/scheduling?tab=availability">
+                <Calendar className="mr-1.5 h-4 w-4" /> View All Teacher Schedules
               </Link>
             </Button>
           </div>
