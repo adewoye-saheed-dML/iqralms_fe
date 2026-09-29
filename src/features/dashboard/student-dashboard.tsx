@@ -23,6 +23,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/lib/auth/auth-provider';
 import { useAcademy } from '@/lib/academy/academy-provider';
 import { schedulingKeys, progressKeys, assessmentKeys } from '@/lib/api/query-keys';
@@ -111,6 +112,19 @@ export function StudentDashboard() {
         title="Student Learning Portal"
         description={`Assalamu Alaikum, ${user?.first_name || user?.username}! Continue your Quranic journey at ${activeAcademy?.name || 'the academy'}.`}
       />
+
+      {user?.is_minor && !user?.is_fully_active && (
+        <Alert className="border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+          <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+          <AlertTitle className="font-semibold text-sm">Parent / Guardian Verification Pending</AlertTitle>
+          <AlertDescription className="text-xs mt-1">
+            As a minor student, your account requires a linked parent or guardian. An invitation has been sent to your parent. Your student account will be fully activated as soon as your parent confirms the link.
+            {user?.signup_code && (
+              <span className="block mt-1 font-mono font-medium">Your Student Code: {user.signup_code}</span>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Next Class Hero */}
       <Card className="border-primary/50 bg-gradient-to-r from-primary/5 via-background to-background">

@@ -62,6 +62,8 @@ function AcceptInvitationForm() {
   const [lastName, setLastName] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [confirmPassword, setConfirmPassword] = React.useState('');
+  const [age, setAge] = React.useState('');
+  const [parentEmail, setParentEmail] = React.useState('');
 
   const [preview, setPreview] = React.useState<InvitationPreview | null>(null);
   const initialLoading = Boolean(tokenParam.trim() && orgParam.trim() && Number(orgParam) > 0);
@@ -148,6 +150,31 @@ function AcceptInvitationForm() {
       timezone = 'UTC';
     }
 
+    const parsedAge = age.trim() ? parseInt(age, 10) : null;
+    const isStudent = preview?.role?.toLowerCase() === 'student';
+    const isMinor = isStudent && parsedAge !== null && !isNaN(parsedAge) && parsedAge < 18;
+
+    if (isStudent && (parsedAge === null || isNaN(parsedAge) || parsedAge <= 0)) {
+      setError('Please specify your age.');
+      return;
+    }
+
+    if (isMinor) {
+      if (!parentEmail.trim()) {
+        setError('Parent or guardian email is required for minor students.');
+        return;
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(parentEmail.trim())) {
+        setError('Please enter a valid parent email address.');
+        return;
+      }
+      if (preview?.email && parentEmail.trim().toLowerCase() === preview.email.toLowerCase()) {
+        setError('Parent email cannot be the same as your student email.');
+        return;
+      }
+    }
+
     setError(null);
     setAccountExistsError(false);
     setIsSubmitting(true);
@@ -159,6 +186,8 @@ function AcceptInvitationForm() {
         last_name: lastName.trim(),
         password,
         timezone,
+        age: parsedAge !== null && !isNaN(parsedAge) ? parsedAge : undefined,
+        parent_email: isMinor ? parentEmail.trim() : undefined,
       });
 
       setAuthToken(res.key);
@@ -466,7 +495,7 @@ function AcceptInvitationForm() {
           </Alert>
         ) : null}
 
-        <form onSubmit={handleRegister} className="space-y-4">
+        <form onSubmit={handleRegister} noValidate className="space-y-4">
           {(!tokenParam || !orgParam) && (
             <div className="space-y-3 pb-2 border-b">
               <div className="space-y-1.5">
@@ -522,6 +551,48 @@ function AcceptInvitationForm() {
                 disabled={isSubmitting}
               />
             </div>
+
+            {preview?.role?.toLowerCase() === 'student' && (
+              <>
+                <div className="space-y-1.5">
+                  <Label htmlFor="studentAge">Age</Label>
+                  <Input
+                    id="studentAge"
+                    type="number"
+                    min={1}
+                    max={120}
+                    required
+                    placeholder="e.g. 15"
+                    value={age}
+                    onChange={(event) => setAge(event.target.value)}
+                    disabled={isSubmitting}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Students under 18 will be connected with a parent or guardian.
+                  </p>
+                </div>
+
+                {Boolean(age.trim() && parseInt(age, 10) < 18) && (
+                  <div className="space-y-1.5 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                    <Label htmlFor="parentEmail" className="font-semibold text-foreground">
+                      Parent / Guardian Email
+                    </Label>
+                    <Input
+                      id="parentEmail"
+                      type="email"
+                      required
+                      placeholder="parent@example.com"
+                      value={parentEmail}
+                      onChange={(event) => setParentEmail(event.target.value)}
+                      disabled={isSubmitting}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Because you are under 18, we will send an invitation to your parent or guardian to verify and link with your account.
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
 
             <div className="space-y-1.5">
               <Label htmlFor="password">Password</Label>

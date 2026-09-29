@@ -11,6 +11,8 @@ export type InvitationPreview = components['schemas']['OrganizationInvitationPre
 export type InvitationRole = components['schemas']['InvitableOrganizationRoleEnum'];
 export type InvitationRegister = Omit<components['schemas']['OrganizationInvitationRegister'], 'username'> & {
   username?: string;
+  age?: number;
+  parent_email?: string;
 };
 export type InvitationRegisterResponse = components['schemas']['OrganizationInvitationRegisterResponse'];
 

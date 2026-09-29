@@ -168,6 +168,78 @@ describe('AcceptInvitationPage', () => {
       expect(pushMock).toHaveBeenCalledWith('/app/dashboard');
     });
 
+    it('shows age input for student invitations and displays parent email field for minor students', async () => {
+      searchParamsData = { token: 'token-student', org: '10' };
+      vi.mocked(invitationsApi.preview).mockResolvedValueOnce({
+        organization_id: 10,
+        organization_name: 'Darul Ilm Academy',
+        role: 'student',
+        status: 'pending',
+        expires_at: '2026-10-15T12:00:00Z',
+        email: 'child@example.com',
+      });
+
+      render(<AcceptInvitationPage />);
+
+      await screen.findByText("You're invited to join Darul Ilm Academy");
+      expect(screen.getByLabelText('Age')).toBeInTheDocument();
+      expect(screen.queryByLabelText('Parent / Guardian Email')).not.toBeInTheDocument();
+
+      // Enter age under 18 (e.g. 14)
+      fireEvent.change(screen.getByLabelText('Age'), { target: { value: '14' } });
+
+      // Parent Email field should now appear
+      expect(screen.getByLabelText('Parent / Guardian Email')).toBeInTheDocument();
+
+      // Change age to 20 (adult)
+      fireEvent.change(screen.getByLabelText('Age'), { target: { value: '20' } });
+      expect(screen.queryByLabelText('Parent / Guardian Email')).not.toBeInTheDocument();
+    });
+
+    it('registers minor student and passes age and parent_email to API', async () => {
+      searchParamsData = { token: 'token-student-minor', org: '10' };
+      vi.mocked(invitationsApi.preview).mockResolvedValueOnce({
+        organization_id: 10,
+        organization_name: 'Darul Ilm Academy',
+        role: 'student',
+        status: 'pending',
+        expires_at: '2026-10-15T12:00:00Z',
+        email: 'child@example.com',
+      });
+
+      vi.mocked(invitationsApi.register).mockResolvedValueOnce({
+        key: 'auth-token-minor',
+        user: { id: 5, email: 'child@example.com', username: 'child' } as any,
+        membership: { id: 6, role: 'student' as const, status: 'active' as const } as any,
+        detail: 'Account created and invitation accepted.',
+      });
+
+      render(<AcceptInvitationPage />);
+
+      await screen.findByText("You're invited to join Darul Ilm Academy");
+
+      fireEvent.change(screen.getByLabelText('First name'), { target: { value: 'Ibrahim' } });
+      fireEvent.change(screen.getByLabelText('Last name'), { target: { value: 'Tariq' } });
+      fireEvent.change(screen.getByLabelText('Age'), { target: { value: '12' } });
+      fireEvent.change(screen.getByLabelText('Parent / Guardian Email'), { target: { value: 'mom@example.com' } });
+      fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'Password123!' } });
+      fireEvent.change(screen.getByLabelText('Confirm password'), { target: { value: 'Password123!' } });
+
+      fireEvent.click(screen.getByRole('button', { name: /create account & join academy/i }));
+
+      await waitFor(() => {
+        expect(invitationsApi.register).toHaveBeenCalledWith(10, {
+          token: 'token-student-minor',
+          first_name: 'Ibrahim',
+          last_name: 'Tariq',
+          password: 'Password123!',
+          timezone: expect.any(String),
+          age: 12,
+          parent_email: 'mom@example.com',
+        });
+      });
+    });
+
     it('handles fallback query parameter "organization"', async () => {
       searchParamsData = { token: 'token-compat', organization: '15' };
       vi.mocked(invitationsApi.preview).mockResolvedValueOnce({

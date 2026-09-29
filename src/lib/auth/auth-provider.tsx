@@ -9,14 +9,17 @@ import { ApiError } from '@/lib/api/errors';
 
 type User = components['schemas']['User'];
 type LoginParams = components['schemas']['Login'];
-type RegisterParams = components['schemas']['Register'];
+type RegisterParams = components['schemas']['Register'] & {
+  age?: number;
+  parent_email?: string;
+};
 
 interface AuthContextValue {
   user: User | null;
   isLoading: boolean;
   error: Error | null;
   login: (credentials: LoginParams) => Promise<void>;
-  register: (data: RegisterParams) => Promise<void>;
+  register: (data: RegisterParams) => Promise<any>;
   logout: () => Promise<void>;
   refreshAuth: () => Promise<void>;
 }
@@ -63,9 +66,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [queryClient]);
 
   const register = React.useCallback(async (data: RegisterParams) => {
-    await apiClient.POST('/api/auth/register/', {
-      body: data,
+    const res = await apiClient.POST('/api/auth/register/', {
+      body: data as components['schemas']['Register'],
     });
+    return res.data;
   }, []);
 
   const logout = React.useCallback(async () => {
