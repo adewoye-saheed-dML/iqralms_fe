@@ -16,6 +16,7 @@ import {
   Clock,
   CalendarCheck,
   Mail,
+  Video,
 } from 'lucide-react';
 import type { Capability } from '@/lib/permissions/capabilities';
 import {
@@ -127,6 +128,13 @@ export const navigationConfig: NavItem[] = [
     allowedOrgRoles: ['owner', 'admin'],
   },
   {
+    label: 'Recordings',
+    href: '/app/dashboard?tab=recordings',
+    icon: Video,
+    requiredCapability: 'manage_academy',
+    allowedOrgRoles: ['owner', 'admin'],
+  },
+  {
     label: 'Audit',
     href: '/app/audit',
     icon: Shield,
@@ -154,6 +162,7 @@ export function getNavigationForRole(experience: RoleExperience): NavItem[] {
     case 'owner_admin':
       return [
         { label: 'Dashboard', href: '/app/dashboard', icon: LayoutDashboard },
+        { label: 'Recordings & Audit', href: '/app/dashboard?tab=recordings', icon: Video, requiredCapability: 'manage_academy' },
         { label: 'Invitations', href: '/app/invitations', icon: Mail, requiredCapability: 'manage_invitations' },
         { label: 'Teachers', href: '/app/teachers', icon: Users, requiredCapability: 'manage_teachers' },
         { label: 'Students', href: '/app/students', icon: Users, requiredCapability: 'manage_students' },
