@@ -1,0 +1,255 @@
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AssignmentsListView } from '../components/assignments-list-view';
+import { CreateAssignmentModal } from '../components/create-assignment-modal';
+import { AssignmentSubmissionModal } from '../components/assignment-submission-modal';
+import { GradeSubmissionModal } from '../components/grade-submission-modal';
+import { ParentWardAssessmentView } from '../components/parent-ward-assessment-view';
+import { OwnerAssessmentOversight } from '../components/owner-assessment-oversight';
+import { assessmentApi, StudentAssignment, AssignmentSubmission } from '../api/assessment';
+import { useAcademy } from '@/lib/academy/academy-provider';
+import { useAuth } from '@/lib/auth/auth-provider';
+import { familyApi } from '@/features/family/api/family';
+import { curriculumApi } from '@/features/curriculum/api/curriculum';
+import { studentsApi } from '@/features/students/api/students';
+
+vi.mock('@/lib/academy/academy-provider', () => ({
+  useAcademy: vi.fn(),
+}));
+
+vi.mock('@/lib/auth/auth-provider', () => ({
+  useAuth: vi.fn(),
+}));
+
+vi.mock('../api/assessment', () => ({
+  assessmentApi: {
+    getAssignments: vi.fn(),
+    createAssignment: vi.fn(),
+    deleteAssignment: vi.fn(),
+    submitAssignment: vi.fn(),
+    gradeSubmission: vi.fn(),
+    getSubmissions: vi.fn(),
+    getWardProgress: vi.fn(),
+  },
+  resolveAssessmentMediaUrl: vi.fn((url) => (url ? `http://localhost:8000${url}` : null)),
+}));
+
+vi.mock('@/features/family/api/family', () => ({
+  familyApi: {
+    getMyChildren: vi.fn(),
+    getAcademyChildren: vi.fn(),
+  },
+}));
+
+vi.mock('@/features/curriculum/api/curriculum', () => ({
+  curriculumApi: {
+    getTracks: vi.fn(),
+  },
+}));
+
+vi.mock('@/features/students/api/students', () => ({
+  studentsApi: {
+    getMyStudents: vi.fn(),
+  },
+}));
+
+function renderWithProviders(ui: React.ReactNode) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+}
+
+describe('Assignments and Homework Submissions', () => {
+  const mockAssignment: StudentAssignment = {
+    id: 10,
+    organization: 1,
+    created_by: 2,
+    created_by_name: 'Ustadh Ahmad',
+    track: 1,
+    track_name: 'Quran Memorization',
+    level: 2,
+    level_name: 'Juz 30',
+    assigned_student: null,
+    assigned_student_name: null,
+    title: 'Surah Al-Mulk Recitation Practice',
+    description: 'Recite verses 1 through 10 with clear Tajweed.',
+    submission_type: 'recitation',
+    surah_number: 67,
+    ayah_start: 1,
+    ayah_end: 10,
+    reference_notes: 'Focus on Ghunnah rules',
+    attachment: null,
+    attachment_url: null,
+    max_score: 100,
+    due_date: '2026-10-15T18:00:00Z',
+    is_active: true,
+    created_at: '2026-09-29T10:00:00Z',
+    updated_at: '2026-09-29T10:00:00Z',
+    submissions_count: 3,
+    my_submission: null,
+  };
+
+  const mockSubmission: AssignmentSubmission = {
+    id: 55,
+    assignment: 10,
+    assignment_title: 'Surah Al-Mulk Recitation Practice',
+    assignment_details: {
+      submission_type: 'recitation',
+      surah_number: 67,
+      ayah_start: 1,
+      ayah_end: 10,
+      max_score: 100,
+      due_date: '2026-10-15T18:00:00Z',
+    },
+    student: 5,
+    student_name: 'Zayd Ali',
+    status: 'submitted',
+    audio_file: '/media/audio/recitation.webm',
+    audio_file_url: '/media/audio/recitation.webm',
+    written_response: '',
+    attachment_file: null,
+    attachment_file_url: null,
+    notes_from_student: 'I practiced verse 5 multiple times.',
+    submitted_at: '2026-09-29T14:30:00Z',
+    score: null,
+    rubric_scores: null,
+    teacher_feedback: '',
+    graded_by: null,
+    graded_by_name: null,
+    graded_at: null,
+    created_at: '2026-09-29T14:30:00Z',
+    updated_at: '2026-09-29T14:30:00Z',
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(useAcademy).mockReturnValue({
+      academyId: 1,
+      activeAcademy: { id: 1, name: 'Darul Quran Academy' },
+      activeRole: 'teacher',
+    } as any);
+
+    vi.mocked(useAuth).mockReturnValue({
+      user: { id: 2, role: 'lead', full_name: 'Ustadh Ahmad', email: 'teacher@quran.com' },
+    } as any);
+
+    vi.mocked(assessmentApi.getAssignments).mockResolvedValue([mockAssignment]);
+    vi.mocked(assessmentApi.getSubmissions).mockResolvedValue([mockSubmission]);
+    vi.mocked(curriculumApi.getTracks).mockResolvedValue([]);
+    vi.mocked(studentsApi.getMyStudents).mockResolvedValue([]);
+  });
+
+  it('renders assignments list with Quran reference info and teacher controls', async () => {
+    renderWithProviders(<AssignmentsListView />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Surah Al-Mulk Recitation Practice')).toBeInTheDocument();
+      expect(screen.getByText(/Teacher: Ustadh Ahmad/)).toBeInTheDocument();
+      expect(screen.getByText(/Surah #67/)).toBeInTheDocument();
+      expect(screen.getByText(/Ayat 1 - 10/)).toBeInTheDocument();
+      expect(screen.getByText('Create Assignment')).toBeInTheDocument();
+    });
+  });
+
+  it('renders student submission modal with recitation guidelines', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: { id: 5, role: 'student', full_name: 'Zayd Ali' },
+    } as any);
+
+    renderWithProviders(
+      <AssignmentSubmissionModal
+        open={true}
+        onOpenChange={vi.fn()}
+        assignment={mockAssignment}
+        submission={null}
+      />
+    );
+
+    expect(screen.getByText('Surah Al-Mulk Recitation Practice')).toBeInTheDocument();
+    expect(screen.getByText(/Recitation Audio Recording/)).toBeInTheDocument();
+    expect(screen.getByText('Submit Homework')).toBeInTheDocument();
+  });
+
+  it('renders teacher grading modal with audio player and score inputs', async () => {
+    renderWithProviders(
+      <GradeSubmissionModal
+        open={true}
+        onOpenChange={vi.fn()}
+        submission={mockSubmission}
+      />
+    );
+
+    expect(screen.getByText('Grade Student Submission')).toBeInTheDocument();
+    expect(screen.getByText(/Zayd Ali/)).toBeInTheDocument();
+    expect(screen.getByText('Student Recitation Audio')).toBeInTheDocument();
+    expect(screen.getByText(/I practiced verse 5 multiple times/)).toBeInTheDocument();
+    expect(screen.getByText('Save Grade & Feedback')).toBeInTheDocument();
+  });
+
+  it('renders parent ward progress view with stats and audio recordings', async () => {
+    vi.mocked(useAcademy).mockReturnValue({
+      activeAcademy: { id: 1, name: 'Darul Quran Academy' },
+      activeRole: 'parent',
+    } as any);
+
+    vi.mocked(useAuth).mockReturnValue({
+      user: { id: 8, role: 'parent', first_name: 'Abu', last_name: 'Zayd', email: 'parent@quran.com' },
+    } as any);
+
+    vi.mocked(familyApi.getAcademyChildren).mockResolvedValue([
+      { id: 5, first_name: 'Zayd', last_name: 'Ali', email: 'zayd@student.com' } as any,
+    ]);
+
+    vi.mocked(assessmentApi.getWardProgress).mockResolvedValue({
+      student: { id: 5, name: 'Zayd Ali', email: 'zayd@student.com' },
+      stats: {
+        total_assigned: 1,
+        submitted_count: 1,
+        graded_count: 1,
+        average_score: 95.0,
+      },
+      items: [
+        {
+          assignment: mockAssignment,
+          submission: {
+            ...mockSubmission,
+            status: 'graded',
+            score: 95.0,
+            teacher_feedback: 'Excellent recitation with accurate makharij.',
+          },
+        },
+      ],
+    });
+
+    renderWithProviders(<ParentWardAssessmentView />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Ward's Quran Homework & Progress")).toBeInTheDocument();
+      expect(screen.getByText('95%')).toBeInTheDocument();
+      expect(screen.getByText("Child's Recitation Recording")).toBeInTheDocument();
+      expect(screen.getByText(/Excellent recitation with accurate makharij/)).toBeInTheDocument();
+    });
+  });
+
+  it('renders owner assessment oversight dashboard with KPIs', async () => {
+    vi.mocked(useAcademy).mockReturnValue({
+      activeAcademy: { id: 1, name: 'Darul Quran Academy' },
+      activeRole: 'owner',
+    } as any);
+
+    vi.mocked(useAuth).mockReturnValue({
+      user: { id: 1, role: 'lead', first_name: 'Academy', last_name: 'Owner', email: 'owner@quran.com' },
+    } as any);
+
+    renderWithProviders(<OwnerAssessmentOversight />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Academy Assignments')).toBeInTheDocument();
+      expect(screen.getByText('Academy Submissions & Grading Oversight')).toBeInTheDocument();
+      expect(screen.getByText('Zayd Ali')).toBeInTheDocument();
+      expect(screen.getByText('New Assignment')).toBeInTheDocument();
+    });
+  });
+});

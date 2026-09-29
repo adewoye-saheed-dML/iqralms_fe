@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { AssessmentList } from '../components/assessment-list';
 import { AssessmentDashboard } from '../components/assessment-dashboard';
 import { assessmentApi } from '../api/assessment';
 import { useAcademy } from '@/lib/academy/academy-provider';
@@ -22,7 +23,11 @@ vi.mock('../api/assessment', () => ({
     getChildAssessments: vi.fn(),
     getReviewQueue: vi.fn(),
     reviewAssessment: vi.fn(),
+    getAssignments: vi.fn(),
+    getWardProgress: vi.fn(),
+    getSubmissions: vi.fn(),
   },
+  resolveAssessmentMediaUrl: vi.fn((url) => url),
 }));
 
 function renderWithProviders(ui: React.ReactNode) {
@@ -36,23 +41,30 @@ describe('Assessment Feature', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useAcademy).mockReturnValue({
+      academyId: 1,
       activeAcademy: { id: 1, name: 'Test Academy' },
       activeRole: 'student',
     } as any);
+    vi.mocked(assessmentApi.getAssignments).mockResolvedValue([]);
+    vi.mocked(assessmentApi.getWardProgress).mockResolvedValue({
+      student: { id: 1, name: 'Student 1', email: 's@test.com' },
+      stats: { total_assigned: 0, submitted_count: 0, graded_count: 0, average_score: null },
+      items: [],
+    });
   });
 
-  it('renders empty assessments state', async () => {
+  it('renders empty assessments state in AssessmentList', async () => {
     vi.mocked(assessmentApi.getStudentAssessments).mockResolvedValue([]);
     vi.mocked(assessmentApi.getMyAssessments).mockResolvedValue([]);
     
-    renderWithProviders(<AssessmentDashboard />);
+    renderWithProviders(<AssessmentList type="family" />);
     
     await waitFor(() => {
       expect(screen.getByText('No assessments')).toBeInTheDocument();
     });
   });
 
-  it('renders assessment history', async () => {
+  it('renders assessment history in AssessmentList', async () => {
     const mockData = [
       {
         id: 301,
@@ -64,7 +76,7 @@ describe('Assessment Feature', () => {
     vi.mocked(assessmentApi.getStudentAssessments).mockResolvedValue(mockData);
     vi.mocked(assessmentApi.getMyAssessments).mockResolvedValue(mockData);
     
-    renderWithProviders(<AssessmentDashboard />);
+    renderWithProviders(<AssessmentList type="family" />);
     
     await waitFor(() => {
       expect(screen.getByText('Assessment #301')).toBeInTheDocument();
@@ -73,11 +85,11 @@ describe('Assessment Feature', () => {
     });
   });
 
-  it('handles 403 Forbidden state', async () => {
+  it('handles 403 Forbidden state in AssessmentList', async () => {
     vi.mocked(assessmentApi.getStudentAssessments).mockRejectedValue(new ApiError(403, 'Forbidden'));
     vi.mocked(assessmentApi.getMyAssessments).mockRejectedValue(new ApiError(403, 'Forbidden'));
     
-    renderWithProviders(<AssessmentDashboard />);
+    renderWithProviders(<AssessmentList type="family" />);
     
     await waitFor(() => {
       expect(screen.getByText('Access Denied')).toBeInTheDocument();

@@ -61,6 +61,14 @@ export const assessmentKeys = {
   all: (academyId: AcademyId) => [...academyKeys.tenant(academyId), 'assessment'] as const,
   list: (academyId: AcademyId, type: string) => [...assessmentKeys.all(academyId), type] as const,
   reviewQueue: (academyId: AcademyId) => [...assessmentKeys.all(academyId), 'review-queue'] as const,
+  assignments: (academyId: AcademyId, filters?: Record<string, unknown>) =>
+    [...assessmentKeys.all(academyId), 'assignments', filters] as const,
+  assignmentDetail: (academyId: AcademyId, id: number | string) =>
+    [...assessmentKeys.all(academyId), 'assignment', id] as const,
+  submissions: (academyId: AcademyId, filters?: Record<string, unknown>) =>
+    [...assessmentKeys.all(academyId), 'submissions', filters] as const,
+  wardProgress: (academyId: AcademyId, studentId?: number | string) =>
+    [...assessmentKeys.all(academyId), 'ward-progress', studentId] as const,
 };
 
 export const progressKeys = {
