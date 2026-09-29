@@ -10,6 +10,7 @@ import { invitationsApi, type InvitationPreview } from '@/features/invitations/a
 import { ApiError } from '@/lib/api/errors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import {
   Card,
@@ -379,11 +380,13 @@ function AcceptInvitationForm() {
                   <Label htmlFor="authOrgId">Academy ID</Label>
                   <Input
                     id="authOrgId"
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     required
                     placeholder="e.g. 1"
                     value={orgId}
-                    onChange={(event) => setOrgId(event.target.value)}
+                    onChange={(event) => setOrgId(event.target.value.replace(/[^0-9]/g, ''))}
                     disabled={isSubmitting}
                   />
                 </div>
@@ -502,11 +505,13 @@ function AcceptInvitationForm() {
                 <Label htmlFor="orgId">Academy ID</Label>
                 <Input
                   id="orgId"
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   required
                   placeholder="e.g. 1"
                   value={orgId}
-                  onChange={(event) => setOrgId(event.target.value)}
+                  onChange={(event) => setOrgId(event.target.value.replace(/[^0-9]/g, ''))}
                   disabled={isSubmitting}
                 />
               </div>
@@ -558,13 +563,13 @@ function AcceptInvitationForm() {
                   <Label htmlFor="studentAge">Age</Label>
                   <Input
                     id="studentAge"
-                    type="number"
-                    min={1}
-                    max={120}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     required
                     placeholder="e.g. 15"
                     value={age}
-                    onChange={(event) => setAge(event.target.value)}
+                    onChange={(event) => setAge(event.target.value.replace(/[^0-9]/g, ''))}
                     disabled={isSubmitting}
                   />
                   <p className="text-xs text-muted-foreground">
@@ -596,9 +601,8 @@ function AcceptInvitationForm() {
 
             <div className="space-y-1.5">
               <Label htmlFor="password">Password</Label>
-              <Input
+              <PasswordInput
                 id="password"
-                type="password"
                 required
                 placeholder="Choose a secure password"
                 value={password}
@@ -609,9 +613,8 @@ function AcceptInvitationForm() {
 
             <div className="space-y-1.5">
               <Label htmlFor="confirmPassword">Confirm password</Label>
-              <Input
+              <PasswordInput
                 id="confirmPassword"
-                type="password"
                 required
                 placeholder="Confirm your password"
                 value={confirmPassword}

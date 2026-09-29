@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth/auth-provider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -230,13 +231,13 @@ export default function RegisterPage() {
               <Label htmlFor="studentAge">Age</Label>
               <Input
                 id="studentAge"
-                type="number"
-                min={1}
-                max={120}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 required
                 placeholder="e.g. 14"
                 value={age}
-                onChange={(e) => setAge(e.target.value)}
+                onChange={(e) => setAge(e.target.value.replace(/[^0-9]/g, ''))}
                 disabled={isSubmitting}
               />
               <p className="text-xs text-muted-foreground">
@@ -270,9 +271,8 @@ export default function RegisterPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="password">Password</Label>
-                <Input
+                <PasswordInput
                   id="password"
-                  type="password"
                   required
                   placeholder="Choose password"
                   value={password}
@@ -282,9 +282,8 @@ export default function RegisterPage() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="confirmPassword">Confirm password</Label>
-                <Input
+                <PasswordInput
                   id="confirmPassword"
-                  type="password"
                   required
                   placeholder="Confirm password"
                   value={confirmPassword}

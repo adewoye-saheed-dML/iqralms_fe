@@ -334,13 +334,16 @@ export function ClassSession({ bookingId }: ClassSessionProps) {
               <div className="flex items-center gap-1 bg-background/80 px-2 py-0.5 rounded border text-[11px]">
                 <span className="text-muted-foreground">Logged:</span>
                 <input
-                  type="number"
-                  min="1"
-                  max="480"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   aria-label="Teaching duration in minutes"
                   value={customDurationInput}
-                  onChange={(e) => setCustomDurationInput(e.target.value)}
-                  className="w-12 h-6 px-1 text-center font-mono font-medium rounded border bg-background text-xs"
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, '');
+                    setCustomDurationInput(val);
+                  }}
+                  className="w-14 h-6 px-1.5 text-center font-mono font-medium rounded border bg-background text-xs focus:outline-none focus:ring-1 focus:ring-primary"
                 />
                 <span className="text-muted-foreground">min</span>
               </div>

@@ -7,6 +7,7 @@ import { passwordResetApi } from '@/features/auth/api/password-reset';
 import { ApiError } from '@/lib/api/errors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -124,9 +125,8 @@ function ResetPasswordForm() {
             )}
             <div className="space-y-2">
               <Label htmlFor="new-password">New Password</Label>
-              <Input
+              <PasswordInput
                 id="new-password"
-                type="password"
                 placeholder="At least 8 characters"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -137,9 +137,8 @@ function ResetPasswordForm() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirm-password">Confirm New Password</Label>
-              <Input
+              <PasswordInput
                 id="confirm-password"
-                type="password"
                 placeholder="Repeat your new password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
