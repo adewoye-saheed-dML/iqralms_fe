@@ -9,6 +9,8 @@ import {
   StudentAssignment,
   SubmissionType,
   resolveAssessmentMediaUrl,
+  getDisplayName,
+  SUBMISSION_TYPE_LABELS,
 } from '../api/assessment';
 import { assessmentKeys } from '@/lib/api/query-keys';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';

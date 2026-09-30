@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAcademy } from '@/lib/academy/academy-provider';
-import { assessmentApi, SubmissionType } from '../api/assessment';
+import { assessmentApi, SubmissionType, SUBMISSION_TYPE_LABELS } from '../api/assessment';
 import { assessmentKeys, curriculumKeys, studentKeys } from '@/lib/api/query-keys';
 import { curriculumApi } from '@/features/curriculum/api/curriculum';
 import { studentsApi } from '@/features/students/api/students';

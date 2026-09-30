@@ -13,35 +13,62 @@ export type PatchedAssessmentRubricUpdate = components['schemas']['PatchedAssess
 export type LeadReview = components['schemas']['LeadReview'];
 export type TeacherReport = components['schemas']['TeacherReport'];
 
-export type SubmissionType = 'recitation' | 'written' | 'file' | 'mixed';
-export type SubmissionStatus = 'pending' | 'submitted' | 'graded' | 'needs_revision';
+export type SubmissionType = 'audio_recitation' | 'written_text' | 'file_upload' | 'mixed';
+export type SubmissionStatus = 'submitted' | 'graded' | 'resubmission_requested';
+
+/** User-friendly labels for submission types. */
+export const SUBMISSION_TYPE_LABELS: Record<SubmissionType, string> = {
+  audio_recitation: 'Quran Recitation',
+  written_text: 'Written Response',
+  file_upload: 'File / Worksheet',
+  mixed: 'Mixed Format',
+};
+
+/** User-friendly labels for submission statuses. */
+export const SUBMISSION_STATUS_LABELS: Record<SubmissionStatus, string> = {
+  submitted: 'Submitted',
+  graded: 'Graded',
+  resubmission_requested: 'Revision Requested',
+};
+
+/** Helper to get display name from a user object returned by the API. */
+export function getDisplayName(user: { first_name: string; last_name: string; username: string } | null | undefined): string {
+  if (!user) return 'Unknown';
+  const fullName = `${user.first_name} ${user.last_name}`.trim();
+  return fullName || user.username;
+}
+
+/** User object shape returned by backend serializers (student, created_by, graded_by). */
+export interface ApiUserRef {
+  id: number;
+  username: string;
+  first_name: string;
+  last_name: string;
+}
 
 export interface StudentAssignment {
   id: number;
-  organization: number;
-  created_by: number;
-  created_by_name: string;
+  title: string;
+  description: string;
   track: number | null;
   track_name: string | null;
   level: number | null;
   level_name: string | null;
   assigned_student: number | null;
   assigned_student_name: string | null;
-  title: string;
-  description: string;
   submission_type: SubmissionType;
   surah_number: number | null;
   ayah_start: number | null;
   ayah_end: number | null;
-  reference_notes: string;
-  attachment: string | null;
-  attachment_url: string | null;
-  max_score: number;
   due_date: string | null;
-  is_active: boolean;
+  max_score: number;
+  rubric: number | null;
+  resource_file: string | null;
+  created_by: ApiUserRef;
   created_at: string;
   updated_at: string;
   submissions_count: number;
+  pending_submissions_count: number;
   my_submission?: AssignmentSubmission | null;
 }
 
@@ -56,32 +83,22 @@ export interface AssignmentSubmission {
   id: number;
   assignment: number;
   assignment_title: string;
-  assignment_details: {
-    submission_type: SubmissionType;
-    surah_number: number | null;
-    ayah_start: number | null;
-    ayah_end: number | null;
-    max_score: number;
-    due_date: string | null;
-  };
-  student: number;
-  student_name: string;
-  status: SubmissionStatus;
-  audio_file: string | null;
-  audio_file_url: string | null;
+  max_score: number;
+  submission_type: SubmissionType;
+  surah_number: number | null;
+  ayah_start: number | null;
+  ayah_end: number | null;
+  student: ApiUserRef;
+  audio_recording: string | null;
   written_response: string;
   attachment_file: string | null;
-  attachment_file_url: string | null;
-  notes_from_student: string;
+  status: SubmissionStatus;
   submitted_at: string;
-  score: number | null;
-  rubric_scores: RubricCriterionScore[] | Record<string, unknown> | null;
-  teacher_feedback: string;
-  graded_by: number | null;
-  graded_by_name: string | null;
+  graded_by: ApiUserRef | null;
   graded_at: string | null;
-  created_at: string;
-  updated_at: string;
+  score: number | null;
+  teacher_feedback: string;
+  rubric_scores: RubricCriterionScore[] | Record<string, unknown>[];
 }
 
 export interface StudentAssignmentInput {
@@ -94,43 +111,32 @@ export interface StudentAssignmentInput {
   surah_number?: number | null;
   ayah_start?: number | null;
   ayah_end?: number | null;
-  reference_notes?: string;
-  attachment?: File | null;
   max_score?: number;
   due_date?: string | null;
-  is_active?: boolean;
+  resource_file?: File | null;
+  rubric?: number | null;
 }
 
 export interface AssignmentSubmissionInput {
-  audio_file?: Blob | File | null;
+  audio_recording?: Blob | File | null;
   written_response?: string;
   attachment_file?: File | null;
-  notes_from_student?: string;
 }
 
 export interface AssignmentGradeInput {
-  score: number;
+  score?: number | null;
   teacher_feedback?: string;
-  status?: 'graded' | 'needs_revision';
   rubric_scores?: RubricCriterionScore[];
+  request_resubmission?: boolean;
 }
 
 export interface WardProgressResponse {
-  student: {
-    id: number;
-    name: string;
-    email: string;
-  };
-  stats: {
-    total_assigned: number;
-    submitted_count: number;
-    graded_count: number;
-    average_score: number | null;
-  };
-  items: Array<{
-    assignment: StudentAssignment;
-    submission: AssignmentSubmission | null;
-  }>;
+  student: ApiUserRef;
+  total_assigned: number;
+  total_submitted: number;
+  total_graded: number;
+  average_score_pct: number | null;
+  recent_submissions: AssignmentSubmission[];
 }
 
 function getApiBaseUrl(): string {
@@ -330,19 +336,15 @@ export const assessmentApi = {
   getAssignments: async (
     organizationId: number,
     params?: {
-      track?: number;
-      level?: number;
+      track_id?: number;
       student_id?: number;
       submission_type?: SubmissionType;
-      is_active?: boolean;
     }
   ): Promise<StudentAssignment[]> => {
     const query = new URLSearchParams();
-    if (params?.track) query.set('track', String(params.track));
-    if (params?.level) query.set('level', String(params.level));
+    if (params?.track_id) query.set('track_id', String(params.track_id));
     if (params?.student_id) query.set('student_id', String(params.student_id));
     if (params?.submission_type) query.set('submission_type', params.submission_type);
-    if (params?.is_active !== undefined) query.set('is_active', String(params.is_active));
 
     const qs = query.toString();
     const endpoint = `${getApiBaseUrl()}/api/assessment/organizations/${organizationId}/assignments/${qs ? `?${qs}` : ''}`;
@@ -357,7 +359,7 @@ export const assessmentApi = {
     let body: BodyInit;
     const headers: Record<string, string> = {};
 
-    if (input.attachment) {
+    if (input.resource_file) {
       const formData = new FormData();
       formData.append('title', input.title);
       if (input.description) formData.append('description', input.description);
@@ -368,11 +370,10 @@ export const assessmentApi = {
       if (input.surah_number) formData.append('surah_number', String(input.surah_number));
       if (input.ayah_start) formData.append('ayah_start', String(input.ayah_start));
       if (input.ayah_end) formData.append('ayah_end', String(input.ayah_end));
-      if (input.reference_notes) formData.append('reference_notes', input.reference_notes);
       if (input.max_score !== undefined) formData.append('max_score', String(input.max_score));
       if (input.due_date) formData.append('due_date', input.due_date);
-      if (input.is_active !== undefined) formData.append('is_active', String(input.is_active));
-      formData.append('attachment', input.attachment);
+      if (input.rubric) formData.append('rubric', String(input.rubric));
+      formData.append('resource_file', input.resource_file);
       body = formData;
     } else {
       headers['Content-Type'] = 'application/json';
@@ -386,10 +387,9 @@ export const assessmentApi = {
         surah_number: input.surah_number ?? null,
         ayah_start: input.ayah_start ?? null,
         ayah_end: input.ayah_end ?? null,
-        reference_notes: input.reference_notes ?? '',
         max_score: input.max_score ?? 100,
         due_date: input.due_date ?? null,
-        is_active: input.is_active ?? true,
+        rubric: input.rubric ?? null,
       });
     }
 
@@ -413,18 +413,15 @@ export const assessmentApi = {
     const endpoint = `${getApiBaseUrl()}/api/assessment/organizations/${organizationId}/assignments/${assignmentId}/submit/`;
     const formData = new FormData();
 
-    if (input.audio_file) {
-      const filename = input.audio_file instanceof File ? input.audio_file.name : 'recitation.webm';
-      formData.append('audio_file', input.audio_file, filename);
+    if (input.audio_recording) {
+      const filename = input.audio_recording instanceof File ? input.audio_recording.name : 'recitation.webm';
+      formData.append('audio_recording', input.audio_recording, filename);
     }
     if (input.written_response) {
       formData.append('written_response', input.written_response);
     }
     if (input.attachment_file) {
       formData.append('attachment_file', input.attachment_file);
-    }
-    if (input.notes_from_student) {
-      formData.append('notes_from_student', input.notes_from_student);
     }
 
     return requestJson<AssignmentSubmission>(endpoint, {

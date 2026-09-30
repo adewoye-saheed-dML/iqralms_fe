@@ -8,6 +8,8 @@ import {
   StudentAssignment,
   resolveAssessmentMediaUrl,
   AssignmentSubmission,
+  getDisplayName,
+  SUBMISSION_TYPE_LABELS,
 } from '../api/assessment';
 import { assessmentKeys } from '@/lib/api/query-keys';
 import { AudioRecorder } from './audio-recorder';
