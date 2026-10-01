@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { PageHeader } from '@/components/ui/page-header';
 import { CurriculumDirectory } from '@/features/curriculum/components/curriculum-directory';
 
 export const metadata = {
@@ -37,12 +36,6 @@ export default async function CurriculumPage({ searchParams }: CurriculumPagePro
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Curriculum"
-        description="Manage curriculum subjects, progressive levels, student allocations with teachers, and audio placement evaluations."
-        backHref={backHref}
-        backLabel={backLabel}
-      />
       <React.Suspense fallback={<LoadingState />}>
         <CurriculumDirectory />
       </React.Suspense>

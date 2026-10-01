@@ -23,6 +23,7 @@ import { ErrorState } from '@/components/ui/error-state';
 import { LoadingState } from '@/components/ui/loading';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { PageHeader } from '@/components/ui/page-header';
 import Link from 'next/link';
 import { Users, Mail, FileUp, BookOpen } from 'lucide-react';
 
@@ -181,16 +182,26 @@ export function StudentDirectory() {
     );
   }
 
+  const pageTitle = isOwnerAdmin
+    ? 'Student Directory & Enrollments'
+    : isParent
+    ? 'My Children'
+    : 'Assigned Students';
+
+  const pageDescription = isOwnerAdmin
+    ? `Manage student enrollments, invitations, and academy allocations for ${activeAcademy.name}.`
+    : isParent
+    ? `View your children registered in ${activeAcademy.name} and track their enrollment status.`
+    : `Students enrolled in your classes and curriculum tracks in ${activeAcademy.name}.`;
+
   return (
-    <div className="space-y-8">
-      {canManage && (
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-xl font-semibold">Student Roster</h2>
-            <p className="text-xs text-muted-foreground">
-              Students currently enrolled in {activeAcademy.name}.
-            </p>
-          </div>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <PageHeader
+          title={pageTitle}
+          description={pageDescription}
+        />
+        {canManage && (
           <div className="flex flex-wrap items-center gap-2">
             <Button asChild>
               <Link href="/app/invitations?role=student&from=students">
@@ -205,17 +216,25 @@ export function StudentDirectory() {
               </Link>
             </Button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {students.length === 0 ? (
         <EmptyState
           icon={<Users className="text-muted-foreground h-10 w-10" />}
-          title={isOwnerAdmin ? 'No students enrolled yet.' : 'No assigned students.'}
+          title={
+            isOwnerAdmin
+              ? 'No students enrolled yet.'
+              : isParent
+              ? 'No children registered.'
+              : 'No assigned students.'
+          }
           description={
             isOwnerAdmin
               ? 'Send email invitations or import a spreadsheet of students to get started.'
-              : 'You currently have no students assigned to you in this academy.'
+              : isParent
+              ? 'You have no children linked to this academy yet. Use your child student code to link them from your dashboard.'
+              : 'You currently have no students assigned to your classes in this academy.'
           }
           action={
             canManage ? (

@@ -93,7 +93,7 @@ export function TeacherDashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <PageHeader
           title="Teacher Dashboard"
-          description={`Welcome back, Ustadh ${user?.first_name || user?.username}. Academy: ${activeAcademy?.name || 'Academy'}.`}
+          description={`Welcome back, ${user?.first_name || user?.username}. Here is your teaching schedule and student overview for ${activeAcademy?.name || 'the academy'}.`}
         />
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" asChild className="border-primary/30 hover:bg-primary/5">

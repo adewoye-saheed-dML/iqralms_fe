@@ -12,6 +12,7 @@ import { LoadingState } from '@/components/ui/loading';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { PageHeader } from '@/components/ui/page-header';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import Link from 'next/link';
 import { BookOpen, Plus, GraduationCap, ArrowRight } from 'lucide-react';
@@ -94,10 +95,23 @@ export function CurriculumDirectory() {
   const canManageCurriculum = can('manage_curriculum', { activeRole });
   const isTeacher = activeRole === 'teacher';
 
+  const pageTitle = canManageCurriculum
+    ? 'Curriculum Management'
+    : isTeacher
+    ? 'Curriculum & Teaching Materials'
+    : 'Books & Syllabus Materials';
+
+  const pageDescription = canManageCurriculum
+    ? `Configure subjects, progressive levels, books, and student allocations for ${activeAcademy.name}.`
+    : isTeacher
+    ? `Explore syllabus levels and access authentic teaching books and resources for your lessons.`
+    : `Access your Quran learning textbooks, worksheets, and syllabus resources.`;
+
   // For students or parents, display Books & Materials directly
   if (!canManageCurriculum && !isTeacher) {
     return (
       <div className="space-y-6">
+        <PageHeader title={pageTitle} description={pageDescription} />
         <LearningMaterialsManager />
       </div>
     );
@@ -107,6 +121,7 @@ export function CurriculumDirectory() {
   if (isTeacher) {
     return (
       <div className="space-y-6">
+        <PageHeader title={pageTitle} description={pageDescription} />
         <Tabs
           value={activeTab === 'subjects' ? 'subjects' : 'materials'}
           onValueChange={(val) => handleTabChange(val as any)}
@@ -196,6 +211,7 @@ export function CurriculumDirectory() {
 
   return (
     <div className="space-y-6">
+      <PageHeader title={pageTitle} description={pageDescription} />
       {/* Top Level Curriculum Navigation Tabs for Owners & Admins */}
       <Tabs
         value={activeTab}

@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { useAcademy } from '@/lib/academy/academy-provider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PageHeader } from '@/components/ui/page-header';
 import { AssessmentList } from './assessment-list';
 import { ReviewQueue } from './review-queue';
 import { RubricsList } from './rubrics-list';
@@ -59,8 +60,25 @@ export function AssessmentDashboard() {
     setActiveTab('grading-queue');
   };
 
+  const pageTitle = isLeadOrAdmin
+    ? 'Assessments & Oversight'
+    : isTeacher
+    ? 'Assessments & Grading'
+    : isStudent
+    ? 'My Homework & Assessments'
+    : "Children's Evaluations & Homework";
+
+  const pageDescription = isLeadOrAdmin
+    ? 'Monitor homework assignments, grading queues, and recitation evaluations across the academy.'
+    : isTeacher
+    ? 'Assign homework, evaluate student recitations, and grade submissions.'
+    : isStudent
+    ? 'Submit homework recordings, track revisions, and review instructor feedback.'
+    : "Review your children's homework submissions, recitation grades, and teacher remarks.";
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      <PageHeader title={pageTitle} description={pageDescription} />
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="flex flex-wrap h-auto gap-1">
           {/* Owner / Admin Tabs */}

@@ -384,7 +384,7 @@ export function ParentDashboard() {
             </div>
           </CardHeader>
           <CardContent className="text-xs text-muted-foreground">
-            Manage your registered children and track their active academy enrollments.
+            View your registered children and track their active academy enrollments.
           </CardContent>
           <CardFooter className="pt-0">
             <Button variant="outline" size="sm" asChild className="w-full text-xs">

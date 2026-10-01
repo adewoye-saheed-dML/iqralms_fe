@@ -66,7 +66,7 @@ function SchedulingDashboardInner() {
             <span>Full academy scheduling overview, student allocation queue, and cohorts.</span>
           )}
           {isStudentOrParent && (
-            <span>Manage your booked recitation sessions and requested times.</span>
+            <span>View your upcoming recitation lessons and book new class times.</span>
           )}
         </div>
         <div className="flex items-center gap-2">

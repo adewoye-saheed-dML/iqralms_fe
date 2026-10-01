@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { PageHeader } from '@/components/ui/page-header';
 import { StudentDirectory } from '@/features/students/components/student-directory';
 
 export const metadata = {
@@ -9,12 +8,6 @@ export const metadata = {
 export default function StudentsPage() {
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Student Management"
-        description="Manage students, enrollments, and parent links."
-        backHref="/app/dashboard?tab=students"
-        backLabel="Back to Dashboard"
-      />
       <StudentDirectory />
     </div>
   );
