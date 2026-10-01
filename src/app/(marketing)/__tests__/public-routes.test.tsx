@@ -30,7 +30,7 @@ describe('Public Route Pages Rendering', () => {
   it('renders marketing landing page with core value and CTAs', () => {
     render(<HomePage />);
     expect(
-      screen.getByText(/Streamline your Quran Academy with structured learning & operations/i)
+      screen.getByText(/Streamline your Quran & Islamic Studies Academy with structured learning & operations/i)
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /View Pricing & Access/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Sign In to Academy/i })).toBeInTheDocument();
