@@ -27,7 +27,7 @@ export default function ContactPage() {
     <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 space-y-12">
       <div className="text-center max-w-3xl mx-auto space-y-4">
         <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
-          Contact IQRA LMS Support
+          Contact iqralms Support
         </h1>
         <p className="text-muted-foreground text-lg">
           Have inquiries regarding institutional onboarding, technical setup, or platform features? Our team is here to assist.

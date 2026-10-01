@@ -9,13 +9,13 @@ export default function AboutPage() {
       {/* Header */}
       <div className="text-center max-w-3xl mx-auto space-y-4">
         <div className="inline-flex items-center gap-2 rounded-full border bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground">
-          About IQRA LMS
+          About iqralms
         </div>
         <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
           Dedicated software for Quranic educational institutions
         </h1>
         <p className="text-muted-foreground text-lg leading-relaxed">
-          IQRA LMS is engineered to eliminate operational friction from Quran academies, enabling scholars and teachers to focus on preserving and transmitting the Book of Allah.
+          iqralms is engineered to eliminate operational friction from Quran academies, enabling scholars and teachers to focus on preserving and transmitting the Book of Allah.
         </p>
       </div>
 
@@ -54,12 +54,12 @@ export default function AboutPage() {
 
       {/* Narrative Section */}
       <div className="max-w-4xl mx-auto space-y-6 text-muted-foreground leading-relaxed border-t pt-12">
-        <h2 className="text-2xl font-bold text-foreground">Why we built IQRA LMS</h2>
+        <h2 className="text-2xl font-bold text-foreground">Why we built iqralms</h2>
         <p>
           Traditional learning management systems are designed for university lecture halls or corporate compliance courses. They fail to address the unique needs of Quran academies: tracking memorized verses, assessing recitation accuracy (Makharij and Sifaat), managing 1-on-1 recitation circles, and calculating teacher compensation by teaching hours.
         </p>
         <p>
-          IQRA LMS was designed from the ground up to support these exact Islamic educational workflows, giving academy administrators the tools they need to run modern, professional, and spiritually grounded madrasahs.
+          iqralms was designed from the ground up to support these exact Islamic educational workflows, giving academy administrators the tools they need to run modern, professional, and spiritually grounded madrasahs.
         </p>
 
         <div className="pt-6 flex gap-4">

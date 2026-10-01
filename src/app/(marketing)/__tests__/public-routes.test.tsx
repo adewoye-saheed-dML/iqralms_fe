@@ -65,7 +65,7 @@ describe('Public Route Pages Rendering', () => {
 
   it('renders contact page with support details and inquiry form', () => {
     render(<ContactPage />);
-    expect(screen.getByText(/Contact IQRA LMS Support/i)).toBeInTheDocument();
+    expect(screen.getByText(/Contact iqralms Support/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Full Name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Email Address/i)).toBeInTheDocument();
   });

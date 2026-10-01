@@ -12,18 +12,15 @@ export default function MarketingLayout({
       {/* Public Navigation Header */}
       <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link href="/" className="flex items-center gap-2.5 font-bold text-lg text-primary tracking-tight">
+          <Link href="/" className="flex items-center tracking-tight">
             <Image
-              src="/images/iqralms-icon.jpeg"
-              alt="IQRA LMS Logo"
-              width={34}
-              height={34}
-              className="h-8.5 w-8.5 rounded-lg object-contain border border-emerald-100 dark:border-emerald-900 bg-white p-0.5 shadow-2xs"
+              src="/images/iqralms-brand-transparent.png"
+              alt="iqralms"
+              width={170}
+              height={48}
+              className="h-10 w-auto object-contain dark:brightness-110"
               priority
             />
-            <span className="font-extrabold text-xl tracking-tight text-foreground">
-              iqra<span className="text-emerald-600 dark:text-emerald-400">lms</span>
-            </span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
@@ -60,17 +57,14 @@ export default function MarketingLayout({
         <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="space-y-3">
-              <div className="flex items-center gap-2 font-bold text-base text-foreground">
+              <div className="flex items-center">
                 <Image
-                  src="/images/iqralms-icon.jpeg"
-                  alt="IQRA LMS"
-                  width={28}
-                  height={28}
-                  className="h-7 w-7 rounded-md object-contain border bg-white p-0.5 shadow-2xs"
+                  src="/images/iqralms-brand-transparent.png"
+                  alt="iqralms"
+                  width={150}
+                  height={42}
+                  className="h-8 w-auto object-contain dark:brightness-110"
                 />
-                <span className="font-extrabold text-lg tracking-tight">
-                  iqra<span className="text-emerald-600 dark:text-emerald-400">lms</span>
-                </span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 Dedicated learning management platform engineered for Quran academies, Arabic institutes, and Islamic studies programs worldwide.
@@ -105,7 +99,7 @@ export default function MarketingLayout({
           </div>
 
           <div className="mt-8 border-t pt-6 text-center text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} IQRA LMS. All rights reserved. Built with reverence for Quranic scholarship.
+            &copy; {new Date().getFullYear()} iqralms. All rights reserved. Built with reverence for Quranic scholarship &amp; authentic Islamic learning.
           </div>
         </div>
       </footer>

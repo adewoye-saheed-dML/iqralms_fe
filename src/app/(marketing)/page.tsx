@@ -44,7 +44,7 @@ export default function HomePage() {
 
           {/* Subheading in Natural, Non-AI English */}
           <p className="mx-auto mt-6 max-w-3xl text-base sm:text-lg text-muted-foreground leading-relaxed">
-            Streamline your Quran &amp; Islamic Studies Academy with structured learning &amp; operations. From a child&apos;s first Noorani Qaida and heartfelt Tajweed recitation, to complete Qur&apos;an memorization (Hifz), classical Arabic, Hadith, and essential Fiqh—bring your teachers, students, and parents together in one calm, blessed educational sanctuary.
+            Streamline your Quran &amp; Islamic Studies Academy with structured learning &amp; operations. From a child&apos;s first Noorani Qaida and heartfelt Tajweed recitation, to complete Qur&apos;an memorization (Hifz), classical Arabic, Hadith, and essential Fiqh—iqralms brings teachers, students, and parents together in one calm, blessed educational sanctuary.
           </p>
 
           {/* CTA Buttons */}
@@ -77,7 +77,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Hero Visual: Centerpiece Showcase */}
+          {/* Hero Visual: Centerpiece Showcase with Prominent iqralms Brand Mark */}
           <div className="mt-12 mx-auto max-w-4xl">
             <div className="relative rounded-2xl border border-border/80 bg-white dark:bg-card p-6 sm:p-10 shadow-md text-left">
               {/* Subtle Islamic corner decoration */}
@@ -86,26 +86,31 @@ export default function HomePage() {
               </div>
 
               <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pb-6 border-b border-border/60">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-5">
                   <Image
-                    src="/images/iqralms-card.jpeg"
-                    alt="IQRA LMS Emblem"
-                    width={64}
-                    height={64}
-                    className="h-16 w-16 rounded-xl object-contain border bg-emerald-900 shadow-sm shrink-0"
+                    src="/images/iqralms-icon-transparent.png"
+                    alt="iqralms emblem"
+                    width={90}
+                    height={82}
+                    className="h-16 sm:h-20 w-auto object-contain drop-shadow-sm shrink-0"
                     priority
                   />
                   <div>
-                    <div className="flex items-center gap-2">
-                      <h2 className="font-extrabold text-xl text-foreground tracking-tight">
-                        iqra<span className="text-emerald-700 dark:text-emerald-400">lms</span>
-                      </h2>
-                      <Badge variant="outline" className="text-[10px] text-emerald-800 dark:text-emerald-300 border-emerald-300/80 bg-emerald-50 dark:bg-emerald-950/60 font-medium">
+                    <div className="flex items-center gap-3">
+                      <Image
+                        src="/images/iqralms-brand-transparent.png"
+                        alt="iqralms"
+                        width={210}
+                        height={58}
+                        className="h-9 sm:h-11 w-auto object-contain dark:brightness-110"
+                        priority
+                      />
+                      <Badge variant="outline" className="hidden sm:inline-flex text-[11px] text-emerald-800 dark:text-emerald-300 border-emerald-300/80 bg-emerald-50 dark:bg-emerald-950/60 font-semibold px-2.5 py-0.5">
                         Madrasah Operating System
                       </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Dedicated infrastructure for traditional madrasahs, community Quran schools, and online institutes.
+                    <p className="text-xs text-muted-foreground mt-1.5 max-w-lg">
+                      Dedicated infrastructure for traditional madrasahs, community Quran schools, and online Islamic institutes.
                     </p>
                   </div>
                 </div>
@@ -379,7 +384,7 @@ export default function HomePage() {
             Trusted by Madrasahs, Teachers &amp; Families
           </h2>
           <p className="mt-4 text-muted-foreground text-base sm:text-lg">
-            See how academies and Muslim homes use IQRA LMS to keep sacred learning structured, consistent, and inspiring.
+            See how academies and Muslim homes use iqralms to keep sacred learning structured, consistent, and inspiring.
           </p>
         </div>
 
@@ -395,7 +400,7 @@ export default function HomePage() {
               </div>
             </div>
             <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed italic">
-              &ldquo;Managing our Hifz circles and tracking daily Sabaq used to require countless spreadsheets and WhatsApp messages. IQRA LMS gave our madrasah a serene, organized structure where teachers and parents communicate with ease.&rdquo;
+              &ldquo;Managing our Hifz circles and tracking daily Sabaq used to require countless spreadsheets and WhatsApp messages. iqralms gave our madrasah a serene, organized structure where teachers and parents communicate with ease.&rdquo;
             </p>
           </div>
 
@@ -490,25 +495,25 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Inspiring Call to Action Section with Official Logo Seal */}
+      {/* Inspiring Call to Action Section with Large Official Logo Seal */}
       <section className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="rounded-3xl border border-border/80 bg-white dark:bg-card p-8 sm:p-14 text-center max-w-4xl mx-auto shadow-md space-y-6">
           <div className="flex justify-center">
             <Image
-              src="/images/iqralms-seal.jpeg"
-              alt="IQRA LMS Seal"
-              width={80}
-              height={80}
-              className="h-20 w-20 rounded-full object-contain border-2 border-emerald-100 dark:border-emerald-900 bg-white p-1 shadow-sm"
+              src="/images/iqralms-seal.png"
+              alt="iqralms seal"
+              width={140}
+              height={140}
+              className="h-28 w-28 sm:h-32 sm:w-32 object-contain drop-shadow-md"
             />
           </div>
           
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground text-balance">
-            Begin Nurturing the Next Generation of Qur&apos;an Learners
+            Begin Nurturing the Next Generation of Qur&apos;an Learners with iqralms
           </h2>
           
           <p className="text-muted-foreground max-w-xl mx-auto text-sm sm:text-base leading-relaxed">
-            Whether you run an established madrasah, a community weekend school, or an online teaching academy, IQRA LMS gives you the tools to teach with excellence, clarity, and Barakah.
+            Whether you run an established madrasah, a community weekend school, or an online teaching academy, iqralms gives you the tools to teach with excellence, clarity, and Barakah.
           </p>
           
           <div className="flex flex-wrap justify-center items-center gap-4 pt-2">
