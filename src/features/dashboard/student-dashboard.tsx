@@ -7,7 +7,6 @@ import {
   BookOpen,
   Calendar,
   CheckSquare,
-  TrendingUp,
   Clock,
   ArrowRight,
   Sparkles,
@@ -26,9 +25,8 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/lib/auth/auth-provider';
 import { useAcademy } from '@/lib/academy/academy-provider';
-import { schedulingKeys, progressKeys, assessmentKeys } from '@/lib/api/query-keys';
+import { schedulingKeys, assessmentKeys } from '@/lib/api/query-keys';
 import { schedulingApi, type Booking, type WaitlistEntry } from '@/features/scheduling/api/scheduling';
-import { progressApi, type ProgressSnapshot } from '@/features/progress/api/progress';
 import { assessmentApi, type FamilyAssessment } from '@/features/assessment/api/assessment';
 
 export function StudentDashboard() {
@@ -46,13 +44,6 @@ export function StudentDashboard() {
   const { data: myWaitlist = [] } = useQuery<WaitlistEntry[]>({
     queryKey: schedulingKeys.waitlistMine(activeAcademy?.id),
     queryFn: () => schedulingApi.getMyWaitlist(activeAcademy!.id),
-    enabled: !!activeAcademy?.id,
-  });
-
-  // Load student's progress snapshots
-  const { data: progressSnapshots = [] } = useQuery<ProgressSnapshot[]>({
-    queryKey: progressKeys.snapshots(activeAcademy?.id),
-    queryFn: () => progressApi.getAllSnapshots(activeAcademy!.id),
     enabled: !!activeAcademy?.id,
   });
 
@@ -485,13 +476,13 @@ export function StudentDashboard() {
                 <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded font-medium">Enrolled</span>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                Continue logging your memorization progress and recite your daily assignment to your teacher.
+                Access your learning materials, assigned books, and course syllabus.
               </p>
             </div>
           </CardContent>
           <CardFooter className="pt-0 border-t">
             <Button variant="ghost" size="sm" asChild className="w-full justify-between mt-3">
-              <Link href="/app/progress">Go to My Learning <ArrowRight className="h-4 w-4" /></Link>
+              <Link href="/app/curriculum">Go to My Materials <ArrowRight className="h-4 w-4" /></Link>
             </Button>
           </CardFooter>
         </Card>
@@ -504,7 +495,7 @@ export function StudentDashboard() {
               <CardTitle className="text-base">Assessments & Results</CardTitle>
             </div>
             <CardDescription className="text-xs">
-              Placement evaluations and recitation reviews recorded by your teachers.
+              Recitation evaluations, homework feedback, and rubric grades recorded by your teachers.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -579,16 +570,16 @@ export function StudentDashboard() {
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-primary" />
-              <CardTitle className="text-sm">My Progress</CardTitle>
+              <CheckSquare className="h-4 w-4 text-primary" />
+              <CardTitle className="text-sm">Assignments &amp; Reviews</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="text-xs text-muted-foreground">
-            Check your memorized Surahs, revision logs, and milestones ({progressSnapshots.length} logged).
+            Submit homework recordings, track revisions, and review teacher remarks.
           </CardContent>
           <CardFooter className="pt-0">
             <Button variant="outline" size="sm" asChild className="w-full text-xs">
-              <Link href="/app/progress">View Progress</Link>
+              <Link href="/app/assessments">Open Assessments</Link>
             </Button>
           </CardFooter>
         </Card>

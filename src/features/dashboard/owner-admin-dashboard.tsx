@@ -41,7 +41,6 @@ import {
   type TrackBrief,
   type Level,
   type TeacherTrack,
-  type PlacementResult,
 } from '@/features/curriculum/api/curriculum';
 import {
   AllocateStudentModal,
@@ -147,19 +146,6 @@ export function OwnerAdminDashboard() {
       if (!activeAcademy?.id) return [];
       const res = await curriculumApi.getAcademyTeacherTracks(activeAcademy.id);
       return res ?? [];
-    },
-    enabled: !!activeAcademy?.id,
-  });
-
-  const { data: pendingPlacements = [] } = useQuery<PlacementResult[]>({
-    queryKey: ['placements', activeAcademy?.id, 'pending'],
-    queryFn: async () => {
-      try {
-        if (!activeAcademy?.id) return [];
-        return await curriculumApi.getPendingPlacements(activeAcademy.id);
-      } catch {
-        return [];
-      }
     },
     enabled: !!activeAcademy?.id,
   });
@@ -305,10 +291,6 @@ export function OwnerAdminDashboard() {
           (s.username && m.username.toLowerCase() === s.username.toLowerCase())
       );
 
-      const placement = pendingPlacements.find(
-        (p) => p.student?.id === s.user_id || p.student?.username === s.username
-      );
-
       studentMap.set(key, {
         id: `enrollment-${s.id}`,
         enrollmentId: s.id,
@@ -326,9 +308,6 @@ export function OwnerAdminDashboard() {
         dateOfBirth: s.date_of_birth,
         createdAt: s.created_at,
         hasEnrollment: true,
-        appliedTrackName: placement ? placement.track : null,
-        appliedLevelName: placement?.recommended_level?.name || null,
-        appliedAsBeginner: placement ? placement.skipped_as_beginner : false,
       });
     }
 
@@ -337,9 +316,6 @@ export function OwnerAdminDashboard() {
     for (const m of studentMembers) {
       const key = m.username.toLowerCase();
       if (!studentMap.has(key)) {
-        const placement = pendingPlacements.find(
-          (p) => p.student?.id === m.user || p.student?.username === m.username
-        );
         studentMap.set(key, {
           id: `member-${m.id}`,
           membershipId: m.id,
@@ -349,15 +325,12 @@ export function OwnerAdminDashboard() {
           status: m.status,
           createdAt: m.created_at,
           hasEnrollment: false,
-          appliedTrackName: placement ? placement.track : null,
-          appliedLevelName: placement?.recommended_level?.name || null,
-          appliedAsBeginner: placement ? placement.skipped_as_beginner : false,
         });
       }
     }
 
     return Array.from(studentMap.values());
-  }, [studentsList, membersList, pendingPlacements]);
+  }, [studentsList, membersList]);
 
   // Unified Members List for the Members & Access directory tab
   const allMembersUnified = React.useMemo(() => {
@@ -844,7 +817,7 @@ export function OwnerAdminDashboard() {
                     <CardTitle className="text-base">Assessments &amp; Reviews</CardTitle>
                   </div>
                   <CardDescription className="text-xs mt-2">
-                    Review placement tests and periodic recitation evaluation queues submitted by instructors.
+                    Review assignments, homework, and periodic recitation evaluation queues submitted by instructors.
                   </CardDescription>
                 </CardHeader>
                 <CardFooter className="pt-0">

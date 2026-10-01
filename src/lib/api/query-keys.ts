@@ -35,8 +35,6 @@ export const curriculumKeys = {
     [...curriculumKeys.all(academyId), 'track', trackId] as const,
   levels: (academyId: AcademyId, trackId?: number | string) =>
     [...curriculumKeys.all(academyId), 'levels', trackId] as const,
-  placements: (academyId: AcademyId, filter?: string) =>
-    [...curriculumKeys.all(academyId), 'placements', filter] as const,
   teachingTracks: (academyId: AcademyId) =>
     [...curriculumKeys.all(academyId), 'teachers', 'mine'] as const,
   teacherTracks: (academyId: AcademyId) =>
@@ -69,17 +67,6 @@ export const assessmentKeys = {
     [...assessmentKeys.all(academyId), 'submissions', filters] as const,
   wardProgress: (academyId: AcademyId, studentId?: number | string) =>
     [...assessmentKeys.all(academyId), 'ward-progress', studentId] as const,
-  progress: (academyId: AcademyId, type: string, filters?: Record<string, unknown>) =>
-    [...assessmentKeys.all(academyId), 'progress', type, filters] as const,
-  snapshots: (academyId: AcademyId, type?: string, filters?: Record<string, unknown>) =>
-    [...assessmentKeys.all(academyId), 'snapshots', type, filters] as const,
-};
-
-export const progressKeys = {
-  all: (academyId: AcademyId) => [...academyKeys.tenant(academyId), 'progress'] as const,
-  list: (academyId: AcademyId, type: string) => [...progressKeys.all(academyId), type] as const,
-  detail: (academyId: AcademyId, trackId?: number | string) => [...progressKeys.all(academyId), 'detail', trackId] as const,
-  snapshots: (academyId: AcademyId) => [...progressKeys.all(academyId), 'snapshots'] as const,
 };
 
 export const pricingKeys = {

@@ -5,8 +5,6 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StudentAllocationsTable } from '../components/student-allocations-table';
-import { AudioPlacementTestsPanel } from '../components/audio-placement-tests-panel';
-import { PlacementReviewQueue } from '../components/placement-review-queue';
 import * as AcademyProvider from '@/lib/academy/academy-provider';
 import * as AuthProvider from '@/lib/auth/auth-provider';
 import { studentsApi } from '@/features/students/api/students';
@@ -28,11 +26,6 @@ vi.mock('../api/curriculum', () => ({
     getAcademyTeacherTracks: vi.fn(),
     assignTeacherTrack: vi.fn(),
     updateTeacherTrack: vi.fn(),
-    getPendingPlacements: vi.fn(),
-    getMyPlacements: vi.fn(),
-    getChildPlacements: vi.fn(),
-    reviewPlacement: vi.fn(),
-    getPlacementAudioUrl: vi.fn(),
   },
 }));
 
@@ -202,71 +195,6 @@ describe('Student Allocations & Curriculum Features', () => {
         track_id: 10,
         level_id: 20,
         teacher_id: null,
-      });
-    });
-  });
-
-  describe('AudioPlacementTestsPanel & Beginner Placement', () => {
-    it('reviews complete beginner placement and recommends starting Level 1', async () => {
-      vi.mocked(curriculumApi.getPendingPlacements).mockResolvedValue([
-        {
-          id: 55,
-          student: {
-            id: 88,
-            username: 'beginner_student',
-            first_name: 'Bilal',
-            last_name: 'Habashi',
-            timezone: 'UTC',
-            is_minor: false,
-          },
-          organization: 1,
-          track: 'Tajweed',
-          has_audio_sample: false,
-          audio_filename: null,
-          skipped_as_beginner: true,
-          recommended_level: null as any,
-          reviewed_by: '',
-          reviewed_at: null,
-          reviewed_at_local: null,
-          status: 'pending',
-        } as any,
-      ]);
-
-      vi.mocked(curriculumApi.getTracks).mockResolvedValue([
-        { id: 10, organization: 1, name: 'Tajweed', slug: 'tajweed' },
-      ]);
-
-      vi.mocked(curriculumApi.getLevels).mockResolvedValue([
-        { id: 201, track: 10, order: 1, name: 'Foundations (Level 1)' } as any,
-      ]);
-
-      vi.mocked(curriculumApi.reviewPlacement).mockResolvedValue({} as any);
-
-      renderWithProviders(<AudioPlacementTestsPanel />);
-
-      await waitFor(() => {
-        expect(screen.getByText(/Bilal Habashi — Tajweed/i)).toBeInTheDocument();
-        expect(screen.getByText('Declared as a complete beginner')).toBeInTheDocument();
-      });
-
-      // Click Review
-      fireEvent.click(screen.getByRole('button', { name: 'Review' }));
-
-      await waitFor(() => {
-        expect(screen.getByText('Review Bilal Habashi')).toBeInTheDocument();
-        expect(screen.getByText('Complete Beginner Assessment')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'Confirm Level & Allocate' })).not.toBeDisabled();
-      });
-
-      // Confirm Level & Allocate
-      await act(async () => {
-        fireEvent.click(screen.getByRole('button', { name: 'Confirm Level & Allocate' }));
-      });
-
-      await waitFor(() => {
-        expect(curriculumApi.reviewPlacement).toHaveBeenCalledWith(1, 55, {
-          recommended_level: 201,
-        });
       });
     });
   });

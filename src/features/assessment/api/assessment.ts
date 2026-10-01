@@ -11,13 +11,6 @@ export type AssessmentRubric = components['schemas']['AssessmentRubric'];
 export type AssessmentRubricCreate = components['schemas']['AssessmentRubricCreate'];
 export type PatchedAssessmentRubricUpdate = components['schemas']['PatchedAssessmentRubricUpdate'];
 export type LeadReview = components['schemas']['LeadReview'];
-export type TeacherReport = components['schemas']['TeacherReport'];
-export type StudentProgress = components['schemas']['StudentProgress'];
-export type ProgressSnapshot = components['schemas']['ProgressSnapshot'];
-export type ProgressSnapshotCreate = components['schemas']['ProgressSnapshotCreate'];
-export type FamilyProgressSnapshot = components['schemas']['FamilyProgressSnapshot'];
-export type CriterionAverage = components['schemas']['CriterionAverage'];
-export type RecentSummary = components['schemas']['RecentSummary'];
 
 export type SubmissionType = components['schemas']['SubmissionTypeEnum'];
 export type SubmissionStatus = components['schemas']['SubmissionStatusEnum'];
@@ -234,22 +227,6 @@ export const assessmentApi = {
     return data;
   },
 
-  getTeacherReports: async (
-    organizationId: number,
-    params?: { from?: string; to?: string; track_id?: number }
-  ): Promise<TeacherReport[]> => {
-    const { data } = await apiClient.GET(
-      '/api/assessment/organizations/{organization_pk}/reports/teachers/',
-      {
-        params: {
-          path: { organization_pk: organizationId },
-          query: params,
-        },
-      }
-    );
-    return data ?? [];
-  },
-
   // ---- Student Assignments & Submissions ----
 
   getAssignments: async (
@@ -435,139 +412,5 @@ export const assessmentApi = {
     );
     if (!data) throw new Error('Failed to fetch ward progress');
     return data as WardProgressResponse;
-  },
-
-  // ---- Progress Endpoints (Session-based assessment progress) ----
-
-  getMyProgress: async (
-    organizationId: number,
-    params: { track_id: number; from?: string; to?: string }
-  ): Promise<StudentProgress> => {
-    const { data } = await apiClient.GET(
-      '/api/assessment/organizations/{organization_pk}/progress/mine/',
-      {
-        params: {
-          path: { organization_pk: organizationId },
-          query: params,
-        },
-      }
-    );
-    if (!data) throw new Error('Failed to fetch progress');
-    return data;
-  },
-
-  getChildProgress: async (
-    organizationId: number,
-    params: { student_id: number; track_id: number; from?: string; to?: string }
-  ): Promise<StudentProgress> => {
-    const { data } = await apiClient.GET(
-      '/api/assessment/organizations/{organization_pk}/progress/child/',
-      {
-        params: {
-          path: { organization_pk: organizationId },
-          query: params,
-        },
-      }
-    );
-    if (!data) throw new Error('Failed to fetch child progress');
-    return data;
-  },
-
-  getTeachingProgress: async (
-    organizationId: number,
-    params: { student_id: number; track_id: number; from?: string; to?: string }
-  ): Promise<StudentProgress> => {
-    const { data } = await apiClient.GET(
-      '/api/assessment/organizations/{organization_pk}/progress/teaching/',
-      {
-        params: {
-          path: { organization_pk: organizationId },
-          query: params,
-        },
-      }
-    );
-    if (!data) throw new Error('Failed to fetch teaching progress');
-    return data;
-  },
-
-  // ---- Snapshot Endpoints ----
-
-  getSnapshots: async (
-    organizationId: number,
-    params?: { student_id?: number; track_id?: number }
-  ): Promise<ProgressSnapshot[]> => {
-    const { data } = await apiClient.GET(
-      '/api/assessment/organizations/{organization_pk}/snapshots/',
-      {
-        params: {
-          path: { organization_pk: organizationId },
-          query: params,
-        },
-      }
-    );
-    return data ?? [];
-  },
-
-  createSnapshot: async (
-    organizationId: number,
-    body: ProgressSnapshotCreate
-  ): Promise<ProgressSnapshot> => {
-    const { data } = await apiClient.POST(
-      '/api/assessment/organizations/{organization_pk}/snapshots/',
-      {
-        params: { path: { organization_pk: organizationId } },
-        body,
-      }
-    );
-    if (!data) throw new Error('Failed to create snapshot');
-    return data;
-  },
-
-  getAllSnapshots: async (
-    organizationId: number,
-    params?: { student_id?: number; track_id?: number }
-  ): Promise<ProgressSnapshot[]> => {
-    const { data } = await apiClient.GET(
-      '/api/assessment/organizations/{organization_pk}/snapshots/all/',
-      {
-        params: {
-          path: { organization_pk: organizationId },
-          query: params,
-        },
-      }
-    );
-    return data ?? [];
-  },
-
-  getMySnapshots: async (
-    organizationId: number,
-    params?: { track_id?: number }
-  ): Promise<FamilyProgressSnapshot[]> => {
-    const { data } = await apiClient.GET(
-      '/api/assessment/organizations/{organization_pk}/snapshots/mine/',
-      {
-        params: {
-          path: { organization_pk: organizationId },
-          query: params,
-        },
-      }
-    );
-    return data ?? [];
-  },
-
-  getChildSnapshots: async (
-    organizationId: number,
-    params: { student_id: number; track_id?: number }
-  ): Promise<FamilyProgressSnapshot[]> => {
-    const { data } = await apiClient.GET(
-      '/api/assessment/organizations/{organization_pk}/snapshots/child/',
-      {
-        params: {
-          path: { organization_pk: organizationId },
-          query: params,
-        },
-      }
-    );
-    return data ?? [];
   },
 };

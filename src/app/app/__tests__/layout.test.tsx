@@ -110,7 +110,7 @@ describe('AppLayout Route Guards', () => {
     expect(screen.queryByText('Page Content')).not.toBeInTheDocument();
   });
 
-  it('allows parent access to allowed routes like progress', () => {
+  it('allows parent access to allowed routes like students directory', () => {
     vi.mocked(AuthProvider.useAuth).mockReturnValue({ user: { id: 1, role: 'parent' }, isLoading: false } as any);
     vi.mocked(AcademyProvider.useAcademy).mockReturnValue({
       academies: [{ id: 1 }],
@@ -118,7 +118,7 @@ describe('AppLayout Route Guards', () => {
       activeRole: null, // Parents don't have active roles in the academy
       isLoading: false,
     } as any);
-    vi.mocked(Navigation.usePathname).mockReturnValue('/app/progress');
+    vi.mocked(Navigation.usePathname).mockReturnValue('/app/students');
 
     renderLayout();
     expect(screen.getByText('Page Content')).toBeInTheDocument();

@@ -13,7 +13,6 @@ import {
   type TrackBrief,
   type Level,
   type TeacherTrack,
-  type PlacementResult,
 } from '@/features/curriculum/api/curriculum';
 import {
   AllocateStudentModal,
@@ -90,19 +89,6 @@ export function StudentDirectory() {
     enabled: !!activeAcademy && isOwnerAdmin,
   });
 
-  const { data: pendingPlacements = [] } = useQuery<PlacementResult[]>({
-    queryKey: ['placements', activeAcademy?.id, 'pending'],
-    queryFn: async () => {
-      try {
-        if (!activeAcademy?.id) return [];
-        return await curriculumApi.getPendingPlacements(activeAcademy.id);
-      } catch {
-        return [];
-      }
-    },
-    enabled: !!activeAcademy && isOwnerAdmin,
-  });
-
   const students = React.useMemo(() => {
     const list: Array<{
       id: number | string;
@@ -114,9 +100,6 @@ export function StudentDirectory() {
       email?: string;
       status: string;
       hasEnrollment: boolean;
-      appliedTrackName?: string | null;
-      appliedLevelName?: string | null;
-      appliedAsBeginner?: boolean;
     }> = [];
 
     const enrolledStudents = data || [];
@@ -125,9 +108,6 @@ export function StudentDirectory() {
         s.first_name || s.last_name
           ? `${s.first_name || ''} ${s.last_name || ''}`.trim()
           : s.username || 'Unknown';
-      const placement = pendingPlacements.find(
-        (p) => p.student?.id === s.user_id || p.student?.username === s.username
-      );
       list.push({
         id: s.id,
         userId: s.user_id,
@@ -137,9 +117,6 @@ export function StudentDirectory() {
         email: s.email,
         status: s.enrollment_status || 'active',
         hasEnrollment: true,
-        appliedTrackName: placement ? placement.track : null,
-        appliedLevelName: placement?.recommended_level?.name || null,
-        appliedAsBeginner: placement ? placement.skipped_as_beginner : false,
       });
     }
 
@@ -150,9 +127,6 @@ export function StudentDirectory() {
           (s) => s.username.toLowerCase() === m.username.toLowerCase()
         );
         if (!exists) {
-          const placement = pendingPlacements.find(
-            (p) => p.student?.id === m.user || p.student?.username === m.username
-          );
           list.push({
             id: `member-${m.id}`,
             userId: m.user,
@@ -161,9 +135,6 @@ export function StudentDirectory() {
             displayName: m.username,
             status: m.status === 'active' ? 'active' : m.status,
             hasEnrollment: false,
-            appliedTrackName: placement ? placement.track : null,
-            appliedLevelName: placement?.recommended_level?.name || null,
-            appliedAsBeginner: placement ? placement.skipped_as_beginner : false,
           });
         }
       }
@@ -181,16 +152,13 @@ export function StudentDirectory() {
             email: kid.email,
             status: kid.is_fully_active ? 'active' : 'pending',
             hasEnrollment: false,
-            appliedTrackName: null,
-            appliedLevelName: null,
-            appliedAsBeginner: false,
           });
         }
       }
     }
 
     return list;
-  }, [data, members, isOwnerAdmin, isParent, myLinkedChildren, pendingPlacements]);
+  }, [data, members, isOwnerAdmin, isParent, myLinkedChildren]);
 
   if (!activeAcademy) {
     return <EmptyState title="No Academy Context" description="Please select an academy." />;
@@ -291,16 +259,9 @@ export function StudentDirectory() {
                       )}
                     </td>
                     <td className="p-4">
-                      <div className="flex flex-col gap-1">
-                        <Badge variant={student.status === 'active' ? 'default' : 'secondary'}>
-                          {student.hasEnrollment ? (student.status || 'active') : 'Pending Placement'}
-                        </Badge>
-                        {student.appliedTrackName && (
-                          <Badge variant="outline" className="text-primary border-primary/40 bg-primary/5 text-xs font-normal">
-                            Applied: {student.appliedTrackName}
-                          </Badge>
-                        )}
-                      </div>
+                      <Badge variant={student.status === 'active' ? 'default' : 'secondary'}>
+                        {student.hasEnrollment ? (student.status || 'active') : 'Pending Enrollment'}
+                      </Badge>
                     </td>
                     <td className="p-4 text-right">
                       {student.hasEnrollment ? (
@@ -309,7 +270,7 @@ export function StudentDirectory() {
                             {canManage ? 'Manage' : 'View Details'}
                           </Link>
                         </Button>
-                      ) : (
+                      ) : canManage ? (
                         <Button
                           variant="outline"
                           size="sm"
@@ -325,15 +286,17 @@ export function StudentDirectory() {
                               track_id: null,
                               level_id: null,
                               teacher_id: null,
-                              appliedTrackName: student.appliedTrackName,
-                              appliedLevelName: student.appliedLevelName,
-                              appliedAsBeginner: student.appliedAsBeginner,
+                              appliedTrackName: null,
+                              appliedLevelName: null,
+                              appliedAsBeginner: false,
                             });
                           }}
                         >
                           <BookOpen className="mr-1.5 h-3.5 w-3.5 text-primary" />
-                          Enroll / Place
+                          Enroll / Allocate
                         </Button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Awaiting Enrollment</span>
                       )}
                     </td>
                   </tr>

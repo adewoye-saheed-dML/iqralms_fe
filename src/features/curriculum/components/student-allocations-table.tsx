@@ -88,29 +88,12 @@ export function StudentAllocationsTable() {
     enabled: !!activeAcademy?.id,
   });
 
-  // Fetch pending placements (placement tests / applications)
-  const { data: pendingPlacements = [] } = useQuery<PlacementResult[]>({
-    queryKey: ['placements', activeAcademy?.id, 'pending'],
-    queryFn: async () => {
-      try {
-        if (!activeAcademy?.id) return [];
-        return await curriculumApi.getPendingPlacements(activeAcademy.id);
-      } catch {
-        return [];
-      }
-    },
-    enabled: !!activeAcademy?.id,
-  });
-
   // Unified Allocatable Students: Cross-match enrolled students and student members
   const allAllocatableStudents = React.useMemo<AllocatableStudent[]>(() => {
     const list: AllocatableStudent[] = [];
 
     // 1. Enrolled students
     for (const s of students) {
-      const placement = pendingPlacements.find(
-        (p) => p.student?.id === s.user_id || p.student?.username === s.username
-      );
       list.push({
         id: s.id,
         user_id: s.user_id,
@@ -126,35 +109,18 @@ export function StudentAllocationsTable() {
         teacher_id: s.teacher_id,
         teacher_name: s.teacher_name,
         hasEnrollment: true,
-        appliedTrackName: placement ? placement.track : null,
-        appliedLevelName: placement?.recommended_level?.name || null,
-        appliedAsBeginner: placement ? placement.skipped_as_beginner : false,
+        appliedTrackName: null,
+        appliedLevelName: null,
+        appliedAsBeginner: false,
       });
     }
 
-    // 2. Student members awaiting initial enrollment / placement
+    // 2. Student members awaiting initial enrollment
     const enrolledUserIds = new Set(students.map((s) => s.user_id));
     const studentMembers = members.filter((m) => m.role === 'student');
 
     for (const m of studentMembers) {
       if (!enrolledUserIds.has(m.user)) {
-        const placement = pendingPlacements.find(
-          (p) => p.student?.id === m.user || p.student?.username === m.username
-        );
-        let appliedTrackId: number | null = null;
-        let appliedLevelId: number | null = null;
-        if (placement) {
-          const match = tracks.find(
-            (t) =>
-              t.name.toLowerCase() === placement.track.toLowerCase() ||
-              t.slug.toLowerCase() === placement.track.toLowerCase()
-          );
-          if (match) appliedTrackId = match.id;
-          if (placement.recommended_level?.id) {
-            appliedLevelId = placement.recommended_level.id;
-          }
-        }
-
         list.push({
           id: -(m.id || m.user),
           user_id: m.user,
@@ -164,21 +130,21 @@ export function StudentAllocationsTable() {
           email: '',
           is_minor: false,
           date_of_birth: '',
-          enrollment_status: 'pending_placement',
-          track_id: appliedTrackId,
-          level_id: appliedLevelId,
+          enrollment_status: 'pending_enrollment',
+          track_id: null,
+          level_id: null,
           teacher_id: null,
           teacher_name: null,
           hasEnrollment: false,
-          appliedTrackName: placement ? placement.track : null,
-          appliedLevelName: placement?.recommended_level?.name || null,
-          appliedAsBeginner: placement ? placement.skipped_as_beginner : false,
+          appliedTrackName: null,
+          appliedLevelName: null,
+          appliedAsBeginner: false,
         });
       }
     }
 
     return list;
-  }, [students, members, pendingPlacements, tracks]);
+  }, [students, members]);
 
   // Teachers in the academy
   const teacherMembers = React.useMemo(() => {

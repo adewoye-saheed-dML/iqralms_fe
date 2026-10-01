@@ -7,7 +7,6 @@ import {
   Users,
   Calendar,
   CheckSquare,
-  TrendingUp,
   ArrowRight,
   Video,
   Link2,
@@ -21,9 +20,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/auth/auth-provider';
 import { useAcademy } from '@/lib/academy/academy-provider';
-import { schedulingKeys, progressKeys, assessmentKeys, studentKeys } from '@/lib/api/query-keys';
+import { schedulingKeys, assessmentKeys, studentKeys } from '@/lib/api/query-keys';
 import { schedulingApi, type Booking } from '@/features/scheduling/api/scheduling';
-import { progressApi, type ProgressSnapshot } from '@/features/progress/api/progress';
 import { assessmentApi, type FamilyAssessment } from '@/features/assessment/api/assessment';
 import { studentsApi } from '@/features/students/api/students';
 import { familyApi, type LinkedStudent } from '@/features/family/api/family';
@@ -58,13 +56,6 @@ export function ParentDashboard() {
   const { data: children = [], refetch: refetchChildren } = useQuery({
     queryKey: studentKeys.mine(activeAcademy?.id),
     queryFn: () => studentsApi.getMyStudents(activeAcademy!.id),
-    enabled: !!activeAcademy?.id,
-  });
-
-  // Load progress snapshots
-  const { data: progressSnapshots = [] } = useQuery<ProgressSnapshot[]>({
-    queryKey: progressKeys.snapshots(activeAcademy?.id),
-    queryFn: () => progressApi.getAllSnapshots(activeAcademy!.id),
     enabled: !!activeAcademy?.id,
   });
 
@@ -336,41 +327,39 @@ export function ParentDashboard() {
           </CardFooter>
         </Card>
 
-        {/* Learning Progress & Milestones */}
+        {/* Recent Evaluations & Feedback */}
         <Card className="flex flex-col justify-between">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              <CardTitle className="text-base">Recent Learning Progress</CardTitle>
+              <CheckSquare className="h-5 w-5 text-primary" />
+              <CardTitle className="text-base">Recent Evaluations &amp; Feedback</CardTitle>
             </div>
             <CardDescription className="text-xs">
-              Ayah memorization logs, revision marks, and instructor feedback.
+              Recitation evaluations, rubric scores, and instructor remarks for your children.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {progressSnapshots.length === 0 ? (
+            {assessments.length === 0 ? (
               <div className="rounded-lg border border-dashed p-6 text-center text-xs text-muted-foreground">
-                No recent progress snapshots recorded yet. Progress logs appear as instructors evaluate recitations.
+                No recent evaluations recorded yet. Evaluations appear as instructors review recitations and sessions.
               </div>
             ) : (
               <div className="space-y-2">
-                {progressSnapshots.slice(0, 3).map((snapshot) => (
+                {assessments.slice(0, 3).map((assessment) => (
                   <div
-                    key={snapshot.id}
+                    key={assessment.id}
                     className="flex items-center justify-between rounded-lg border p-3 text-xs"
                   >
                     <div>
                       <span className="font-semibold text-foreground">
-                        {snapshot.student.first_name
-                          ? `${snapshot.student.first_name} ${snapshot.student.last_name || ''}`.trim()
-                          : snapshot.student.username}
+                        {assessment.rubric_name || 'Session Evaluation'}
                       </span>
                       <p className="text-muted-foreground text-[11px] mt-0.5">
-                        {snapshot.track?.name || 'Quranic Studies'}
+                        Track: {assessment.track} • Score: {assessment.overall_average} / 5.0
                       </p>
                     </div>
                     <span className="text-[11px] text-muted-foreground">
-                      {new Date(snapshot.generated_at).toLocaleDateString()}
+                      {new Date(assessment.assessed_at).toLocaleDateString()}
                     </span>
                   </div>
                 ))}
@@ -379,7 +368,7 @@ export function ParentDashboard() {
           </CardContent>
           <CardFooter className="pt-0 border-t">
             <Button variant="ghost" size="sm" asChild className="w-full justify-between mt-3">
-              <Link href="/app/progress">View Detailed Progress <ArrowRight className="h-4 w-4" /></Link>
+              <Link href="/app/assessments">View All Assessments <ArrowRight className="h-4 w-4" /></Link>
             </Button>
           </CardFooter>
         </Card>

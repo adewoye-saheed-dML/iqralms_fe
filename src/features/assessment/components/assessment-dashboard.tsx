@@ -6,7 +6,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AssessmentList } from './assessment-list';
 import { ReviewQueue } from './review-queue';
 import { RubricsList } from './rubrics-list';
-import { TeacherReportsList } from './teacher-reports-list';
 import { AssignmentsListView } from './assignments-list-view';
 import { TeacherGradingQueue } from './teacher-grading-queue';
 import { ParentWardAssessmentView } from './parent-ward-assessment-view';
@@ -76,12 +75,6 @@ export function AssessmentDashboard() {
               Rubrics & Criteria
             </TabsTrigger>
           )}
-          {isLeadOrAdmin && (
-            <TabsTrigger value="teacher-reports" className="flex items-center gap-1.5">
-              <FileCheck className="h-4 w-4" />
-              Teacher Reports
-            </TabsTrigger>
-          )}
 
           {/* Teacher Specific Tabs */}
           {!isLeadOrAdmin && isTeacher && (
@@ -111,12 +104,6 @@ export function AssessmentDashboard() {
             </TabsTrigger>
           )}
           {isStudent && (
-            <TabsTrigger value="my-progress" className="flex items-center gap-1.5">
-              <ClipboardCheck className="h-4 w-4" />
-              My Progress & Scores
-            </TabsTrigger>
-          )}
-          {isStudent && (
             <TabsTrigger value="my-session-assessments" className="flex items-center gap-1.5">
               <FileCheck className="h-4 w-4" />
               Session Assessments
@@ -127,7 +114,7 @@ export function AssessmentDashboard() {
           {isParent && (
             <TabsTrigger value="ward-progress" className="flex items-center gap-1.5">
               <Users className="h-4 w-4" />
-              Ward Progress & Homework
+              Ward Homework & Submissions
             </TabsTrigger>
           )}
           {isParent && (
@@ -158,9 +145,6 @@ export function AssessmentDashboard() {
             <TabsContent value="rubrics" className="pt-4">
               <RubricsList />
             </TabsContent>
-            <TabsContent value="teacher-reports" className="pt-4">
-              <TeacherReportsList />
-            </TabsContent>
           </>
         )}
 
@@ -186,9 +170,6 @@ export function AssessmentDashboard() {
           <>
             <TabsContent value="my-homework" className="pt-4">
               <AssignmentsListView />
-            </TabsContent>
-            <TabsContent value="my-progress" className="pt-4">
-              <ParentWardAssessmentView />
             </TabsContent>
             <TabsContent value="my-session-assessments" className="pt-4">
               <AssessmentList type="family" />

@@ -6,7 +6,6 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Calendar,
   CheckSquare,
-  TrendingUp,
   Clock,
   Users,
   Banknote,
@@ -379,16 +378,16 @@ export function TeacherDashboard() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              <CardTitle className="text-base">Progress Logs</CardTitle>
+              <CheckSquare className="h-5 w-5 text-primary" />
+              <CardTitle className="text-base">Assessments &amp; Rubrics</CardTitle>
             </div>
             <CardDescription className="text-xs">
-              Record Surah memorization, revision, and Ayah milestones.
+              Evaluate student recitations, grade homework submissions, and use rubrics.
             </CardDescription>
           </CardHeader>
           <CardFooter className="pt-0">
             <Button variant="outline" size="sm" asChild className="w-full">
-              <Link href="/app/progress">Record Progress</Link>
+              <Link href="/app/assessments">Evaluate Students</Link>
             </Button>
           </CardFooter>
         </Card>

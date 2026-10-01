@@ -74,7 +74,7 @@ describe('Navigation Policy per Role', () => {
     expect(labels).toContain('Dashboard');
     expect(labels).toContain('Children');
     expect(labels).toContain('Schedule');
-    expect(labels).toContain('Progress');
+    expect(labels).not.toContain('Progress');
     expect(labels).toContain('Assessments');
 
     expect(labels).not.toContain('Finance');
@@ -90,7 +90,7 @@ describe('Navigation Policy per Role', () => {
     const labels = nav.map((item) => item.label);
     expect(labels).toContain('Dashboard');
     expect(labels).toContain('My Schedule');
-    expect(labels).toContain('Progress & Learning');
+    expect(labels).not.toContain('Progress & Learning');
     expect(labels).toContain('Assessments');
 
     expect(labels).not.toContain('Finance');
@@ -139,7 +139,7 @@ describe('Direct Route Access Guards (canAccessRoute)', () => {
     const context = { activeRole: null, userRole: 'parent' as const };
     expect(canAccessRoute('/app/dashboard', context)).toBe(true);
     expect(canAccessRoute('/app/students', context)).toBe(true);
-    expect(canAccessRoute('/app/progress', context)).toBe(true);
+    expect(canAccessRoute('/app/progress', context)).toBe(false);
 
     expect(canAccessRoute('/app/finance', context)).toBe(false);
     expect(canAccessRoute('/app/payouts', context)).toBe(false);
@@ -152,7 +152,7 @@ describe('Direct Route Access Guards (canAccessRoute)', () => {
     const context = { activeRole: null, userRole: 'student' as const };
     expect(canAccessRoute('/app/dashboard', context)).toBe(true);
     expect(canAccessRoute('/app/scheduling', context)).toBe(true);
-    expect(canAccessRoute('/app/progress', context)).toBe(true);
+    expect(canAccessRoute('/app/progress', context)).toBe(false);
 
     expect(canAccessRoute('/app/finance', context)).toBe(false);
     expect(canAccessRoute('/app/payouts', context)).toBe(false);

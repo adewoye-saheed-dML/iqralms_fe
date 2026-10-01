@@ -14,12 +14,10 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import Link from 'next/link';
-import { BookOpen, Plus, GraduationCap, Headphones, ArrowRight } from 'lucide-react';
+import { BookOpen, Plus, GraduationCap, ArrowRight } from 'lucide-react';
 import { ApiError } from '@/lib/api/errors';
 import { useSearchParams } from 'next/navigation';
 import { StudentAllocationsTable } from './student-allocations-table';
-import { AudioPlacementTestsPanel } from './audio-placement-tests-panel';
-import { PlacementsPanel } from './placements-panel';
 import { LearningMaterialsManager } from './learning-materials-manager';
 
 export function CurriculumDirectory() {
@@ -28,16 +26,14 @@ export function CurriculumDirectory() {
   const searchParams = useSearchParams();
   const tabParam = searchParams?.get('tab') ?? null;
 
-  const initialTab: 'subjects' | 'materials' | 'allocations' | 'placements' =
+  const initialTab: 'subjects' | 'materials' | 'allocations' =
     tabParam === 'mapping' || tabParam === 'allocations'
       ? 'allocations'
-      : tabParam === 'placements'
-      ? 'placements'
       : tabParam === 'materials' || tabParam === 'books'
       ? 'materials'
       : 'subjects';
 
-  const [selectedTab, setSelectedTab] = React.useState<'subjects' | 'materials' | 'allocations' | 'placements' | null>(null);
+  const [selectedTab, setSelectedTab] = React.useState<'subjects' | 'materials' | 'allocations' | null>(null);
   const [prevTabParam, setPrevTabParam] = React.useState(tabParam);
 
   if (tabParam !== prevTabParam) {
@@ -47,7 +43,7 @@ export function CurriculumDirectory() {
 
   const activeTab = selectedTab ?? initialTab;
 
-  const handleTabChange = (val: 'subjects' | 'materials' | 'allocations' | 'placements') => {
+  const handleTabChange = (val: 'subjects' | 'materials' | 'allocations') => {
     setSelectedTab(val);
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
@@ -98,34 +94,11 @@ export function CurriculumDirectory() {
   const canManageCurriculum = can('manage_curriculum', { activeRole });
   const isTeacher = activeRole === 'teacher';
 
-  // For students or parents, display Books & Materials and Placement Tests
+  // For students or parents, display Books & Materials directly
   if (!canManageCurriculum && !isTeacher) {
     return (
       <div className="space-y-6">
-        <Tabs
-          value={activeTab === 'materials' ? 'materials' : 'placements'}
-          onValueChange={(val) => handleTabChange(val as any)}
-          className="space-y-6"
-        >
-          <TabsList className="grid w-full grid-cols-2 max-w-md bg-muted/60 p-1 rounded-xl">
-            <TabsTrigger value="materials" className="text-xs sm:text-sm font-medium flex items-center gap-2">
-              <BookOpen className="h-4 w-4" />
-              <span>Books &amp; Materials</span>
-            </TabsTrigger>
-            <TabsTrigger value="placements" className="text-xs sm:text-sm font-medium flex items-center gap-2">
-              <Headphones className="h-4 w-4" />
-              <span>Placement Tests</span>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="materials" className="space-y-6">
-            <LearningMaterialsManager />
-          </TabsContent>
-
-          <TabsContent value="placements" className="space-y-6">
-            <AudioPlacementTestsPanel />
-          </TabsContent>
-        </Tabs>
+        <LearningMaterialsManager />
       </div>
     );
   }
@@ -226,10 +199,10 @@ export function CurriculumDirectory() {
       {/* Top Level Curriculum Navigation Tabs for Owners & Admins */}
       <Tabs
         value={activeTab}
-        onValueChange={(val) => handleTabChange(val as 'subjects' | 'materials' | 'allocations' | 'placements')}
+        onValueChange={(val) => handleTabChange(val as 'subjects' | 'materials' | 'allocations')}
         className="space-y-6"
       >
-        <TabsList className="grid w-full grid-cols-4 max-w-3xl bg-muted/60 p-1 rounded-xl">
+        <TabsList className="grid w-full grid-cols-3 max-w-2xl bg-muted/60 p-1 rounded-xl">
           <TabsTrigger value="subjects" className="text-xs sm:text-sm font-medium flex items-center gap-2">
             <BookOpen className="h-4 w-4" />
             <span>Subjects &amp; Levels</span>
@@ -241,10 +214,6 @@ export function CurriculumDirectory() {
           <TabsTrigger value="allocations" className="text-xs sm:text-sm font-medium flex items-center gap-2">
             <GraduationCap className="h-4 w-4" />
             <span>Student Allocations</span>
-          </TabsTrigger>
-          <TabsTrigger value="placements" className="text-xs sm:text-sm font-medium flex items-center gap-2">
-            <Headphones className="h-4 w-4" />
-            <span>Placement Tests</span>
           </TabsTrigger>
         </TabsList>
 
@@ -289,7 +258,6 @@ export function CurriculumDirectory() {
                   ) : undefined
                 }
               />
-              <PlacementsPanel />
             </div>
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -363,11 +331,6 @@ export function CurriculumDirectory() {
         {/* TAB 2: STUDENT LEVEL ALLOCATIONS */}
         <TabsContent value="allocations" className="space-y-6">
           <StudentAllocationsTable />
-        </TabsContent>
-
-        {/* TAB 3: AUDIO PLACEMENT TESTS */}
-        <TabsContent value="placements" className="space-y-6">
-          <AudioPlacementTestsPanel />
         </TabsContent>
       </Tabs>
     </div>

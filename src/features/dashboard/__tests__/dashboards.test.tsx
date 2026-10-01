@@ -21,7 +21,6 @@ import { curriculumApi } from '@/features/curriculum/api/curriculum';
 import { schedulingApi } from '@/features/scheduling/api/scheduling';
 import { assessmentApi } from '@/features/assessment/api/assessment';
 import { payoutsApi } from '@/features/payouts/api/payouts';
-import { progressApi } from '@/features/progress/api/progress';
 import { membershipsApi } from '@/features/memberships/api/memberships';
 
 vi.mock('@/features/invitations/api/invitations', () => ({
@@ -64,12 +63,6 @@ vi.mock('@/features/payouts/api/payouts', () => ({
   payoutsApi: {
     getMyPayouts: vi.fn(),
     getMyStatement: vi.fn(),
-  },
-}));
-
-vi.mock('@/features/progress/api/progress', () => ({
-  progressApi: {
-    getAllSnapshots: vi.fn(),
   },
 }));
 
@@ -334,7 +327,6 @@ describe('Role-Based Dashboards and SSoT Compliance', () => {
           cohort: false,
         } as any,
       ]);
-      vi.mocked(progressApi.getAllSnapshots).mockResolvedValue([]);
       vi.mocked(assessmentApi.getStudentAssessments).mockResolvedValue([]);
 
       renderWithProviders(<StudentDashboard />);
@@ -379,7 +371,6 @@ describe('Role-Based Dashboards and SSoT Compliance', () => {
       vi.mocked(studentsApi.getMyStudents).mockResolvedValue([
         { id: 31, username: 'child_yusuf', first_name: 'Yusuf' } as any,
       ]);
-      vi.mocked(progressApi.getAllSnapshots).mockResolvedValue([]);
       vi.mocked(assessmentApi.getChildAssessments).mockResolvedValue([]);
 
       renderWithProviders(<ParentDashboard />);

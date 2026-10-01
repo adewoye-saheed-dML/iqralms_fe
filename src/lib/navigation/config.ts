@@ -99,11 +99,6 @@ export const navigationConfig: NavItem[] = [
     icon: CheckSquare,
   },
   {
-    label: 'Progress',
-    href: '/app/progress',
-    icon: TrendingUp,
-  },
-  {
     label: 'Pricing',
     href: '/app/pricing',
     icon: Wallet,
@@ -169,7 +164,6 @@ export function getNavigationForRole(experience: RoleExperience): NavItem[] {
         { label: 'Curriculum', href: '/app/curriculum', icon: BookOpen, requiredCapability: 'manage_curriculum' },
         { label: 'Scheduling', href: '/app/scheduling', icon: Calendar },
         { label: 'Assessments', href: '/app/assessments', icon: CheckSquare },
-        { label: 'Progress / Reports', href: '/app/progress', icon: TrendingUp },
         { label: 'Pricing', href: '/app/pricing', icon: Wallet, requiredCapability: 'manage_pricing' },
         { label: 'Payouts', href: '/app/payouts', icon: Banknote, requiredCapability: 'manage_payouts' },
         { label: 'Notifications', href: '/app/notifications', icon: Bell },
@@ -183,8 +177,7 @@ export function getNavigationForRole(experience: RoleExperience): NavItem[] {
         { label: 'My Classes', href: '/app/scheduling', icon: Calendar },
         { label: 'Students', href: '/app/students', icon: Users },
         { label: 'Assessments', href: '/app/assessments', icon: CheckSquare },
-        { label: 'Progress', href: '/app/progress', icon: TrendingUp },
-        { label: 'Curriculum & Placements', href: '/app/curriculum', icon: BookOpen },
+        { label: 'Curriculum', href: '/app/curriculum', icon: BookOpen },
         { label: 'Pricing', href: '/app/pricing', icon: Wallet, requiredCapability: 'manage_pricing' },
         { label: 'Payouts', href: '/app/payouts', icon: Banknote, requiredCapability: 'view_academy_payouts' },
         { label: 'Notifications', href: '/app/notifications', icon: Bell },
@@ -198,7 +191,6 @@ export function getNavigationForRole(experience: RoleExperience): NavItem[] {
         { label: 'Books & Materials', href: '/app/curriculum?tab=materials', icon: BookOpen },
         { label: 'Students', href: '/app/students', icon: Users },
         { label: 'Assessments', href: '/app/assessments', icon: CheckSquare },
-        { label: 'Progress', href: '/app/progress', icon: TrendingUp },
         { label: 'My Earnings', href: '/app/payouts', icon: Banknote, requiredCapability: 'view_own_payouts' },
         { label: 'Notifications', href: '/app/notifications', icon: Bell },
         { label: 'Profile', href: '/app/profile', icon: User },
@@ -210,7 +202,6 @@ export function getNavigationForRole(experience: RoleExperience): NavItem[] {
         { label: 'Children', href: '/app/students', icon: Users },
         { label: 'Books & Materials', href: '/app/curriculum?tab=materials', icon: BookOpen },
         { label: 'Schedule', href: '/app/scheduling', icon: Calendar },
-        { label: 'Progress', href: '/app/progress', icon: TrendingUp },
         { label: 'Assessments', href: '/app/assessments', icon: CheckSquare },
         { label: 'Notifications', href: '/app/notifications', icon: Bell },
         { label: 'Profile', href: '/app/profile', icon: User },
@@ -221,7 +212,6 @@ export function getNavigationForRole(experience: RoleExperience): NavItem[] {
         { label: 'Dashboard', href: '/app/dashboard', icon: LayoutDashboard },
         { label: 'My Schedule', href: '/app/scheduling', icon: Calendar },
         { label: 'Books & Materials', href: '/app/curriculum?tab=materials', icon: BookOpen },
-        { label: 'Progress & Learning', href: '/app/progress', icon: TrendingUp },
         { label: 'Assessments', href: '/app/assessments', icon: CheckSquare },
         { label: 'Notifications', href: '/app/notifications', icon: Bell },
         { label: 'Profile', href: '/app/profile', icon: User },
@@ -250,6 +240,11 @@ export function canAccessRoute(
   pathname: string,
   context: { activeRole?: AcademyMembershipRole | OrgRole | string | null; userRole?: GlobalAccountRole | UserRole | string | null; academyId?: number | null; isMinor?: boolean; isFullyActive?: boolean }
 ): boolean {
+  // Progress route has been decommissioned
+  if (pathname === '/app/progress' || pathname.startsWith('/app/progress')) {
+    return false;
+  }
+
   // Inactive minor students can only access dashboard, notifications, profile
   if (context.isMinor && !context.isFullyActive) {
     return (
@@ -294,7 +289,6 @@ export function canAccessRoute(
       pathname.startsWith('/app/scheduling') ||
       pathname.startsWith('/app/students') ||
       pathname.startsWith('/app/assessments') ||
-      pathname.startsWith('/app/progress') ||
       pathname.startsWith('/app/pricing') ||
       pathname.startsWith('/app/payouts') ||
       pathname.startsWith('/app/finance') ||
@@ -312,7 +306,9 @@ export function canAccessRoute(
       (pathname.startsWith('/app/academy') && pathname !== '/app/academy/create') ||
       pathname.startsWith('/app/teachers') ||
       pathname.startsWith('/app/imports') ||
-      pathname.startsWith('/app/settings')
+      pathname.startsWith('/app/settings') ||
+      pathname === '/app/students/add' ||
+      pathname.startsWith('/app/students/add')
     ) {
       return false;
     }
@@ -321,7 +317,6 @@ export function canAccessRoute(
       pathname.startsWith('/app/scheduling') ||
       pathname.startsWith('/app/students') ||
       pathname.startsWith('/app/assessments') ||
-      pathname.startsWith('/app/progress') ||
       pathname.startsWith('/app/payouts') ||
       pathname.startsWith('/app/curriculum')
     );
@@ -329,7 +324,7 @@ export function canAccessRoute(
 
   // Parent route access
   if (experience === 'parent') {
-    // Strictly forbidden for parents
+    // Strictly forbidden for parents (parents cannot enroll students or manage settings/finance)
     if (
       pathname.startsWith('/app/finance') ||
       pathname.startsWith('/app/payouts') ||
@@ -338,14 +333,15 @@ export function canAccessRoute(
       pathname.startsWith('/app/teachers') ||
       pathname.startsWith('/app/imports') ||
       pathname.startsWith('/app/audit') ||
-      pathname.startsWith('/app/settings')
+      pathname.startsWith('/app/settings') ||
+      pathname === '/app/students/add' ||
+      pathname.startsWith('/app/students/add')
     ) {
       return false;
     }
     return (
       pathname.startsWith('/app/students') ||
       pathname.startsWith('/app/scheduling') ||
-      pathname.startsWith('/app/progress') ||
       pathname.startsWith('/app/assessments') ||
       pathname.startsWith('/app/curriculum')
     );
@@ -370,7 +366,6 @@ export function canAccessRoute(
     }
     return (
       pathname.startsWith('/app/scheduling') ||
-      pathname.startsWith('/app/progress') ||
       pathname.startsWith('/app/assessments') ||
       pathname.startsWith('/app/pricing') ||
       pathname.startsWith('/app/curriculum')

@@ -10,60 +10,9 @@ vi.mock('@/lib/api/client', () => ({
   },
 }));
 
-describe('curriculumApi Placements and Teacher Assignments', () => {
+describe('curriculumApi Teacher Track Assignments', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  it('submits placement assessment', async () => {
-    const mockPlacement = { id: 1, status: 'pending' };
-    vi.mocked(apiClient.POST).mockResolvedValue({ data: mockPlacement } as any);
-
-    const body = {
-      track: 1,
-      self_assessed_level: 2,
-    };
-    const res = await curriculumApi.submitPlacement(1, body as any);
-
-    expect(apiClient.POST).toHaveBeenCalledWith(
-      '/api/curriculum/organizations/{organization_pk}/placements/',
-      {
-        params: { path: { organization_pk: 1 } },
-        body,
-      }
-    );
-    expect(res).toEqual(mockPlacement);
-  });
-
-  it('fetches pending placements for lead review', async () => {
-    const mockList = [{ id: 10, status: 'pending' }];
-    vi.mocked(apiClient.GET).mockResolvedValue({ data: mockList } as any);
-
-    const res = await curriculumApi.getPendingPlacements(1);
-    expect(apiClient.GET).toHaveBeenCalledWith(
-      '/api/curriculum/organizations/{organization_pk}/placements/pending/',
-      {
-        params: { path: { organization_pk: 1 } },
-      }
-    );
-    expect(res).toEqual(mockList);
-  });
-
-  it('reviews placement with recommended level', async () => {
-    const reviewed = { id: 10, status: 'reviewed', recommended_level: 3 };
-    vi.mocked(apiClient.POST).mockResolvedValue({ data: reviewed } as any);
-
-    const body = { recommended_level: 3, notes: 'Good pronunciation' };
-    const res = await curriculumApi.reviewPlacement(1, 10, body as any);
-
-    expect(apiClient.POST).toHaveBeenCalledWith(
-      '/api/curriculum/organizations/{organization_pk}/placements/{id}/review/',
-      {
-        params: { path: { organization_pk: 1, id: 10 } },
-        body,
-      }
-    );
-    expect(res).toEqual(reviewed);
   });
 
   it('fetches teacher own teaching tracks', async () => {
