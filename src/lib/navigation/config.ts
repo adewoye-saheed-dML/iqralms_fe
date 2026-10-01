@@ -7,7 +7,6 @@ import {
   Wallet,
   BookOpen,
   CheckSquare,
-  TrendingUp,
   Banknote,
   Bell,
   FileUp,

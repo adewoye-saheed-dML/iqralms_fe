@@ -41,6 +41,19 @@ export function AssessmentDashboard() {
       : 'assignments'
   );
 
+  // Sync active tab whenever the active role changes across tenants
+  React.useEffect(() => {
+    setActiveTab(
+      isParent
+        ? 'ward-progress'
+        : isStudent
+        ? 'my-homework'
+        : isLeadOrAdmin
+        ? 'academy-oversight'
+        : 'assignments'
+    );
+  }, [activeRole, isParent, isStudent, isLeadOrAdmin]);
+
   const handleSelectAssignmentForGrading = (assignmentId: number) => {
     setSelectedAssignmentIdForGrading(assignmentId);
     setActiveTab('grading-queue');
