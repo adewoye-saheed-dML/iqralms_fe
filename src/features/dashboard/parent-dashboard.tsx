@@ -289,10 +289,18 @@ export function ParentDashboard() {
                     className="flex items-center justify-between rounded-lg border p-3 text-xs"
                   >
                     <div>
-                      <span className="font-semibold text-foreground">
-                        {booking.level?.name || 'Recitation Session'}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-semibold text-foreground">
+                          {booking.level?.name || 'Recitation Session'}
+                        </span>
+                        {booking.student && (
+                          <span className="text-[11px] font-normal text-muted-foreground">
+                            • Child: {booking.student.first_name || booking.student.username}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-muted-foreground text-[11px] mt-0.5">
+                        {booking.teacher && `Teacher: ${booking.teacher.first_name || booking.teacher.username} • `}
                         {booking.start_time_local ||
                           new Date(booking.start_time_utc).toLocaleString(undefined, {
                             weekday: 'short',

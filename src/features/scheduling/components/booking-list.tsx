@@ -6,6 +6,7 @@ import * as React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { schedulingApi } from '../api/scheduling';
 import { useAcademy } from '@/lib/academy/academy-provider';
+import { useAuth } from '@/lib/auth/auth-provider';
 import { LoadingState } from '@/components/ui/loading';
 import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -22,9 +23,12 @@ interface BookingListProps {
 }
 
 export function BookingList({ type }: BookingListProps) {
-  const { activeAcademy } = useAcademy();
+  const { activeAcademy, activeRole } = useAcademy();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [cancelError, setCancelError] = React.useState<string | null>(null);
+
+  const isParent = activeRole === 'parent' || user?.role === 'parent';
 
   const queryKey = schedulingKeys.bookingsByType(activeAcademy?.id, type);
 
@@ -84,7 +88,11 @@ export function BookingList({ type }: BookingListProps) {
     return (
       <EmptyState
         title="No bookings found"
-        description="You don't have any upcoming or past bookings."
+        description={
+          isParent
+            ? "You don't have any scheduled sessions for your children yet."
+            : "You don't have any upcoming or past bookings."
+        }
         icon={<CalendarIcon className="h-10 w-10 text-muted-foreground" />}
       />
     );
@@ -191,13 +199,27 @@ export function BookingList({ type }: BookingListProps) {
                     <User className="mr-2 h-3.5 w-3.5 text-primary" />
                     <span className="truncate">
                       {type === 'mine'
-                        ? `Teacher: ${
-                            booking.teacher?.first_name ||
-                            (booking as unknown as { teacher_details?: { user?: { first_name?: string } } })
-                              .teacher_details?.user?.first_name ||
-                            booking.teacher?.username ||
-                            'Unassigned'
-                          }`
+                        ? isParent
+                          ? `Child: ${
+                              booking.student?.first_name ||
+                              (booking as unknown as { student_details?: { user?: { first_name?: string } } })
+                                .student_details?.user?.first_name ||
+                              booking.student?.username ||
+                              'Linked Child'
+                            } • Teacher: ${
+                              booking.teacher?.first_name ||
+                              (booking as unknown as { teacher_details?: { user?: { first_name?: string } } })
+                                .teacher_details?.user?.first_name ||
+                              booking.teacher?.username ||
+                              'Unassigned'
+                            }`
+                          : `Teacher: ${
+                              booking.teacher?.first_name ||
+                              (booking as unknown as { teacher_details?: { user?: { first_name?: string } } })
+                                .teacher_details?.user?.first_name ||
+                              booking.teacher?.username ||
+                              'Unassigned'
+                            }`
                         : type === 'teaching'
                         ? `Student: ${
                             booking.student?.first_name ||
