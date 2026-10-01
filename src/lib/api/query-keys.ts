@@ -69,6 +69,10 @@ export const assessmentKeys = {
     [...assessmentKeys.all(academyId), 'submissions', filters] as const,
   wardProgress: (academyId: AcademyId, studentId?: number | string) =>
     [...assessmentKeys.all(academyId), 'ward-progress', studentId] as const,
+  progress: (academyId: AcademyId, type: string, filters?: Record<string, unknown>) =>
+    [...assessmentKeys.all(academyId), 'progress', type, filters] as const,
+  snapshots: (academyId: AcademyId, type?: string, filters?: Record<string, unknown>) =>
+    [...assessmentKeys.all(academyId), 'snapshots', type, filters] as const,
 };
 
 export const progressKeys = {

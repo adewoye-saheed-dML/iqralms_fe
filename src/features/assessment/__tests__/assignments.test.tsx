@@ -22,18 +22,23 @@ vi.mock('@/lib/auth/auth-provider', () => ({
   useAuth: vi.fn(),
 }));
 
-vi.mock('../api/assessment', () => ({
-  assessmentApi: {
-    getAssignments: vi.fn(),
-    createAssignment: vi.fn(),
-    deleteAssignment: vi.fn(),
-    submitAssignment: vi.fn(),
-    gradeSubmission: vi.fn(),
-    getSubmissions: vi.fn(),
-    getWardProgress: vi.fn(),
-  },
-  resolveAssessmentMediaUrl: vi.fn((url) => (url ? `http://localhost:8000${url}` : null)),
-}));
+vi.mock('../api/assessment', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../api/assessment')>();
+  return {
+    ...actual,
+    assessmentApi: {
+      ...actual.assessmentApi,
+      getAssignments: vi.fn(),
+      createAssignment: vi.fn(),
+      deleteAssignment: vi.fn(),
+      submitAssignment: vi.fn(),
+      gradeSubmission: vi.fn(),
+      getSubmissions: vi.fn(),
+      getWardProgress: vi.fn(),
+    },
+    resolveAssessmentMediaUrl: vi.fn((url) => (url ? `http://localhost:8000${url}` : null)),
+  };
+});
 
 vi.mock('@/features/family/api/family', () => ({
   familyApi: {
@@ -64,9 +69,7 @@ function renderWithProviders(ui: React.ReactNode) {
 describe('Assignments and Homework Submissions', () => {
   const mockAssignment: StudentAssignment = {
     id: 10,
-    organization: 1,
-    created_by: 2,
-    created_by_name: 'Ustadh Ahmad',
+    created_by: { id: 2, username: 'ahmad', first_name: 'Ustadh', last_name: 'Ahmad' },
     track: 1,
     track_name: 'Quran Memorization',
     level: 2,
@@ -75,19 +78,17 @@ describe('Assignments and Homework Submissions', () => {
     assigned_student_name: null,
     title: 'Surah Al-Mulk Recitation Practice',
     description: 'Recite verses 1 through 10 with clear Tajweed.',
-    submission_type: 'recitation',
+    submission_type: 'audio_recitation',
     surah_number: 67,
     ayah_start: 1,
     ayah_end: 10,
-    reference_notes: 'Focus on Ghunnah rules',
-    attachment: null,
-    attachment_url: null,
+    resource_file: null,
     max_score: 100,
     due_date: '2026-10-15T18:00:00Z',
-    is_active: true,
     created_at: '2026-09-29T10:00:00Z',
     updated_at: '2026-09-29T10:00:00Z',
     submissions_count: 3,
+    pending_submissions_count: 0,
     my_submission: null,
   };
 
@@ -95,32 +96,22 @@ describe('Assignments and Homework Submissions', () => {
     id: 55,
     assignment: 10,
     assignment_title: 'Surah Al-Mulk Recitation Practice',
-    assignment_details: {
-      submission_type: 'recitation',
-      surah_number: 67,
-      ayah_start: 1,
-      ayah_end: 10,
-      max_score: 100,
-      due_date: '2026-10-15T18:00:00Z',
-    },
-    student: 5,
-    student_name: 'Zayd Ali',
+    max_score: 100,
+    submission_type: 'audio_recitation',
+    surah_number: 67,
+    ayah_start: 1,
+    ayah_end: 10,
+    student: { id: 5, username: 'zayd', first_name: 'Zayd', last_name: 'Ali' },
     status: 'submitted',
-    audio_file: '/media/audio/recitation.webm',
-    audio_file_url: '/media/audio/recitation.webm',
-    written_response: '',
+    audio_recording: '/media/audio/recitation.webm',
+    written_response: 'I practiced verse 5 multiple times.',
     attachment_file: null,
-    attachment_file_url: null,
-    notes_from_student: 'I practiced verse 5 multiple times.',
     submitted_at: '2026-09-29T14:30:00Z',
     score: null,
     rubric_scores: null,
     teacher_feedback: '',
     graded_by: null,
-    graded_by_name: null,
     graded_at: null,
-    created_at: '2026-09-29T14:30:00Z',
-    updated_at: '2026-09-29T14:30:00Z',
   };
 
   beforeEach(() => {
@@ -203,22 +194,17 @@ describe('Assignments and Homework Submissions', () => {
     ]);
 
     vi.mocked(assessmentApi.getWardProgress).mockResolvedValue({
-      student: { id: 5, name: 'Zayd Ali', email: 'zayd@student.com' },
-      stats: {
-        total_assigned: 1,
-        submitted_count: 1,
-        graded_count: 1,
-        average_score: 95.0,
-      },
-      items: [
+      student: { id: 5, username: 'zayd', first_name: 'Zayd', last_name: 'Ali' },
+      total_assigned: 1,
+      total_submitted: 1,
+      total_graded: 1,
+      average_score_pct: 95.0,
+      recent_submissions: [
         {
-          assignment: mockAssignment,
-          submission: {
-            ...mockSubmission,
-            status: 'graded',
-            score: 95.0,
-            teacher_feedback: 'Excellent recitation with accurate makharij.',
-          },
+          ...mockSubmission,
+          status: 'graded',
+          score: 95.0,
+          teacher_feedback: 'Excellent recitation with accurate makharij.',
         },
       ],
     });

@@ -40,7 +40,7 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
 
   const [title, setTitle] = React.useState('');
   const [description, setDescription] = React.useState('');
-  const [submissionType, setSubmissionType] = React.useState<SubmissionType>('recitation');
+  const [submissionType, setSubmissionType] = React.useState<SubmissionType>('audio_recitation');
   const [trackId, setTrackId] = React.useState<string>('all');
   const [levelId, setLevelId] = React.useState<string>('all');
   const [assignedStudentId, setAssignedStudentId] = React.useState<string>('all');
@@ -72,9 +72,16 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
       if (!academyId) throw new Error('Academy ID required');
       if (!title.trim()) throw new Error('Assignment title is required');
 
+      const finalDescription = [
+        description.trim(),
+        referenceNotes.trim() ? `Reference Notes: ${referenceNotes.trim()}` : null,
+      ]
+        .filter(Boolean)
+        .join('\n\n');
+
       return assessmentApi.createAssignment(academyId, {
         title: title.trim(),
-        description: description.trim() || undefined,
+        description: finalDescription || undefined,
         submission_type: submissionType,
         track: trackId !== 'all' ? parseInt(trackId, 10) : undefined,
         level: levelId !== 'all' ? parseInt(levelId, 10) : undefined,
@@ -82,10 +89,9 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
         surah_number: surahNumber ? parseInt(surahNumber, 10) : undefined,
         ayah_start: ayahStart ? parseInt(ayahStart, 10) : undefined,
         ayah_end: ayahEnd ? parseInt(ayahEnd, 10) : undefined,
-        reference_notes: referenceNotes.trim() || undefined,
         max_score: maxScore ? parseFloat(maxScore) : 100,
         due_date: dueDate ? new Date(dueDate).toISOString() : undefined,
-        attachment: attachment || undefined,
+        resource_file: attachment || undefined,
       });
     },
     onSuccess: () => {
@@ -101,7 +107,7 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
   const handleClose = () => {
     setTitle('');
     setDescription('');
-    setSubmissionType('recitation');
+    setSubmissionType('audio_recitation');
     setTrackId('all');
     setLevelId('all');
     setAssignedStudentId('all');
@@ -165,19 +171,19 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
                   <SelectValue placeholder="Select format" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="recitation">
+                  <SelectItem value="audio_recitation">
                     <div className="flex items-center gap-2">
                       <Mic className="h-4 w-4 text-emerald-600" />
                       <span>Quran Recitation (Audio Recording)</span>
                     </div>
                   </SelectItem>
-                  <SelectItem value="written">
+                  <SelectItem value="written_text">
                     <div className="flex items-center gap-2">
                       <FileText className="h-4 w-4 text-blue-600" />
                       <span>Written Answer / Reflection</span>
                     </div>
                   </SelectItem>
-                  <SelectItem value="file">
+                  <SelectItem value="file_upload">
                     <div className="flex items-center gap-2">
                       <Paperclip className="h-4 w-4 text-amber-600" />
                       <span>Worksheet / File Upload</span>
@@ -214,7 +220,7 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
             </div>
           </div>
 
-          {(submissionType === 'recitation' || submissionType === 'mixed') && (
+          {(submissionType === 'audio_recitation' || submissionType === 'mixed') && (
             <div className="p-3.5 border rounded-lg bg-emerald-50/40 dark:bg-emerald-950/20 space-y-3">
               <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
                 Quran Recitation Reference

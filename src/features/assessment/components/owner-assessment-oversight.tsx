@@ -8,6 +8,7 @@ import {
   AssignmentSubmission,
   StudentAssignment,
   resolveAssessmentMediaUrl,
+  getDisplayName,
 } from '../api/assessment';
 import { assessmentKeys } from '@/lib/api/query-keys';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -78,8 +79,9 @@ export function OwnerAssessmentOversight() {
 
   // Filtered submissions
   const filteredSubmissions = submissions.filter((s) => {
+    const studentDisplayName = getDisplayName(s.student);
     const matchesSearch =
-      s.student_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      studentDisplayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       s.assignment_title.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || s.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -172,7 +174,7 @@ export function OwnerAssessmentOversight() {
               <SelectItem value="all">All Statuses</SelectItem>
               <SelectItem value="submitted">Pending Grading</SelectItem>
               <SelectItem value="graded">Graded</SelectItem>
-              <SelectItem value="needs_revision">Needs Revision</SelectItem>
+              <SelectItem value="resubmission_requested">Needs Revision</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -190,14 +192,17 @@ export function OwnerAssessmentOversight() {
             {filteredSubmissions.map((sub) => {
               const isGraded = sub.status === 'graded';
               const isSubmitted = sub.status === 'submitted';
-              const needsRevision = sub.status === 'needs_revision';
+              const needsRevision = sub.status === 'resubmission_requested';
+              const studentDisplayName = getDisplayName(sub.student);
+              const gradedByName = sub.graded_by ? getDisplayName(sub.graded_by) : null;
+              const audioUrl = sub.audio_recording;
 
               return (
                 <Card key={sub.id} className="p-4 space-y-3 hover:border-primary/50 transition-colors">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-base">{sub.student_name}</span>
+                        <span className="font-semibold text-base">{studentDisplayName}</span>
                         <span className="text-muted-foreground">•</span>
                         <span className="text-sm font-medium text-muted-foreground">
                           {sub.assignment_title}
@@ -205,14 +210,14 @@ export function OwnerAssessmentOversight() {
                       </div>
                       <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                         <span>Submitted: {new Date(sub.submitted_at).toLocaleString()}</span>
-                        {sub.graded_by_name && <span>Graded by: {sub.graded_by_name}</span>}
+                        {gradedByName && <span>Graded by: {gradedByName}</span>}
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2">
                       {isGraded ? (
                         <Badge className="bg-emerald-600 text-white">
-                          Score: {sub.score} / {sub.assignment_details?.max_score || 100}
+                          Score: {sub.score} / {sub.max_score || 100}
                         </Badge>
                       ) : isSubmitted ? (
                         <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
@@ -237,13 +242,13 @@ export function OwnerAssessmentOversight() {
                   </div>
 
                   {/* Recitation audio player */}
-                  {sub.audio_file_url && (
+                  {audioUrl && (
                     <div className="flex items-center gap-3 bg-muted/40 p-2.5 rounded">
                       <Volume2 className="h-4 w-4 text-emerald-600 shrink-0" />
                       <audio
                         controls
                         className="w-full h-8"
-                        src={resolveAssessmentMediaUrl(sub.audio_file_url) || ''}
+                        src={resolveAssessmentMediaUrl(audioUrl) || ''}
                       />
                     </div>
                   )}

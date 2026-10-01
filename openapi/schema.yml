@@ -1158,6 +1158,233 @@ paths:
                 items:
                   $ref: '#/components/schemas/TeacherAssessment'
           description: ''
+  /api/assessment/organizations/{organization_pk}/assignments/:
+    get:
+      operationId: assessment_organizations_assignments_list
+      description: |-
+        GET /api/assessment/organizations/<organization_pk>/assignments/ — continuous assignments and homework.
+      parameters:
+      - in: path
+        name: organization_pk
+        schema:
+          type: integer
+        required: true
+      - in: query
+        name: track_id
+        schema:
+          type: integer
+      - in: query
+        name: student_id
+        schema:
+          type: integer
+      - in: query
+        name: submission_type
+        schema:
+          $ref: '#/components/schemas/SubmissionTypeEnum'
+      tags:
+      - assessment
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentAssignment'
+          description: ''
+    post:
+      operationId: assessment_organizations_assignments_create
+      description: |-
+        POST /api/assessment/organizations/<organization_pk>/assignments/ — create homework assignment.
+      parameters:
+      - in: path
+        name: organization_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - assessment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentAssignmentCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StudentAssignmentCreate'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentAssignment'
+          description: ''
+  /api/assessment/organizations/{organization_pk}/assignments/{id}/:
+    delete:
+      operationId: assessment_organizations_assignments_destroy
+      description: |-
+        DELETE /api/assessment/organizations/<organization_pk>/assignments/<id>/ — remove an assignment.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: organization_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - assessment
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/assessment/organizations/{organization_pk}/assignments/{assignment_id}/submit/:
+    post:
+      operationId: assessment_organizations_assignments_submit_create
+      description: |-
+        POST /api/assessment/organizations/<organization_pk>/assignments/<assignment_id>/submit/ — submit homework.
+      parameters:
+      - in: path
+        name: assignment_id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: organization_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - assessment
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AssignmentSubmissionCreate'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignmentSubmissionCreate'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssignmentSubmission'
+          description: ''
+  /api/assessment/organizations/{organization_pk}/submissions/:
+    get:
+      operationId: assessment_organizations_submissions_list
+      description: |-
+        GET /api/assessment/organizations/<organization_pk>/submissions/ — list submissions.
+      parameters:
+      - in: path
+        name: organization_pk
+        schema:
+          type: integer
+        required: true
+      - in: query
+        name: assignment_id
+        schema:
+          type: integer
+      - in: query
+        name: student_id
+        schema:
+          type: integer
+      - in: query
+        name: status
+        schema:
+          $ref: '#/components/schemas/SubmissionStatusEnum'
+      tags:
+      - assessment
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AssignmentSubmission'
+          description: ''
+  /api/assessment/organizations/{organization_pk}/submissions/{id}/grade/:
+    post:
+      operationId: assessment_organizations_submissions_grade_create
+      description: |-
+        POST /api/assessment/organizations/<organization_pk>/submissions/<id>/grade/ — score submission.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: organization_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - assessment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignmentGrade'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssignmentSubmission'
+          description: ''
+  /api/assessment/organizations/{organization_pk}/ward-progress/:
+    get:
+      operationId: assessment_organizations_ward_progress_retrieve
+      description: |-
+        GET /api/assessment/organizations/<organization_pk>/ward-progress/?student_id= — student homework and assignment statistics.
+      parameters:
+      - in: path
+        name: organization_pk
+        schema:
+          type: integer
+        required: true
+      - in: query
+        name: student_id
+        schema:
+          type: integer
+      tags:
+      - assessment
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WardProgress'
+          description: ''
   /api/auth/login/:
     post:
       operationId: auth_login_create
@@ -8443,6 +8670,286 @@ components:
         * `4` - Friday
         * `5` - Saturday
         * `6` - Sunday
+    SubmissionTypeEnum:
+      enum:
+      - audio_recitation
+      - written_text
+      - file_upload
+      - mixed
+      type: string
+    SubmissionStatusEnum:
+      enum:
+      - submitted
+      - graded
+      - resubmission_requested
+      type: string
+    StudentAssignment:
+      type: object
+      description: A student assignment or homework task.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+        description:
+          type: string
+        track:
+          type: integer
+          nullable: true
+        track_name:
+          type: string
+          nullable: true
+          readOnly: true
+        level:
+          type: integer
+          nullable: true
+        level_name:
+          type: string
+          nullable: true
+          readOnly: true
+        assigned_student:
+          type: integer
+          nullable: true
+        assigned_student_name:
+          type: string
+          nullable: true
+          readOnly: true
+        submission_type:
+          $ref: '#/components/schemas/SubmissionTypeEnum'
+        surah_number:
+          type: integer
+          nullable: true
+        ayah_start:
+          type: integer
+          nullable: true
+        ayah_end:
+          type: integer
+          nullable: true
+        due_date:
+          type: string
+          format: date-time
+          nullable: true
+        max_score:
+          type: integer
+        rubric:
+          type: integer
+          nullable: true
+        resource_file:
+          type: string
+          nullable: true
+        created_by:
+          allOf:
+          - $ref: '#/components/schemas/AssessmentParty'
+          nullable: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        submissions_count:
+          type: integer
+          readOnly: true
+        pending_submissions_count:
+          type: integer
+          readOnly: true
+        my_submission:
+          allOf:
+          - $ref: '#/components/schemas/AssignmentSubmission'
+          nullable: true
+          readOnly: true
+      required:
+      - id
+      - title
+      - submission_type
+      - max_score
+      - created_at
+      - updated_at
+    StudentAssignmentCreate:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        track:
+          type: integer
+          nullable: true
+        level:
+          type: integer
+          nullable: true
+        assigned_student:
+          type: integer
+          nullable: true
+        submission_type:
+          $ref: '#/components/schemas/SubmissionTypeEnum'
+        surah_number:
+          type: integer
+          nullable: true
+        ayah_start:
+          type: integer
+          nullable: true
+        ayah_end:
+          type: integer
+          nullable: true
+        due_date:
+          type: string
+          format: date-time
+          nullable: true
+        max_score:
+          type: integer
+        rubric:
+          type: integer
+          nullable: true
+        resource_file:
+          type: string
+          format: binary
+          nullable: true
+      required:
+      - title
+      - submission_type
+    AssignmentSubmission:
+      type: object
+      description: A student's submission for an assignment.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        assignment:
+          type: integer
+          readOnly: true
+        assignment_title:
+          type: string
+          readOnly: true
+        max_score:
+          type: integer
+          readOnly: true
+        submission_type:
+          $ref: '#/components/schemas/SubmissionTypeEnum'
+          readOnly: true
+        surah_number:
+          type: integer
+          nullable: true
+          readOnly: true
+        ayah_start:
+          type: integer
+          nullable: true
+          readOnly: true
+        ayah_end:
+          type: integer
+          nullable: true
+          readOnly: true
+        student:
+          allOf:
+          - $ref: '#/components/schemas/AssessmentParty'
+          readOnly: true
+        audio_recording:
+          type: string
+          nullable: true
+          readOnly: true
+        written_response:
+          type: string
+          readOnly: true
+        attachment_file:
+          type: string
+          nullable: true
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/SubmissionStatusEnum'
+          readOnly: true
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+        graded_by:
+          allOf:
+          - $ref: '#/components/schemas/AssessmentParty'
+          nullable: true
+          readOnly: true
+        graded_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+        score:
+          type: number
+          nullable: true
+          readOnly: true
+        teacher_feedback:
+          type: string
+          readOnly: true
+        rubric_scores:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+          nullable: true
+      required:
+      - id
+      - assignment
+      - assignment_title
+      - max_score
+      - submission_type
+      - student
+      - status
+      - submitted_at
+    AssignmentSubmissionCreate:
+      type: object
+      properties:
+        audio_recording:
+          type: string
+          format: binary
+          nullable: true
+        written_response:
+          type: string
+        attachment_file:
+          type: string
+          format: binary
+          nullable: true
+    AssignmentGrade:
+      type: object
+      properties:
+        score:
+          type: number
+          nullable: true
+        teacher_feedback:
+          type: string
+        rubric_scores:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        request_resubmission:
+          type: boolean
+    WardProgress:
+      type: object
+      description: Ward homework and assignment statistics.
+      properties:
+        student:
+          $ref: '#/components/schemas/AssessmentParty'
+        total_assigned:
+          type: integer
+        total_submitted:
+          type: integer
+        total_graded:
+          type: integer
+        average_score_pct:
+          type: number
+          nullable: true
+        recent_submissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssignmentSubmission'
+      required:
+      - student
+      - total_assigned
+      - total_submitted
+      - total_graded
+      - recent_submissions
   securitySchemes:
     cookieAuth:
       type: apiKey

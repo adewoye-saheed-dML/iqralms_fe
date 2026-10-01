@@ -8,6 +8,8 @@ import {
   AssignmentSubmission,
   resolveAssessmentMediaUrl,
   RubricCriterionScore,
+  getDisplayName,
+  SUBMISSION_STATUS_LABELS,
 } from '../api/assessment';
 import { assessmentKeys } from '@/lib/api/query-keys';
 import {
@@ -68,7 +70,7 @@ export function GradeSubmissionModal({
   const queryClient = useQueryClient();
 
   const [score, setScore] = React.useState<string>('90');
-  const [status, setStatus] = React.useState<'graded' | 'needs_revision'>('graded');
+  const [status, setStatus] = React.useState<'graded' | 'resubmission_requested'>('graded');
   const [feedback, setFeedback] = React.useState('');
   const [rubricScores, setRubricScores] = React.useState<RubricCriterionScore[]>(DEFAULT_RUBRIC_CRITERIA);
   const [useRubric, setUseRubric] = React.useState(false);
@@ -77,11 +79,11 @@ export function GradeSubmissionModal({
   React.useEffect(() => {
     if (submission) {
       setScore(submission.score !== null ? String(submission.score) : '85');
-      setStatus(submission.status === 'needs_revision' ? 'needs_revision' : 'graded');
+      setStatus(submission.status === 'resubmission_requested' ? 'resubmission_requested' : 'graded');
       setFeedback(submission.teacher_feedback || '');
 
       if (Array.isArray(submission.rubric_scores) && submission.rubric_scores.length > 0) {
-        setRubricScores(submission.rubric_scores as RubricCriterionScore[]);
+        setRubricScores(submission.rubric_scores as unknown as RubricCriterionScore[]);
         setUseRubric(true);
       } else {
         setRubricScores(DEFAULT_RUBRIC_CRITERIA);
@@ -110,6 +112,7 @@ export function GradeSubmissionModal({
 
       return assessmentApi.gradeSubmission(academyId, submission.id, {
         score: numScore,
+        request_resubmission: status === 'resubmission_requested',
         status,
         teacher_feedback: feedback.trim() || undefined,
         rubric_scores: useRubric ? rubricScores : undefined,
@@ -133,7 +136,10 @@ export function GradeSubmissionModal({
     gradeMutation.mutate();
   };
 
-  const maxScore = submission.assignment_details?.max_score || 100;
+  const maxScore = submission.max_score || 100;
+  const audioUrl = submission.audio_recording;
+  const attachmentUrl = submission.attachment_file;
+  const studentName = getDisplayName(submission.student);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -148,16 +154,16 @@ export function GradeSubmissionModal({
               variant={
                 submission.status === 'graded'
                   ? 'default'
-                  : submission.status === 'needs_revision'
+                  : submission.status === 'resubmission_requested'
                   ? 'destructive'
                   : 'outline'
               }
             >
-              {submission.status.toUpperCase()}
+              {SUBMISSION_STATUS_LABELS[submission.status] || submission.status.toUpperCase()}
             </Badge>
           </div>
           <DialogDescription>
-            Student: <span className="font-semibold text-foreground">{submission.student_name}</span>
+            Student: <span className="font-semibold text-foreground">{studentName}</span>
             {' • '}
             Assignment: <span className="font-medium text-foreground">{submission.assignment_title}</span>
           </DialogDescription>
@@ -178,7 +184,7 @@ export function GradeSubmissionModal({
           </div>
 
           {/* Recitation Audio Player */}
-          {submission.audio_file_url && (
+          {audioUrl && (
             <div className="p-3 bg-card rounded-md border space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-300">
                 <Volume2 className="h-4 w-4" />
@@ -187,7 +193,7 @@ export function GradeSubmissionModal({
               <audio
                 controls
                 className="w-full h-10"
-                src={resolveAssessmentMediaUrl(submission.audio_file_url) || ''}
+                src={resolveAssessmentMediaUrl(audioUrl) || ''}
               />
             </div>
           )}
@@ -204,10 +210,10 @@ export function GradeSubmissionModal({
           )}
 
           {/* Attached File */}
-          {submission.attachment_file_url && (
+          {attachmentUrl && (
             <div className="pt-1">
               <a
-                href={resolveAssessmentMediaUrl(submission.attachment_file_url) || '#'}
+                href={resolveAssessmentMediaUrl(attachmentUrl) || '#'}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-1.5 text-xs text-primary font-medium hover:underline"
@@ -215,14 +221,6 @@ export function GradeSubmissionModal({
                 <Download className="h-3.5 w-3.5" />
                 Download Student Homework Attachment
               </a>
-            </div>
-          )}
-
-          {/* Student Note */}
-          {submission.notes_from_student && (
-            <div className="p-2.5 bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded text-xs text-amber-900 dark:text-amber-200">
-              <span className="font-semibold">Student Note: </span>
-              {submission.notes_from_student}
             </div>
           )}
         </div>
@@ -248,7 +246,7 @@ export function GradeSubmissionModal({
               <Label>Outcome Status *</Label>
               <Select
                 value={status}
-                onValueChange={(val) => setStatus(val as 'graded' | 'needs_revision')}
+                onValueChange={(val) => setStatus(val as 'graded' | 'resubmission_requested')}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -260,7 +258,7 @@ export function GradeSubmissionModal({
                       <span>Graded & Approved</span>
                     </div>
                   </SelectItem>
-                  <SelectItem value="needs_revision">
+                  <SelectItem value="resubmission_requested">
                     <div className="flex items-center gap-2 text-amber-600">
                       <AlertCircle className="h-4 w-4" />
                       <span>Needs Revision (Request Redo)</span>

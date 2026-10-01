@@ -66,13 +66,16 @@ export function AssignmentSubmissionModal({
   const existingSubmission = submission || assignment?.my_submission;
   const isAlreadySubmitted = existingSubmission?.status === 'submitted' || existingSubmission?.status === 'graded';
   const isGraded = existingSubmission?.status === 'graded';
-  const needsRevision = existingSubmission?.status === 'needs_revision';
+  const needsRevision = existingSubmission?.status === 'resubmission_requested';
+
+  const existingAudio = existingSubmission?.audio_recording;
+  const existingAttachment = existingSubmission?.attachment_file;
 
   // Initialize existing responses if present
   React.useEffect(() => {
     if (existingSubmission) {
       setWrittenResponse(existingSubmission.written_response || '');
-      setNotesFromStudent(existingSubmission.notes_from_student || '');
+      setNotesFromStudent('');
     } else {
       setWrittenResponse('');
       setNotesFromStudent('');
@@ -87,33 +90,34 @@ export function AssignmentSubmissionModal({
 
       // Validation depending on submission type
       if (
-        (assignment.submission_type === 'recitation') &&
+        assignment.submission_type === 'audio_recitation' &&
         !audioFile &&
-        !existingSubmission?.audio_file_url
+        !existingAudio
       ) {
         throw new Error('Please record or upload your recitation audio before submitting.');
       }
 
       if (
-        (assignment.submission_type === 'written') &&
+        assignment.submission_type === 'written_text' &&
         !writtenResponse.trim()
       ) {
         throw new Error('Please write your response before submitting.');
       }
 
       if (
-        (assignment.submission_type === 'file') &&
+        assignment.submission_type === 'file_upload' &&
         !attachmentFile &&
-        !existingSubmission?.attachment_file_url
+        !existingAttachment
       ) {
         throw new Error('Please attach your homework file before submitting.');
       }
 
+      const combinedWritten = writtenResponse.trim() || notesFromStudent.trim() || undefined;
+
       return assessmentApi.submitAssignment(academyId, assignment.id, {
-        audio_file: audioFile,
-        written_response: writtenResponse.trim() || undefined,
+        audio_recording: audioFile,
+        written_response: combinedWritten,
         attachment_file: attachmentFile || undefined,
-        notes_from_student: notesFromStudent.trim() || undefined,
       });
     },
     onSuccess: () => {
@@ -135,11 +139,11 @@ export function AssignmentSubmissionModal({
   };
 
   const isRecitation =
-    assignment.submission_type === 'recitation' || assignment.submission_type === 'mixed';
+    assignment.submission_type === 'audio_recitation' || assignment.submission_type === 'mixed';
   const isWritten =
-    assignment.submission_type === 'written' || assignment.submission_type === 'mixed';
+    assignment.submission_type === 'written_text' || assignment.submission_type === 'mixed';
   const isFile =
-    assignment.submission_type === 'file' || assignment.submission_type === 'mixed';
+    assignment.submission_type === 'file_upload' || assignment.submission_type === 'mixed';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -170,7 +174,7 @@ export function AssignmentSubmissionModal({
             )}
           </div>
           <DialogDescription>
-            Teacher: <span className="font-medium text-foreground">{assignment.created_by_name}</span>
+            Teacher: <span className="font-medium text-foreground">{assignment.created_by ? getDisplayName(assignment.created_by) : 'Teacher'}</span>
             {assignment.due_date && (
               <>
                 {' • '}
@@ -212,14 +216,14 @@ export function AssignmentSubmissionModal({
                   Rubric Assessment Breakdown:
                 </span>
                 <div className="grid grid-cols-2 gap-2 text-xs">
-                  {existingSubmission.rubric_scores.map((r, i) => (
+                  {existingSubmission.rubric_scores.map((r: any, i: number) => (
                     <div
                       key={i}
                       className="p-2 bg-white/80 dark:bg-black/30 rounded border flex items-center justify-between"
                     >
-                      <span className="font-medium">{r.criterion}</span>
+                      <span className="font-medium">{String(r.criterion || r.name || `Criterion ${i + 1}`)}</span>
                       <span className="font-semibold text-primary">
-                        {r.score}/{r.max_score}
+                        {String(r.score)}/{String(r.max_score)}
                       </span>
                     </div>
                   ))}
@@ -251,16 +255,13 @@ export function AssignmentSubmissionModal({
                   Ayat {assignment.ayah_start || 1} - {assignment.ayah_end || 'End'}
                 </span>
               )}
-              {assignment.reference_notes && (
-                <span className="text-muted-foreground italic">&ldquo;{assignment.reference_notes}&rdquo;</span>
-              )}
             </div>
           )}
 
-          {assignment.attachment_url && (
+          {assignment.resource_file && (
             <div className="pt-1">
               <a
-                href={resolveAssessmentMediaUrl(assignment.attachment_url) || '#'}
+                href={resolveAssessmentMediaUrl(assignment.resource_file) || '#'}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-1.5 text-xs text-primary font-medium hover:underline"
@@ -279,13 +280,13 @@ export function AssignmentSubmissionModal({
             <div className="space-y-2">
               <Label className="flex items-center gap-1.5">
                 <Mic className="h-4 w-4 text-emerald-600" />
-                Recitation Audio Recording {assignment.submission_type === 'recitation' && '*'}
+                Recitation Audio Recording {assignment.submission_type === 'audio_recitation' && '*'}
               </Label>
               <AudioRecorder
                 onAudioReady={setAudioFile}
                 existingAudioUrl={
-                  existingSubmission?.audio_file_url
-                    ? resolveAssessmentMediaUrl(existingSubmission.audio_file_url)
+                  existingAudio
+                    ? resolveAssessmentMediaUrl(existingAudio) || undefined
                     : undefined
                 }
                 disabled={isAlreadySubmitted && !needsRevision}
@@ -298,7 +299,7 @@ export function AssignmentSubmissionModal({
             <div className="space-y-2">
               <Label htmlFor="written-response" className="flex items-center gap-1.5">
                 <FileText className="h-4 w-4 text-blue-600" />
-                Written Answer / Homework Text {assignment.submission_type === 'written' && '*'}
+                Written Answer / Homework Text {assignment.submission_type === 'written_text' && '*'}
               </Label>
               <Textarea
                 id="written-response"
@@ -316,7 +317,7 @@ export function AssignmentSubmissionModal({
             <div className="space-y-2">
               <Label htmlFor="submission-file" className="flex items-center gap-1.5">
                 <Paperclip className="h-4 w-4 text-amber-600" />
-                Upload Homework Document / Photo / PDF {assignment.submission_type === 'file' && '*'}
+                Upload Homework Document / Photo / PDF {assignment.submission_type === 'file_upload' && '*'}
               </Label>
               <Input
                 id="submission-file"
@@ -324,9 +325,9 @@ export function AssignmentSubmissionModal({
                 onChange={(e) => setAttachmentFile(e.target.files?.[0] || null)}
                 disabled={isAlreadySubmitted && !needsRevision}
               />
-              {existingSubmission?.attachment_file_url && (
+              {existingAttachment && (
                 <a
-                  href={resolveAssessmentMediaUrl(existingSubmission.attachment_file_url) || '#'}
+                  href={resolveAssessmentMediaUrl(existingAttachment) || '#'}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1"

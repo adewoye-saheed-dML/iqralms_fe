@@ -604,6 +604,109 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/assessment/organizations/{organization_pk}/assignments/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description GET /api/assessment/organizations/<organization_pk>/assignments/ — continuous assignments and homework. */
+        get: operations["assessment_organizations_assignments_list"];
+        put?: never;
+        /** @description POST /api/assessment/organizations/<organization_pk>/assignments/ — create homework assignment. */
+        post: operations["assessment_organizations_assignments_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assessment/organizations/{organization_pk}/assignments/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description DELETE /api/assessment/organizations/<organization_pk>/assignments/<id>/ — remove an assignment. */
+        delete: operations["assessment_organizations_assignments_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assessment/organizations/{organization_pk}/assignments/{assignment_id}/submit/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description POST /api/assessment/organizations/<organization_pk>/assignments/<assignment_id>/submit/ — submit homework. */
+        post: operations["assessment_organizations_assignments_submit_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assessment/organizations/{organization_pk}/submissions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description GET /api/assessment/organizations/<organization_pk>/submissions/ — list submissions. */
+        get: operations["assessment_organizations_submissions_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assessment/organizations/{organization_pk}/submissions/{id}/grade/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description POST /api/assessment/organizations/<organization_pk>/submissions/<id>/grade/ — score submission. */
+        post: operations["assessment_organizations_submissions_grade_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assessment/organizations/{organization_pk}/ward-progress/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description GET /api/assessment/organizations/<organization_pk>/ward-progress/?student_id= — student homework and assignment statistics. */
+        get: operations["assessment_organizations_ward_progress_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/login/": {
         parameters: {
             query?: never;
@@ -4281,6 +4384,106 @@ export interface components {
          * @enum {integer}
          */
         WeekdayEnum: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+        /** @enum {string} */
+        SubmissionTypeEnum: "audio_recitation" | "written_text" | "file_upload" | "mixed";
+        /** @enum {string} */
+        SubmissionStatusEnum: "submitted" | "graded" | "resubmission_requested";
+        /** @description A student assignment or homework task. */
+        StudentAssignment: {
+            readonly id: number;
+            title: string;
+            description?: string;
+            track?: number | null;
+            readonly track_name?: string | null;
+            level?: number | null;
+            readonly level_name?: string | null;
+            assigned_student?: number | null;
+            readonly assigned_student_name?: string | null;
+            submission_type: components["schemas"]["SubmissionTypeEnum"];
+            surah_number?: number | null;
+            ayah_start?: number | null;
+            ayah_end?: number | null;
+            /** Format: date-time */
+            due_date?: string | null;
+            max_score: number;
+            rubric?: number | null;
+            resource_file?: string | null;
+            readonly created_by?: components["schemas"]["AssessmentParty"] | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+            readonly submissions_count?: number;
+            readonly pending_submissions_count?: number;
+            readonly my_submission?: components["schemas"]["AssignmentSubmission"] | null;
+        };
+        StudentAssignmentCreate: {
+            title: string;
+            description?: string;
+            track?: number | null;
+            level?: number | null;
+            assigned_student?: number | null;
+            submission_type: components["schemas"]["SubmissionTypeEnum"];
+            surah_number?: number | null;
+            ayah_start?: number | null;
+            ayah_end?: number | null;
+            /** Format: date-time */
+            due_date?: string | null;
+            max_score?: number;
+            rubric?: number | null;
+            /** Format: binary */
+            resource_file?: string | null;
+        };
+        /** @description A student's submission for an assignment. */
+        AssignmentSubmission: {
+            readonly id: number;
+            readonly assignment: number;
+            readonly assignment_title: string;
+            readonly max_score: number;
+            readonly submission_type: components["schemas"]["SubmissionTypeEnum"];
+            readonly surah_number?: number | null;
+            readonly ayah_start?: number | null;
+            readonly ayah_end?: number | null;
+            readonly student: components["schemas"]["AssessmentParty"];
+            readonly audio_recording?: string | null;
+            readonly written_response?: string;
+            readonly attachment_file?: string | null;
+            readonly status: components["schemas"]["SubmissionStatusEnum"];
+            /** Format: date-time */
+            readonly submitted_at: string;
+            readonly graded_by?: components["schemas"]["AssessmentParty"] | null;
+            /** Format: date-time */
+            readonly graded_at?: string | null;
+            readonly score?: number | null;
+            readonly teacher_feedback?: string;
+            rubric_scores?: {
+                [key: string]: unknown;
+            }[] | null;
+        };
+        AssignmentSubmissionCreate: {
+            /** Format: binary */
+            audio_recording?: string | null;
+            written_response?: string;
+            /** Format: binary */
+            attachment_file?: string | null;
+        };
+        AssignmentGrade: {
+            score?: number | null;
+            teacher_feedback?: string;
+            rubric_scores?: {
+                [key: string]: unknown;
+            }[];
+            request_resubmission?: boolean;
+        };
+        /** @description Ward homework and assignment statistics. */
+        WardProgress: {
+            student: components["schemas"]["AssessmentParty"];
+            total_assigned: number;
+            total_submitted: number;
+            total_graded: number;
+            average_score_pct?: number | null;
+            recent_submissions: components["schemas"]["AssignmentSubmission"][];
+        };
     };
     responses: never;
     parameters: never;
@@ -5254,6 +5457,179 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TeacherAssessment"][];
+                };
+            };
+        };
+    };
+    assessment_organizations_assignments_list: {
+        parameters: {
+            query?: {
+                track_id?: number;
+                student_id?: number;
+                submission_type?: components["schemas"]["SubmissionTypeEnum"];
+            };
+            header?: never;
+            path: {
+                organization_pk: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentAssignment"][];
+                };
+            };
+        };
+    };
+    assessment_organizations_assignments_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_pk: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StudentAssignmentCreate"];
+                "multipart/form-data": components["schemas"]["StudentAssignmentCreate"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentAssignment"];
+                };
+            };
+        };
+    };
+    assessment_organizations_assignments_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                organization_pk: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    assessment_organizations_assignments_submit_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignment_id: number;
+                organization_pk: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["AssignmentSubmissionCreate"];
+                "application/json": components["schemas"]["AssignmentSubmissionCreate"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssignmentSubmission"];
+                };
+            };
+        };
+    };
+    assessment_organizations_submissions_list: {
+        parameters: {
+            query?: {
+                assignment_id?: number;
+                student_id?: number;
+                status?: components["schemas"]["SubmissionStatusEnum"];
+            };
+            header?: never;
+            path: {
+                organization_pk: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssignmentSubmission"][];
+                };
+            };
+        };
+    };
+    assessment_organizations_submissions_grade_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                organization_pk: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignmentGrade"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssignmentSubmission"];
+                };
+            };
+        };
+    };
+    assessment_organizations_ward_progress_retrieve: {
+        parameters: {
+            query?: {
+                student_id?: number;
+            };
+            header?: never;
+            path: {
+                organization_pk: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WardProgress"];
                 };
             };
         };

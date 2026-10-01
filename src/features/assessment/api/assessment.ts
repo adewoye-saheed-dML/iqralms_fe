@@ -12,9 +12,15 @@ export type AssessmentRubricCreate = components['schemas']['AssessmentRubricCrea
 export type PatchedAssessmentRubricUpdate = components['schemas']['PatchedAssessmentRubricUpdate'];
 export type LeadReview = components['schemas']['LeadReview'];
 export type TeacherReport = components['schemas']['TeacherReport'];
+export type StudentProgress = components['schemas']['StudentProgress'];
+export type ProgressSnapshot = components['schemas']['ProgressSnapshot'];
+export type ProgressSnapshotCreate = components['schemas']['ProgressSnapshotCreate'];
+export type FamilyProgressSnapshot = components['schemas']['FamilyProgressSnapshot'];
+export type CriterionAverage = components['schemas']['CriterionAverage'];
+export type RecentSummary = components['schemas']['RecentSummary'];
 
-export type SubmissionType = 'audio_recitation' | 'written_text' | 'file_upload' | 'mixed';
-export type SubmissionStatus = 'submitted' | 'graded' | 'resubmission_requested';
+export type SubmissionType = components['schemas']['SubmissionTypeEnum'];
+export type SubmissionStatus = components['schemas']['SubmissionStatusEnum'];
 
 /** User-friendly labels for submission types. */
 export const SUBMISSION_TYPE_LABELS: Record<SubmissionType, string> = {
@@ -31,74 +37,32 @@ export const SUBMISSION_STATUS_LABELS: Record<SubmissionStatus, string> = {
   resubmission_requested: 'Revision Requested',
 };
 
-/** Helper to get display name from a user object returned by the API. */
-export function getDisplayName(user: { first_name: string; last_name: string; username: string } | null | undefined): string {
-  if (!user) return 'Unknown';
-  const fullName = `${user.first_name} ${user.last_name}`.trim();
-  return fullName || user.username;
-}
-
 /** User object shape returned by backend serializers (student, created_by, graded_by). */
-export interface ApiUserRef {
-  id: number;
-  username: string;
-  first_name: string;
-  last_name: string;
+export type ApiUserRef = components['schemas']['AssessmentParty'];
+
+/** Helper to get display name from a user object returned by the API. */
+export function getDisplayName(
+  user: { first_name?: string | null; last_name?: string | null; username?: string | null } | number | null | undefined
+): string {
+  if (!user) return 'Unknown';
+  if (typeof user === 'number') return `User #${user}`;
+  const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+  return fullName || user.username || 'Unknown';
 }
 
-export interface StudentAssignment {
-  id: number;
-  title: string;
-  description: string;
-  track: number | null;
-  track_name: string | null;
-  level: number | null;
-  level_name: string | null;
-  assigned_student: number | null;
-  assigned_student_name: string | null;
-  submission_type: SubmissionType;
-  surah_number: number | null;
-  ayah_start: number | null;
-  ayah_end: number | null;
-  due_date: string | null;
-  max_score: number;
-  rubric: number | null;
-  resource_file: string | null;
-  created_by: ApiUserRef;
-  created_at: string;
-  updated_at: string;
-  submissions_count: number;
-  pending_submissions_count: number;
-  my_submission?: AssignmentSubmission | null;
-}
+export type StudentAssignment = components['schemas']['StudentAssignment'];
+export type StudentAssignmentCreate = components['schemas']['StudentAssignmentCreate'];
+export type AssignmentSubmission = components['schemas']['AssignmentSubmission'];
+export type AssignmentSubmissionCreate = components['schemas']['AssignmentSubmissionCreate'];
+export type AssignmentGrade = components['schemas']['AssignmentGrade'];
+export type WardProgress = components['schemas']['WardProgress'];
+export type WardProgressResponse = WardProgress;
 
 export interface RubricCriterionScore {
   criterion: string;
   score: number;
   max_score: number;
   comment?: string;
-}
-
-export interface AssignmentSubmission {
-  id: number;
-  assignment: number;
-  assignment_title: string;
-  max_score: number;
-  submission_type: SubmissionType;
-  surah_number: number | null;
-  ayah_start: number | null;
-  ayah_end: number | null;
-  student: ApiUserRef;
-  audio_recording: string | null;
-  written_response: string;
-  attachment_file: string | null;
-  status: SubmissionStatus;
-  submitted_at: string;
-  graded_by: ApiUserRef | null;
-  graded_at: string | null;
-  score: number | null;
-  teacher_feedback: string;
-  rubric_scores: RubricCriterionScore[] | Record<string, unknown>[];
 }
 
 export interface StudentAssignmentInput {
@@ -111,79 +75,34 @@ export interface StudentAssignmentInput {
   surah_number?: number | null;
   ayah_start?: number | null;
   ayah_end?: number | null;
+  reference_notes?: string | null;
   max_score?: number;
   due_date?: string | null;
   resource_file?: File | null;
+  attachment?: File | null;
   rubric?: number | null;
 }
 
 export interface AssignmentSubmissionInput {
   audio_recording?: Blob | File | null;
+  audio_file?: Blob | File | null;
   written_response?: string;
   attachment_file?: File | null;
+  notes_from_student?: string;
 }
 
 export interface AssignmentGradeInput {
   score?: number | null;
   teacher_feedback?: string;
-  rubric_scores?: RubricCriterionScore[];
+  rubric_scores?: RubricCriterionScore[] | Record<string, unknown>[];
   request_resubmission?: boolean;
-}
-
-export interface WardProgressResponse {
-  student: ApiUserRef;
-  total_assigned: number;
-  total_submitted: number;
-  total_graded: number;
-  average_score_pct: number | null;
-  recent_submissions: AssignmentSubmission[];
-}
-
-function getApiBaseUrl(): string {
-  const url = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://127.0.0.1:8000');
-  return url.replace(/\/+$/, '');
-}
-
-async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const token = getToken();
-  const headers = new Headers(init?.headers);
-  if (token) {
-    headers.set('Authorization', `Token ${token}`);
-  }
-  if (!headers.has('Accept')) {
-    headers.set('Accept', 'application/json');
-  }
-
-  const response = await fetch(url, {
-    ...init,
-    headers,
-  });
-
-  if (!response.ok) {
-    let payload: unknown;
-    try {
-      payload = await response.clone().json();
-    } catch {
-      try {
-        payload = await response.clone().text();
-      } catch {
-        payload = undefined;
-      }
-    }
-    const message = normalizeErrorMessage(response.status, payload, response.statusText);
-    throw new ApiError(response.status, message, payload);
-  }
-
-  if (response.status === 204) {
-    return {} as T;
-  }
-
-  return (await response.json()) as T;
+  status?: 'graded' | 'resubmission_requested' | 'needs_revision';
 }
 
 export function resolveAssessmentMediaUrl(url: string | null): string | null {
   if (!url) return null;
-  const baseUrl = getApiBaseUrl();
+  const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://127.0.0.1:8000');
+  const baseUrl = rawBaseUrl.replace(/\/+$/, '');
   const token = getToken();
   let fullUrl = url.startsWith('http://') || url.startsWith('https://')
     ? url
@@ -341,25 +260,24 @@ export const assessmentApi = {
       submission_type?: SubmissionType;
     }
   ): Promise<StudentAssignment[]> => {
-    const query = new URLSearchParams();
-    if (params?.track_id) query.set('track_id', String(params.track_id));
-    if (params?.student_id) query.set('student_id', String(params.student_id));
-    if (params?.submission_type) query.set('submission_type', params.submission_type);
-
-    const qs = query.toString();
-    const endpoint = `${getApiBaseUrl()}/api/assessment/organizations/${organizationId}/assignments/${qs ? `?${qs}` : ''}`;
-    return requestJson<StudentAssignment[]>(endpoint, { method: 'GET' });
+    const { data } = await apiClient.GET(
+      '/api/assessment/organizations/{organization_pk}/assignments/',
+      {
+        params: {
+          path: { organization_pk: organizationId },
+          query: params,
+        },
+      }
+    );
+    return (data as StudentAssignment[]) ?? [];
   },
 
   createAssignment: async (
     organizationId: number,
     input: StudentAssignmentInput
   ): Promise<StudentAssignment> => {
-    const endpoint = `${getApiBaseUrl()}/api/assessment/organizations/${organizationId}/assignments/`;
-    let body: BodyInit;
-    const headers: Record<string, string> = {};
-
-    if (input.resource_file) {
+    const file = input.resource_file || input.attachment;
+    if (file) {
       const formData = new FormData();
       formData.append('title', input.title);
       if (input.description) formData.append('description', input.description);
@@ -373,36 +291,54 @@ export const assessmentApi = {
       if (input.max_score !== undefined) formData.append('max_score', String(input.max_score));
       if (input.due_date) formData.append('due_date', input.due_date);
       if (input.rubric) formData.append('rubric', String(input.rubric));
-      formData.append('resource_file', input.resource_file);
-      body = formData;
-    } else {
-      headers['Content-Type'] = 'application/json';
-      body = JSON.stringify({
-        title: input.title,
-        description: input.description ?? '',
-        submission_type: input.submission_type,
-        track: input.track ?? null,
-        level: input.level ?? null,
-        assigned_student: input.assigned_student ?? null,
-        surah_number: input.surah_number ?? null,
-        ayah_start: input.ayah_start ?? null,
-        ayah_end: input.ayah_end ?? null,
-        max_score: input.max_score ?? 100,
-        due_date: input.due_date ?? null,
-        rubric: input.rubric ?? null,
-      });
+      formData.append('resource_file', file);
+
+      const { data } = await apiClient.POST(
+        '/api/assessment/organizations/{organization_pk}/assignments/',
+        {
+          params: { path: { organization_pk: organizationId } },
+          body: formData as unknown as StudentAssignmentCreate,
+        }
+      );
+      if (!data) throw new Error('Failed to create assignment');
+      return data;
     }
 
-    return requestJson<StudentAssignment>(endpoint, {
-      method: 'POST',
-      headers,
-      body,
-    });
+    const { data } = await apiClient.POST(
+      '/api/assessment/organizations/{organization_pk}/assignments/',
+      {
+        params: {
+          path: { organization_pk: organizationId },
+        },
+        body: {
+          title: input.title,
+          description: input.description ?? '',
+          submission_type: input.submission_type,
+          track: input.track ?? null,
+          level: input.level ?? null,
+          assigned_student: input.assigned_student ?? null,
+          surah_number: input.surah_number ?? null,
+          ayah_start: input.ayah_start ?? null,
+          ayah_end: input.ayah_end ?? null,
+          max_score: input.max_score ?? 100,
+          due_date: input.due_date ?? null,
+          rubric: input.rubric ?? null,
+        },
+      }
+    );
+    if (!data) throw new Error('Failed to create assignment');
+    return data;
   },
 
   deleteAssignment: async (organizationId: number, assignmentId: number): Promise<void> => {
-    const endpoint = `${getApiBaseUrl()}/api/assessment/organizations/${organizationId}/assignments/${assignmentId}/`;
-    await requestJson<void>(endpoint, { method: 'DELETE' });
+    await apiClient.DELETE(
+      '/api/assessment/organizations/{organization_pk}/assignments/{id}/',
+      {
+        params: {
+          path: { organization_pk: organizationId, id: assignmentId },
+        },
+      }
+    );
   },
 
   submitAssignment: async (
@@ -410,12 +346,12 @@ export const assessmentApi = {
     assignmentId: number,
     input: AssignmentSubmissionInput
   ): Promise<AssignmentSubmission> => {
-    const endpoint = `${getApiBaseUrl()}/api/assessment/organizations/${organizationId}/assignments/${assignmentId}/submit/`;
     const formData = new FormData();
 
-    if (input.audio_recording) {
-      const filename = input.audio_recording instanceof File ? input.audio_recording.name : 'recitation.webm';
-      formData.append('audio_recording', input.audio_recording, filename);
+    const audio = input.audio_recording || input.audio_file;
+    if (audio) {
+      const filename = audio instanceof File ? audio.name : 'recitation.webm';
+      formData.append('audio_recording', audio, filename);
     }
     if (input.written_response) {
       formData.append('written_response', input.written_response);
@@ -424,10 +360,17 @@ export const assessmentApi = {
       formData.append('attachment_file', input.attachment_file);
     }
 
-    return requestJson<AssignmentSubmission>(endpoint, {
-      method: 'POST',
-      body: formData,
-    });
+    const { data } = await apiClient.POST(
+      '/api/assessment/organizations/{organization_pk}/assignments/{assignment_id}/submit/',
+      {
+        params: {
+          path: { organization_pk: organizationId, assignment_id: assignmentId },
+        },
+        body: formData as unknown as AssignmentSubmissionCreate,
+      }
+    );
+    if (!data) throw new Error('Failed to submit assignment');
+    return data;
   },
 
   getSubmissions: async (
@@ -438,14 +381,16 @@ export const assessmentApi = {
       status?: SubmissionStatus;
     }
   ): Promise<AssignmentSubmission[]> => {
-    const query = new URLSearchParams();
-    if (params?.assignment_id) query.set('assignment_id', String(params.assignment_id));
-    if (params?.student_id) query.set('student_id', String(params.student_id));
-    if (params?.status) query.set('status', params.status);
-
-    const qs = query.toString();
-    const endpoint = `${getApiBaseUrl()}/api/assessment/organizations/${organizationId}/submissions/${qs ? `?${qs}` : ''}`;
-    return requestJson<AssignmentSubmission[]>(endpoint, { method: 'GET' });
+    const { data } = await apiClient.GET(
+      '/api/assessment/organizations/{organization_pk}/submissions/',
+      {
+        params: {
+          path: { organization_pk: organizationId },
+          query: params,
+        },
+      }
+    );
+    return (data as AssignmentSubmission[]) ?? [];
   },
 
   gradeSubmission: async (
@@ -453,24 +398,176 @@ export const assessmentApi = {
     submissionId: number,
     input: AssignmentGradeInput
   ): Promise<AssignmentSubmission> => {
-    const endpoint = `${getApiBaseUrl()}/api/assessment/organizations/${organizationId}/submissions/${submissionId}/grade/`;
-    return requestJson<AssignmentSubmission>(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(input),
-    });
+    const isRevision =
+      input.request_resubmission ??
+      (input.status === 'resubmission_requested' || input.status === 'needs_revision');
+
+    const { data } = await apiClient.POST(
+      '/api/assessment/organizations/{organization_pk}/submissions/{id}/grade/',
+      {
+        params: {
+          path: { organization_pk: organizationId, id: submissionId },
+        },
+        body: {
+          score: input.score ?? null,
+          teacher_feedback: input.teacher_feedback ?? '',
+          rubric_scores: (input.rubric_scores as any) ?? [],
+          request_resubmission: !!isRevision,
+        },
+      }
+    );
+    if (!data) throw new Error('Failed to grade submission');
+    return data as AssignmentSubmission;
   },
 
   getWardProgress: async (
     organizationId: number,
     studentId?: number
   ): Promise<WardProgressResponse> => {
-    const query = new URLSearchParams();
-    if (studentId) query.set('student_id', String(studentId));
-    const qs = query.toString();
-    const endpoint = `${getApiBaseUrl()}/api/assessment/organizations/${organizationId}/ward-progress/${qs ? `?${qs}` : ''}`;
-    return requestJson<WardProgressResponse>(endpoint, { method: 'GET' });
+    const { data } = await apiClient.GET(
+      '/api/assessment/organizations/{organization_pk}/ward-progress/',
+      {
+        params: {
+          path: { organization_pk: organizationId },
+          query: { student_id: studentId },
+        },
+      }
+    );
+    if (!data) throw new Error('Failed to fetch ward progress');
+    return data as WardProgressResponse;
+  },
+
+  // ---- Progress Endpoints (Session-based assessment progress) ----
+
+  getMyProgress: async (
+    organizationId: number,
+    params: { track_id: number; from?: string; to?: string }
+  ): Promise<StudentProgress> => {
+    const { data } = await apiClient.GET(
+      '/api/assessment/organizations/{organization_pk}/progress/mine/',
+      {
+        params: {
+          path: { organization_pk: organizationId },
+          query: params,
+        },
+      }
+    );
+    if (!data) throw new Error('Failed to fetch progress');
+    return data;
+  },
+
+  getChildProgress: async (
+    organizationId: number,
+    params: { student_id: number; track_id: number; from?: string; to?: string }
+  ): Promise<StudentProgress> => {
+    const { data } = await apiClient.GET(
+      '/api/assessment/organizations/{organization_pk}/progress/child/',
+      {
+        params: {
+          path: { organization_pk: organizationId },
+          query: params,
+        },
+      }
+    );
+    if (!data) throw new Error('Failed to fetch child progress');
+    return data;
+  },
+
+  getTeachingProgress: async (
+    organizationId: number,
+    params: { student_id: number; track_id: number; from?: string; to?: string }
+  ): Promise<StudentProgress> => {
+    const { data } = await apiClient.GET(
+      '/api/assessment/organizations/{organization_pk}/progress/teaching/',
+      {
+        params: {
+          path: { organization_pk: organizationId },
+          query: params,
+        },
+      }
+    );
+    if (!data) throw new Error('Failed to fetch teaching progress');
+    return data;
+  },
+
+  // ---- Snapshot Endpoints ----
+
+  getSnapshots: async (
+    organizationId: number,
+    params?: { student_id?: number; track_id?: number }
+  ): Promise<ProgressSnapshot[]> => {
+    const { data } = await apiClient.GET(
+      '/api/assessment/organizations/{organization_pk}/snapshots/',
+      {
+        params: {
+          path: { organization_pk: organizationId },
+          query: params,
+        },
+      }
+    );
+    return data ?? [];
+  },
+
+  createSnapshot: async (
+    organizationId: number,
+    body: ProgressSnapshotCreate
+  ): Promise<ProgressSnapshot> => {
+    const { data } = await apiClient.POST(
+      '/api/assessment/organizations/{organization_pk}/snapshots/',
+      {
+        params: { path: { organization_pk: organizationId } },
+        body,
+      }
+    );
+    if (!data) throw new Error('Failed to create snapshot');
+    return data;
+  },
+
+  getAllSnapshots: async (
+    organizationId: number,
+    params?: { student_id?: number; track_id?: number }
+  ): Promise<ProgressSnapshot[]> => {
+    const { data } = await apiClient.GET(
+      '/api/assessment/organizations/{organization_pk}/snapshots/all/',
+      {
+        params: {
+          path: { organization_pk: organizationId },
+          query: params,
+        },
+      }
+    );
+    return data ?? [];
+  },
+
+  getMySnapshots: async (
+    organizationId: number,
+    params?: { track_id?: number }
+  ): Promise<FamilyProgressSnapshot[]> => {
+    const { data } = await apiClient.GET(
+      '/api/assessment/organizations/{organization_pk}/snapshots/mine/',
+      {
+        params: {
+          path: { organization_pk: organizationId },
+          query: params,
+        },
+      }
+    );
+    return data ?? [];
+  },
+
+  getChildSnapshots: async (
+    organizationId: number,
+    params: { student_id: number; track_id?: number }
+  ): Promise<FamilyProgressSnapshot[]> => {
+    const { data } = await apiClient.GET(
+      '/api/assessment/organizations/{organization_pk}/snapshots/child/',
+      {
+        params: {
+          path: { organization_pk: organizationId },
+          query: params,
+        },
+      }
+    );
+    return data ?? [];
   },
 };

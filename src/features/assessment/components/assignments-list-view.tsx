@@ -106,9 +106,9 @@ export function AssignmentsListView({ onSelectAssignmentForGrading }: Assignment
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Formats</SelectItem>
-              <SelectItem value="recitation">Quran Recitation</SelectItem>
-              <SelectItem value="written">Written Task</SelectItem>
-              <SelectItem value="file">File / Worksheet</SelectItem>
+              <SelectItem value="audio_recitation">Quran Recitation</SelectItem>
+              <SelectItem value="written_text">Written Response</SelectItem>
+              <SelectItem value="file_upload">File / Worksheet</SelectItem>
               <SelectItem value="mixed">Mixed Format</SelectItem>
             </SelectContent>
           </Select>
@@ -144,7 +144,7 @@ export function AssignmentsListView({ onSelectAssignmentForGrading }: Assignment
             const mySubmission = assignment.my_submission;
             const isGraded = mySubmission?.status === 'graded';
             const isSubmitted = mySubmission?.status === 'submitted';
-            const needsRevision = mySubmission?.status === 'needs_revision';
+            const needsRevision = mySubmission?.status === 'resubmission_requested';
 
             return (
               <Card key={assignment.id} className="p-4 space-y-3 hover:border-primary/50 transition-colors">
@@ -153,20 +153,20 @@ export function AssignmentsListView({ onSelectAssignmentForGrading }: Assignment
                     <div className="flex items-center gap-2">
                       <h4 className="font-semibold text-base">{assignment.title}</h4>
                       <Badge variant="outline" className="text-xs capitalize">
-                        {assignment.submission_type === 'recitation' && (
+                        {assignment.submission_type === 'audio_recitation' && (
                           <Mic className="h-3 w-3 mr-1 text-emerald-600 inline" />
                         )}
-                        {assignment.submission_type === 'written' && (
+                        {assignment.submission_type === 'written_text' && (
                           <FileText className="h-3 w-3 mr-1 text-blue-600 inline" />
                         )}
-                        {assignment.submission_type === 'file' && (
+                        {assignment.submission_type === 'file_upload' && (
                           <Paperclip className="h-3 w-3 mr-1 text-amber-600 inline" />
                         )}
-                        {assignment.submission_type}
+                        {SUBMISSION_TYPE_LABELS[assignment.submission_type] || assignment.submission_type}
                       </Badge>
                     </div>
                     <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                      <span>Teacher: {assignment.created_by_name}</span>
+                      <span>Teacher: {assignment.created_by ? getDisplayName(assignment.created_by) : 'Teacher'}</span>
                       {assignment.assigned_student_name && (
                         <span>Student: {assignment.assigned_student_name}</span>
                       )}
@@ -244,11 +244,6 @@ export function AssignmentsListView({ onSelectAssignmentForGrading }: Assignment
                     {(assignment.ayah_start || assignment.ayah_end) && (
                       <span>
                         Ayat {assignment.ayah_start || 1} - {assignment.ayah_end || 'End'}
-                      </span>
-                    )}
-                    {assignment.reference_notes && (
-                      <span className="text-muted-foreground italic">
-                        &ldquo;{assignment.reference_notes}&rdquo;
                       </span>
                     )}
                   </div>

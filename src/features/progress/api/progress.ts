@@ -95,12 +95,26 @@ export const progressApi = {
     return data ?? [];
   },
 
-  getAllSnapshots: async (
+  getSnapshots: async (
     organizationId: number,
     studentId?: number,
     trackId?: number
   ): Promise<ProgressSnapshot[]> => {
     return progressApi.getAcademySnapshots(organizationId, studentId, trackId);
+  },
+
+  getAllSnapshots: async (
+    organizationId: number,
+    studentId?: number,
+    trackId?: number
+  ): Promise<ProgressSnapshot[]> => {
+    const { data } = await apiClient.GET('/api/assessment/organizations/{organization_pk}/snapshots/all/', {
+      params: {
+        path: { organization_pk: organizationId },
+        query: { student_id: studentId, track_id: trackId },
+      },
+    });
+    return data ?? [];
   },
 
   createSnapshot: async (

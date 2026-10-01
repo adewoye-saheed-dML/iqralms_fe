@@ -47,9 +47,12 @@ describe('Assessment Feature', () => {
     } as any);
     vi.mocked(assessmentApi.getAssignments).mockResolvedValue([]);
     vi.mocked(assessmentApi.getWardProgress).mockResolvedValue({
-      student: { id: 1, name: 'Student 1', email: 's@test.com' },
-      stats: { total_assigned: 0, submitted_count: 0, graded_count: 0, average_score: null },
-      items: [],
+      student: { id: 1, username: 's1', first_name: 'Student', last_name: '1' },
+      total_assigned: 0,
+      total_submitted: 0,
+      total_graded: 0,
+      average_score_pct: null,
+      recent_submissions: [],
     });
   });
 

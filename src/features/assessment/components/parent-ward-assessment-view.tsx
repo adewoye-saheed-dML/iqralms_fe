@@ -9,6 +9,7 @@ import {
   resolveAssessmentMediaUrl,
   StudentAssignment,
   AssignmentSubmission,
+  getDisplayName,
 } from '../api/assessment';
 import { assessmentKeys, familyKeys } from '@/lib/api/query-keys';
 import { familyApi } from '@/features/family/api/family';
@@ -77,14 +78,41 @@ export function ParentWardAssessmentView() {
     enabled: !!academyId && (isStudent || !!targetStudentId),
   });
 
-  const stats = progressData?.stats || {
-    total_assigned: 0,
-    submitted_count: 0,
-    graded_count: 0,
-    average_score: null,
+  const stats = {
+    total_assigned: progressData?.total_assigned ?? 0,
+    submitted_count: progressData?.total_submitted ?? 0,
+    graded_count: progressData?.total_graded ?? 0,
+    average_score: progressData?.average_score_pct ?? null,
   };
 
-  const items = progressData?.items || [];
+  const items: Array<{ assignment: StudentAssignment; submission: AssignmentSubmission | null }> =
+    (progressData?.recent_submissions || []).map((sub) => ({
+      assignment: {
+        id: sub.assignment,
+        title: sub.assignment_title,
+        submission_type: sub.submission_type,
+        max_score: sub.max_score,
+        surah_number: sub.surah_number,
+        ayah_start: sub.ayah_start,
+        ayah_end: sub.ayah_end,
+        description: '',
+        due_date: null,
+        created_at: sub.submitted_at,
+        updated_at: sub.submitted_at,
+        track: null,
+        track_name: null,
+        level: null,
+        level_name: null,
+        assigned_student: null,
+        assigned_student_name: null,
+        rubric: null,
+        resource_file: null,
+        created_by: sub.graded_by || null,
+        submissions_count: 1,
+        pending_submissions_count: 0,
+      } as StudentAssignment,
+      submission: sub,
+    }));
 
   return (
     <div className="space-y-6">
@@ -187,7 +215,7 @@ export function ParentWardAssessmentView() {
             {items.map(({ assignment, submission }) => {
               const isGraded = submission?.status === 'graded';
               const isSubmitted = submission?.status === 'submitted';
-              const needsRevision = submission?.status === 'needs_revision';
+              const needsRevision = submission?.status === 'resubmission_requested';
 
               return (
                 <Card key={assignment.id} className="overflow-hidden border transition-all hover:shadow-sm">
@@ -201,7 +229,7 @@ export function ParentWardAssessmentView() {
                           </Badge>
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          Assigned by {assignment.created_by_name}
+                          Assigned by {assignment.created_by ? getDisplayName(assignment.created_by) : 'Teacher'}
                           {assignment.due_date && (
                             <> • Due: {new Date(assignment.due_date).toLocaleDateString()}</>
                           )}
@@ -245,14 +273,11 @@ export function ParentWardAssessmentView() {
                             Ayat {assignment.ayah_start || 1} - {assignment.ayah_end || 'End'}
                           </span>
                         )}
-                        {assignment.reference_notes && (
-                          <span className="text-muted-foreground italic">&ldquo;{assignment.reference_notes}&rdquo;</span>
-                        )}
                       </div>
                     )}
 
                     {/* Recitation Audio Player (if child submitted audio) */}
-                    {submission?.audio_file_url && (
+                    {submission?.audio_recording && (
                       <div className="p-3 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900 rounded-md space-y-2">
                         <div className="flex items-center justify-between text-xs">
                           <span className="font-medium text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
@@ -266,7 +291,7 @@ export function ParentWardAssessmentView() {
                         <audio
                           controls
                           className="w-full h-9"
-                          src={resolveAssessmentMediaUrl(submission.audio_file_url) || ''}
+                          src={resolveAssessmentMediaUrl(submission.audio_recording) || ''}
                         />
                       </div>
                     )}
