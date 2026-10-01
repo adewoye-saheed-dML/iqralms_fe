@@ -45,7 +45,7 @@ export default function MarketingLayout({
             <Button variant="ghost" asChild size="sm">
               <Link href="/login">Sign In</Link>
             </Button>
-            <Button asChild size="sm">
+            <Button asChild size="sm" className="bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl px-4 shadow-2xs">
               <Link href="/pricing">Get Started</Link>
             </Button>
           </div>

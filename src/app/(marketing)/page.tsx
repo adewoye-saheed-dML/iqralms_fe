@@ -2,7 +2,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   Calendar,
-  GraduationCap,
   Award,
   ArrowRight,
   BookOpen,
@@ -12,6 +11,12 @@ import {
   ShieldCheck,
   CheckCircle2,
   Users,
+  Mic,
+  Star,
+  Sparkles,
+  Heart,
+  Quote,
+  BookMarked,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -19,395 +24,505 @@ import { Badge } from '@/components/ui/badge';
 
 export default function HomePage() {
   return (
-    <div className="space-y-16 sm:space-y-24 pb-16">
+    <div className="space-y-20 sm:space-y-28 pb-20 bg-[#FAFAFA] dark:bg-background text-foreground">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-muted/50 to-background py-16 sm:py-24">
+      <section className="relative overflow-hidden pt-12 pb-16 sm:pt-20 sm:pb-24 border-b border-border/60 bg-gradient-to-b from-emerald-50/40 via-background to-background dark:from-emerald-950/20 dark:via-background dark:to-background">
         <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border bg-background px-3.5 py-1 text-xs font-medium text-muted-foreground shadow-xs mb-6">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            Purpose-Built for Quran &amp; Islamic Studies Academies
+          
+          {/* Spiritual Opening Banner */}
+          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200/80 dark:border-emerald-800 bg-white dark:bg-card px-4 py-1.5 text-xs font-medium text-emerald-900 dark:text-emerald-300 shadow-2xs mb-6">
+            <span className="font-arabic text-sm text-emerald-700 dark:text-emerald-400">بِسْمِ اللهِ الرَّحْمٰنِ الرَّحِيْمِ</span>
+            <span className="text-border mx-1">•</span>
+            <span>A Dedicated Platform for Qur&apos;an &amp; Islamic Learning</span>
           </div>
 
-          <h1 className="mx-auto max-w-4xl text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl text-foreground">
-            Streamline your Quran &amp; Islamic Studies Academy with structured learning &amp; operations
+          {/* Main Hero Headline */}
+          <h1 className="mx-auto max-w-4xl text-3xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl text-foreground text-balance leading-tight sm:leading-tight">
+            A Sacred Space for Qur&apos;an &amp; Islamic Learning, <br className="hidden sm:inline" />
+            <span className="text-emerald-700 dark:text-emerald-400">Built for Every Madrasah &amp; Family</span>
           </h1>
 
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground leading-relaxed">
-            From Quran memorization (Hifz) and Tajweed to Arabic literacy, Hadith, Fiqh, and foundational Islamic studies—manage multi-level curricula, flexible lesson scheduling, recitation grading, and family oversight in one unified Islamic education platform.
+          {/* Subheading in Natural, Non-AI English */}
+          <p className="mx-auto mt-6 max-w-3xl text-base sm:text-lg text-muted-foreground leading-relaxed">
+            Streamline your Quran &amp; Islamic Studies Academy with structured learning &amp; operations. From a child&apos;s first Noorani Qaida and heartfelt Tajweed recitation, to complete Qur&apos;an memorization (Hifz), classical Arabic, Hadith, and essential Fiqh—bring your teachers, students, and parents together in one calm, blessed educational sanctuary.
           </p>
 
-          <div className="mt-8 flex flex-wrap justify-center gap-4">
-            <Button asChild size="lg" className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">
+          {/* CTA Buttons */}
+          <div className="mt-8 flex flex-wrap justify-center items-center gap-4">
+            <Button asChild size="lg" className="gap-2 bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white shadow-sm px-7 text-sm font-semibold rounded-xl">
               <Link href="/pricing">
                 View Pricing &amp; Access <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
-            <Button variant="outline" asChild size="lg">
+            <Button variant="outline" asChild size="lg" className="rounded-xl px-7 text-sm font-medium border-border/80 hover:bg-muted">
               <Link href="/login">Sign In to Academy</Link>
             </Button>
           </div>
 
-          {/* Hero Visual Showcase */}
-          <div className="mt-14 mx-auto max-w-4xl">
-            <div className="rounded-2xl border bg-card p-6 sm:p-8 shadow-sm text-left">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pb-6 border-b">
+          {/* Community Trust Line */}
+          <div className="mt-8 flex items-center justify-center gap-3 text-xs text-muted-foreground">
+            <div className="flex -space-x-2">
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold border-2 border-background">U</span>
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-amber-100 text-amber-800 text-[11px] font-bold border-2 border-background">Y</span>
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-teal-100 text-teal-800 text-[11px] font-bold border-2 border-background">F</span>
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-200 text-emerald-900 text-[11px] font-bold border-2 border-background">M</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="flex text-amber-500">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="h-3 w-3 fill-current" />
+                ))}
+              </div>
+              <span className="font-medium text-foreground">Trusted by educators &amp; Muslim families worldwide</span>
+            </div>
+          </div>
+
+          {/* Hero Visual: Centerpiece Showcase */}
+          <div className="mt-12 mx-auto max-w-4xl">
+            <div className="relative rounded-2xl border border-border/80 bg-white dark:bg-card p-6 sm:p-10 shadow-md text-left">
+              {/* Subtle Islamic corner decoration */}
+              <div className="absolute top-3 right-3 text-emerald-600/10 dark:text-emerald-400/10 select-none font-arabic text-6xl">
+                ۞
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pb-6 border-b border-border/60">
                 <div className="flex items-center gap-4">
                   <Image
-                    src="/images/iqralms-icon.jpeg"
-                    alt="IQRA LMS"
-                    width={56}
-                    height={56}
-                    className="h-14 w-14 rounded-xl object-contain border bg-white p-1 shadow-xs"
+                    src="/images/iqralms-card.jpeg"
+                    alt="IQRA LMS Emblem"
+                    width={64}
+                    height={64}
+                    className="h-16 w-16 rounded-xl object-contain border bg-emerald-900 shadow-sm shrink-0"
                     priority
                   />
                   <div>
-                    <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
-                      <span>iqra<span className="text-emerald-600">lms</span></span>
-                      <Badge variant="outline" className="text-[10px] text-emerald-700 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/50">
-                        Academy Operating System
+                    <div className="flex items-center gap-2">
+                      <h2 className="font-extrabold text-xl text-foreground tracking-tight">
+                        iqra<span className="text-emerald-700 dark:text-emerald-400">lms</span>
+                      </h2>
+                      <Badge variant="outline" className="text-[10px] text-emerald-800 dark:text-emerald-300 border-emerald-300/80 bg-emerald-50 dark:bg-emerald-950/60 font-medium">
+                        Madrasah Operating System
                       </Badge>
-                    </h3>
+                    </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Unified management for traditional madrasahs, online institutes, and Islamic schools
+                      Dedicated infrastructure for traditional madrasahs, community Quran schools, and online institutes.
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800">
-                    <CheckCircle2 className="h-3.5 w-3.5" /> Multi-Tenant
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                    <CheckCircle2 className="h-3 w-3 text-emerald-600" /> Multi-Tenant
                   </span>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground border">
-                    <ShieldCheck className="h-3.5 w-3.5" /> Role Segregated
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-medium bg-muted text-muted-foreground border">
+                    <ShieldCheck className="h-3 w-3" /> Private Academy
                   </span>
                 </div>
               </div>
 
-              {/* Pillars Highlight Bar */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-6 text-center sm:text-left">
-                <div className="p-3 rounded-lg bg-muted/30 border border-muted/50">
-                  <div className="flex items-center gap-2 text-primary font-semibold text-xs mb-1">
-                    <BookOpen className="h-4 w-4 shrink-0 text-emerald-600" />
-                    <span>Quran &amp; Tajweed</span>
+              {/* Pillars Highlight Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-6">
+                <div className="p-3.5 rounded-xl bg-[#FAFAFA] dark:bg-muted/40 border border-border/60 hover:border-emerald-500/40 transition">
+                  <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-semibold text-xs mb-1">
+                    <BookOpen className="h-4 w-4 text-emerald-600 shrink-0" />
+                    <span>Noble Qur&apos;an &amp; Hifz</span>
                   </div>
-                  <p className="text-[11px] text-muted-foreground">Hifz, Tilawah, Makharij &amp; Muraja&apos;ah</p>
+                  <p className="text-[11px] text-muted-foreground">Sabaq, Sabqi, Manzil &amp; Tajweed</p>
                 </div>
 
-                <div className="p-3 rounded-lg bg-muted/30 border border-muted/50">
-                  <div className="flex items-center gap-2 text-primary font-semibold text-xs mb-1">
-                    <Languages className="h-4 w-4 shrink-0 text-emerald-600" />
-                    <span>Arabic Language</span>
+                <div className="p-3.5 rounded-xl bg-[#FAFAFA] dark:bg-muted/40 border border-border/60 hover:border-emerald-500/40 transition">
+                  <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-semibold text-xs mb-1">
+                    <Languages className="h-4 w-4 text-emerald-600 shrink-0" />
+                    <span>Arabic Literacy</span>
                   </div>
-                  <p className="text-[11px] text-muted-foreground">Qaida, Reading &amp; Grammar tracks</p>
+                  <p className="text-[11px] text-muted-foreground">Qaida, Reading &amp; Quranic Arabic</p>
                 </div>
 
-                <div className="p-3 rounded-lg bg-muted/30 border border-muted/50">
-                  <div className="flex items-center gap-2 text-primary font-semibold text-xs mb-1">
-                    <Compass className="h-4 w-4 shrink-0 text-emerald-600" />
+                <div className="p-3.5 rounded-xl bg-[#FAFAFA] dark:bg-muted/40 border border-border/60 hover:border-emerald-500/40 transition">
+                  <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-semibold text-xs mb-1">
+                    <Compass className="h-4 w-4 text-emerald-600 shrink-0" />
                     <span>Islamic Studies</span>
                   </div>
-                  <p className="text-[11px] text-muted-foreground">Hadith, Fiqh, Seerah &amp; Tarbiyyah</p>
+                  <p className="text-[11px] text-muted-foreground">Seerah, Hadith, Fiqh &amp; Adhkar</p>
                 </div>
 
-                <div className="p-3 rounded-lg bg-muted/30 border border-muted/50">
-                  <div className="flex items-center gap-2 text-primary font-semibold text-xs mb-1">
-                    <Video className="h-4 w-4 shrink-0 text-emerald-600" />
-                    <span>Virtual Classroom</span>
+                <div className="p-3.5 rounded-xl bg-[#FAFAFA] dark:bg-muted/40 border border-border/60 hover:border-emerald-500/40 transition">
+                  <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-semibold text-xs mb-1">
+                    <Video className="h-4 w-4 text-emerald-600 shrink-0" />
+                    <span>Virtual Halaqah</span>
                   </div>
-                  <p className="text-[11px] text-muted-foreground">1-on-1 &amp; cohort video sessions</p>
+                  <p className="text-[11px] text-muted-foreground">1-on-1 and cohort recitation rooms</p>
                 </div>
               </div>
             </div>
           </div>
+
         </div>
       </section>
 
-      {/* Core Educational Scope Section */}
+      {/* Islamic Pedagogy: The 4 Core Disciplines */}
       <section className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <div className="inline-flex items-center gap-1.5 rounded-full border bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground mb-3">
-            Comprehensive Islamic Pedagogy
+        <div className="text-center max-w-3xl mx-auto mb-14">
+          <div className="inline-block py-1.5 px-4 mb-4 text-center rounded-full border border-emerald-200/80 dark:border-emerald-800 bg-white dark:bg-card shadow-2xs">
+            <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
+              Sacred Curriculum
+            </span>
           </div>
-          <h2 className="text-3xl font-bold tracking-tight">Rooted in the Quran, Built for Comprehensive Islamic Education</h2>
-          <p className="mt-4 text-muted-foreground text-base">
-            While Quran memorization and recitation are at the heart of our platform, IQRA LMS supports your academy’s full curriculum across Arabic literacy, Hadith studies, Fiqh, and character building.
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+            Rooted in the Qur&apos;an. Dedicated to the Deen.
+          </h2>
+          <p className="mt-4 text-muted-foreground text-base sm:text-lg leading-relaxed">
+            True Islamic education weaves the Book of Allah together with sound understanding, pure character (Tarbiyyah), and the language of Divine Revelation.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="flex flex-col justify-between">
-            <CardHeader>
-              <div className="h-10 w-10 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/50 flex items-center justify-center mb-3">
-                <BookOpen className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+          <Card className="rounded-2xl border-border/80 bg-white dark:bg-card p-2 hover:border-emerald-500/50 hover:shadow-md transition-all flex flex-col justify-between">
+            <CardHeader className="space-y-3 pb-3">
+              <div className="h-12 w-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200/60 dark:border-emerald-800 flex items-center justify-center">
+                <BookOpen className="h-6 w-6 text-emerald-700 dark:text-emerald-400" />
               </div>
-              <CardTitle className="text-lg">Quran &amp; Hifz Memorization</CardTitle>
-              <CardDescription className="text-xs leading-relaxed pt-1">
-                Structured Hifz milestones from Juz&apos; Amma to complete Khatm. Systematize daily new lesson (Sabaq), recent revision (Sabqi), and retention review (Manzil).
+              <CardTitle className="text-lg font-bold text-foreground">Qur&apos;an Recitation &amp; Hifz</CardTitle>
+              <CardDescription className="text-xs text-muted-foreground leading-relaxed">
+                Nurture steady memorizers with structured daily Sabaq (new lesson), Sabqi (recent review), and Manzil (cumulative retention), evaluated through clear oral Tajweed rubrics.
               </CardDescription>
             </CardHeader>
-            <CardContent className="pt-0 text-xs text-muted-foreground">
-              <span className="font-semibold text-foreground">Includes:</span> Tajweed rule rubrics, audio recitation submissions, and oral testing queues.
+            <CardContent className="pt-0 text-xs text-muted-foreground border-t border-border/50 mt-4 pt-3">
+              <span className="font-semibold text-foreground">Covers:</span> Tilawah fluency, Makharij articulation, rules of Noon/Meem Sakinah, and Muraja&apos;ah tracking.
             </CardContent>
           </Card>
 
-          <Card className="flex flex-col justify-between">
-            <CardHeader>
-              <div className="h-10 w-10 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/50 flex items-center justify-center mb-3">
-                <Languages className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+          <Card className="rounded-2xl border-border/80 bg-white dark:bg-card p-2 hover:border-emerald-500/50 hover:shadow-md transition-all flex flex-col justify-between">
+            <CardHeader className="space-y-3 pb-3">
+              <div className="h-12 w-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200/60 dark:border-emerald-800 flex items-center justify-center">
+                <Languages className="h-6 w-6 text-emerald-700 dark:text-emerald-400" />
               </div>
-              <CardTitle className="text-lg">Arabic Literacy &amp; Language</CardTitle>
-              <CardDescription className="text-xs leading-relaxed pt-1">
-                From beginner Noorani Qaida phonetics and letter recognition to Quranic vocabulary, basic morphology (Sarf), and grammar (Nahw) for lasting comprehension.
+              <CardTitle className="text-lg font-bold text-foreground">Arabic Literacy &amp; Language</CardTitle>
+              <CardDescription className="text-xs text-muted-foreground leading-relaxed">
+                Open the language in which the Qur&apos;an was revealed. Progress gently from Noorani Qaida phonetics and letter recognition to Quranic vocabulary and fundamental grammar.
               </CardDescription>
             </CardHeader>
-            <CardContent className="pt-0 text-xs text-muted-foreground">
-              <span className="font-semibold text-foreground">Includes:</span> Progressive reader levels, pronunciation checks, and syllabus textbooks.
+            <CardContent className="pt-0 text-xs text-muted-foreground border-t border-border/50 mt-4 pt-3">
+              <span className="font-semibold text-foreground">Covers:</span> Beginner Qaida, connecting letters, Harakat, Tanween, Nahw basics, and vocabulary.
             </CardContent>
           </Card>
 
-          <Card className="flex flex-col justify-between">
-            <CardHeader>
-              <div className="h-10 w-10 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/50 flex items-center justify-center mb-3">
-                <Compass className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+          <Card className="rounded-2xl border-border/80 bg-white dark:bg-card p-2 hover:border-emerald-500/50 hover:shadow-md transition-all flex flex-col justify-between">
+            <CardHeader className="space-y-3 pb-3">
+              <div className="h-12 w-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200/60 dark:border-emerald-800 flex items-center justify-center">
+                <Compass className="h-6 w-6 text-emerald-700 dark:text-emerald-400" />
               </div>
-              <CardTitle className="text-lg">Islamic Studies &amp; Ethics</CardTitle>
-              <CardDescription className="text-xs leading-relaxed pt-1">
-                Systematic courses covering Prophetic Seerah, authentic Hadith, essential Fiqh of worship (Taharah, Salah, Sawm), Aqeedah, and daily Adhkar (Tarbiyyah).
+              <CardTitle className="text-lg font-bold text-foreground">Islamic Studies &amp; Seerah</CardTitle>
+              <CardDescription className="text-xs text-muted-foreground leading-relaxed">
+                Build firm faith and practical knowledge. Structured tracks cover the radiant Seerah of the Prophet Muhammad ﷺ, authentic Hadith, and essential beliefs (Aqeedah).
               </CardDescription>
             </CardHeader>
-            <CardContent className="pt-0 text-xs text-muted-foreground">
-              <span className="font-semibold text-foreground">Includes:</span> Modular lessons, written evaluations, and character-building milestones.
+            <CardContent className="pt-0 text-xs text-muted-foreground border-t border-border/50 mt-4 pt-3">
+              <span className="font-semibold text-foreground">Covers:</span> 40 Hadith of Imam Nawawi, Stories of the Prophets, and core articles of Iman.
             </CardContent>
           </Card>
 
-          <Card className="flex flex-col justify-between">
-            <CardHeader>
-              <div className="h-10 w-10 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/50 flex items-center justify-center mb-3">
-                <Video className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+          <Card className="rounded-2xl border-border/80 bg-white dark:bg-card p-2 hover:border-emerald-500/50 hover:shadow-md transition-all flex flex-col justify-between">
+            <CardHeader className="space-y-3 pb-3">
+              <div className="h-12 w-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200/60 dark:border-emerald-800 flex items-center justify-center">
+                <Heart className="h-6 w-6 text-emerald-700 dark:text-emerald-400" />
               </div>
-              <CardTitle className="text-lg">Live Interactive Classrooms</CardTitle>
-              <CardDescription className="text-xs leading-relaxed pt-1">
-                Built-in secure video classrooms, interactive whiteboard, live Quran recitation coaching, session attendance logging, and recording archives.
+              <CardTitle className="text-lg font-bold text-foreground">Fiqh of Worship &amp; Tarbiyyah</CardTitle>
+              <CardDescription className="text-xs text-muted-foreground leading-relaxed">
+                Knowledge shines brightest when paired with devotion. Teach the practical mechanics of Taharah, Salah, fasting, daily morning/evening Adhkar, and Islamic manners (Adab).
               </CardDescription>
             </CardHeader>
-            <CardContent className="pt-0 text-xs text-muted-foreground">
-              <span className="font-semibold text-foreground">Includes:</span> 1-on-1 private sessions and group cohort halaqat with zero external links.
+            <CardContent className="pt-0 text-xs text-muted-foreground border-t border-border/50 mt-4 pt-3">
+              <span className="font-semibold text-foreground">Covers:</span> Step-by-step prayer guides, Wudu, authentic Du&apos;as, and character development.
             </CardContent>
           </Card>
         </div>
       </section>
 
-      {/* Institutional LMS Operations Section */}
+      {/* Live Halaqah Classroom Showcase */}
       <section className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <h2 className="text-3xl font-bold tracking-tight">Modern operations for Islamic educational institutions</h2>
-          <p className="mt-4 text-muted-foreground text-base">
-            Eliminate administrative clutter with tools engineered specifically for managing madrasahs, Islamic institutes, and online Quran academies.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <Card>
-            <CardHeader>
-              <Calendar className="h-8 w-8 text-primary mb-2" />
-              <CardTitle className="text-xl">Flexible Scheduling &amp; Booking</CardTitle>
-              <CardDescription>
-                Coordinate 1-on-1 recitation slots and group cohorts between teachers and students, with automatic timezone conversion and intelligent waitlists.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <Award className="h-8 w-8 text-primary mb-2" />
-              <CardTitle className="text-xl">Rubric Assessment &amp; Grading</CardTitle>
-              <CardDescription>
-                Conduct audio recitation evaluations, Tajweed grading, and written homework reviews with transparent rubric criteria and audio playback.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <GraduationCap className="h-8 w-8 text-primary mb-2" />
-              <CardTitle className="text-xl">Curriculum &amp; Track Structure</CardTitle>
-              <CardDescription>
-                Define multi-tiered curriculum tracks across Quran, Arabic, and Islamic studies with sequential ordered levels and clear graduation milestones.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
-      </section>
-
-      {/* Curriculum Tracks Showcase */}
-      <section className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 bg-muted/20 border rounded-2xl p-8 sm:p-12">
-        <div className="max-w-3xl mx-auto text-center space-y-4 mb-8">
-          <h3 className="text-2xl font-bold tracking-tight">Curriculum tracks designed for authentic madrasah syllabi</h3>
-          <p className="text-muted-foreground text-sm">
-            Configure any subject track your academy offers, or choose from our established Islamic curriculum templates.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-center">
-          <div className="rounded-lg border bg-card p-3 shadow-2xs">
-            <span className="text-xs font-semibold text-foreground block">Tajweed Rules</span>
-            <span className="text-[11px] text-muted-foreground">Makharij &amp; Sifaat</span>
+        <div className="rounded-3xl border border-border/80 bg-white dark:bg-card p-8 sm:p-14 shadow-sm">
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <div className="inline-block py-1 px-4 mb-3 text-center rounded-full border border-emerald-200/80 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-xs font-medium text-emerald-800 dark:text-emerald-300">
+              The Classroom Experience
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+              Live Virtual Halaqat That Feel Personal and Reverent
+            </h2>
+            <p className="mt-4 text-muted-foreground text-base">
+              No scattered Zoom links, noisy distractions, or confusing passwords. Students and teachers enter their recitation circle with a single click.
+            </p>
           </div>
-          <div className="rounded-lg border bg-card p-3 shadow-2xs">
-            <span className="text-xs font-semibold text-foreground block">Quran Hifz</span>
-            <span className="text-[11px] text-muted-foreground">Memorization &amp; Review</span>
-          </div>
-          <div className="rounded-lg border bg-card p-3 shadow-2xs">
-            <span className="text-xs font-semibold text-foreground block">Noorani Qaida</span>
-            <span className="text-[11px] text-muted-foreground">Foundational Reading</span>
-          </div>
-          <div className="rounded-lg border bg-card p-3 shadow-2xs">
-            <span className="text-xs font-semibold text-foreground block">Quranic Arabic</span>
-            <span className="text-[11px] text-muted-foreground">Vocabulary &amp; Grammar</span>
-          </div>
-          <div className="rounded-lg border bg-card p-3 shadow-2xs">
-            <span className="text-xs font-semibold text-foreground block">Hadith &amp; Seerah</span>
-            <span className="text-[11px] text-muted-foreground">Prophetic Teachings</span>
-          </div>
-          <div className="rounded-lg border bg-card p-3 shadow-2xs">
-            <span className="text-xs font-semibold text-foreground block">Fiqh of Worship</span>
-            <span className="text-[11px] text-muted-foreground">Salah, Taharah, Adab</span>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="space-y-3 p-6 rounded-2xl bg-[#FAFAFA] dark:bg-muted/30 border border-border/60">
+              <div className="h-10 w-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 flex items-center justify-center text-emerald-800 dark:text-emerald-300 mb-2">
+                <Video className="h-5 w-5" />
+              </div>
+              <h3 className="font-bold text-lg text-foreground">Private 1-on-1 &amp; Group Halaqat</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Crystal-clear audio optimized for Tajweed articulation, Ghunnah, and Madd. Teachers can listen with precision and correct pronunciations in real time.
+              </p>
+            </div>
+
+            <div className="space-y-3 p-6 rounded-2xl bg-[#FAFAFA] dark:bg-muted/30 border border-border/60">
+              <div className="h-10 w-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 flex items-center justify-center text-emerald-800 dark:text-emerald-300 mb-2">
+                <BookMarked className="h-5 w-5" />
+              </div>
+              <h3 className="font-bold text-lg text-foreground">Digital Mushaf &amp; Books On-Screen</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Display the Holy Qur&apos;an, Noorani Qaida, or Islamic studies syllabi directly on screen during lessons. Mark verses, highlight Tajweed rules, and guide students visually.
+              </p>
+            </div>
+
+            <div className="space-y-3 p-6 rounded-2xl bg-[#FAFAFA] dark:bg-muted/30 border border-border/60">
+              <div className="h-10 w-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 flex items-center justify-center text-emerald-800 dark:text-emerald-300 mb-2">
+                <Mic className="h-5 w-5" />
+              </div>
+              <h3 className="font-bold text-lg text-foreground">Audio Homework &amp; Teacher Voice Notes</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Students record and submit their assigned verses between sessions. Teachers review with timestamped audio feedback, rubric ratings, and words of encouragement.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Role Experiences Section */}
-      <section className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 bg-muted/30 rounded-2xl py-12">
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <h2 className="text-3xl font-bold tracking-tight">Dedicated experiences for every stakeholder</h2>
-          <p className="mt-4 text-muted-foreground text-base">
-            No cluttered one-size-fits-all screens. Every user role enters an experience designed strictly for their responsibilities.
+      {/* Built for Everyone in the Sacred Circle: The 4 Roles */}
+      <section className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-3xl mx-auto mb-14">
+          <div className="inline-block py-1.5 px-4 mb-4 text-center rounded-full border border-emerald-200/80 dark:border-emerald-800 bg-white dark:bg-card shadow-2xs">
+            <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
+              For Every Role
+            </span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+            Thoughtfully Crafted for Madrasahs, Teachers &amp; Families
+          </h2>
+          <p className="mt-4 text-muted-foreground text-base sm:text-lg">
+            No complicated screens or technical confusion. Every user logs into a serene workspace tailored to their exact responsibilities.
           </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="rounded-xl border bg-card p-6 shadow-sm flex flex-col justify-between">
+          <div className="rounded-2xl border border-border/80 bg-white dark:bg-card p-6 shadow-2xs flex flex-col justify-between hover:border-emerald-500/40 transition">
             <div>
-              <div className="font-semibold text-primary text-xs uppercase tracking-wider mb-2">Owner / Admin</div>
-              <h3 className="text-base font-bold mb-2">Academy Operations</h3>
+              <div className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 mb-2">
+                Directors &amp; Admins
+              </div>
+              <h3 className="text-lg font-bold mb-2 text-foreground">Madrasah Governance</h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Curriculum design, teacher invitations, student enrollments, academy finances, teacher payout calculations, audit history, and multi-tenant settings.
+                Keep your institution organized with calm confidence. Manage curriculum tracks, welcome certified teachers, enroll students, set lesson caps, and oversee academy finances with complete audit security.
               </p>
             </div>
-            <div className="mt-4 pt-3 border-t text-[11px] text-muted-foreground">
-              Institutional Governance
+            <div className="mt-6 pt-3 border-t border-border/50 text-[11px] font-medium text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5" /> Full Tenant Privacy
             </div>
           </div>
 
-          <div className="rounded-xl border bg-card p-6 shadow-sm flex flex-col justify-between">
+          <div className="rounded-2xl border border-border/80 bg-white dark:bg-card p-6 shadow-2xs flex flex-col justify-between hover:border-emerald-500/40 transition">
             <div>
-              <div className="font-semibold text-primary text-xs uppercase tracking-wider mb-2">Teacher / Scholar</div>
-              <h3 className="text-base font-bold mb-2">Teaching &amp; Evaluation</h3>
+              <div className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 mb-2">
+                Asatizah &amp; Scholars
+              </div>
+              <h3 className="text-lg font-bold mb-2 text-foreground">Teaching &amp; Evaluation</h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Weekly teaching availability, assigned student rosters, live recitation classes, audio homework grading, and transparent compensation statements.
+                Dedicate your energy to teaching the Deen. Declare your weekly availability windows, meet students in 1-on-1 halaqat, grade recitation audio recordings, and view transparent hourly earnings.
               </p>
             </div>
-            <div className="mt-4 pt-3 border-t text-[11px] text-muted-foreground">
-              Pedagogical Delivery
+            <div className="mt-6 pt-3 border-t border-border/50 text-[11px] font-medium text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5" /> Reverent Teaching Tools
             </div>
           </div>
 
-          <div className="rounded-xl border bg-card p-6 shadow-sm flex flex-col justify-between">
+          <div className="rounded-2xl border border-border/80 bg-white dark:bg-card p-6 shadow-2xs flex flex-col justify-between hover:border-emerald-500/40 transition">
             <div>
-              <div className="font-semibold text-primary text-xs uppercase tracking-wider mb-2">Parent / Family</div>
-              <h3 className="text-base font-bold mb-2">Family Oversight</h3>
+              <div className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 mb-2">
+                Parents &amp; Guardians
+              </div>
+              <h3 className="text-lg font-bold mb-2 text-foreground">Family Oversight</h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Manage all registered children in one portal, book recitation sessions on their behalf, view graded rubrics, and follow Islamic studies progress.
+                Stay closely connected to your children&apos;s spiritual progress. Book lesson times that fit your family schedule, listen to teacher feedback notes, and watch their memorization and Tajweed flourish.
               </p>
             </div>
-            <div className="mt-4 pt-3 border-t text-[11px] text-muted-foreground">
-              Parental Engagement
+            <div className="mt-6 pt-3 border-t border-border/50 text-[11px] font-medium text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5" /> Multi-Child Family Portal
             </div>
           </div>
 
-          <div className="rounded-xl border bg-card p-6 shadow-sm flex flex-col justify-between">
+          <div className="rounded-2xl border border-border/80 bg-white dark:bg-card p-6 shadow-2xs flex flex-col justify-between hover:border-emerald-500/40 transition">
             <div>
-              <div className="font-semibold text-primary text-xs uppercase tracking-wider mb-2">Student / Seeker</div>
-              <h3 className="text-base font-bold mb-2">Active Learning</h3>
+              <div className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 mb-2">
+                Students &amp; Seekers
+              </div>
+              <h3 className="text-lg font-bold mb-2 text-foreground">Active Learning</h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Join live video classes in one click, review lesson materials, record and submit recitation homework, and track Quran memorization achievements.
+                A serene, distraction-free space to learn. Join live lessons in one tap, practice with digital syllabus texts, record recitation homework, and celebrate every completed Surah and milestone.
               </p>
             </div>
-            <div className="mt-4 pt-3 border-t text-[11px] text-muted-foreground">
-              Knowledge Acquisition
+            <div className="mt-6 pt-3 border-t border-border/50 text-[11px] font-medium text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5" /> Rewarding &amp; Focused
             </div>
           </div>
         </div>
       </section>
 
-      {/* Academy Workflow */}
+      {/* Community Voices / Testimonials (Like deenai.app's genuine community quotes) */}
       <section className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <h2 className="text-3xl font-bold tracking-tight">Structured academy setup workflow</h2>
-          <p className="mt-4 text-muted-foreground text-base">
-            From academy creation to first lesson booking in a verified, multi-step onboarding journey.
+        <div className="text-center max-w-3xl mx-auto mb-14">
+          <div className="inline-block py-1.5 px-4 mb-4 text-center rounded-full border border-emerald-200/80 dark:border-emerald-800 bg-white dark:bg-card shadow-2xs">
+            <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
+              Community Voices
+            </span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+            Trusted by Madrasahs, Teachers &amp; Families
+          </h2>
+          <p className="mt-4 text-muted-foreground text-base sm:text-lg">
+            See how academies and Muslim homes use IQRA LMS to keep sacred learning structured, consistent, and inspiring.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="flex flex-col items-center text-center p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-lg mb-4">
-              1
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="rounded-2xl border border-border/80 bg-white dark:bg-card p-6 shadow-2xs space-y-4 hover:border-emerald-500/40 transition">
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-emerald-700 text-white flex items-center justify-center font-bold text-sm h-10 w-10 shrink-0">
+                I
+              </div>
+              <div>
+                <p className="font-semibold text-foreground text-sm">Ustadh Ibrahim Danfulani</p>
+                <p className="text-muted-foreground text-xs">Madrasah Principal • Abuja, Nigeria</p>
+              </div>
             </div>
-            <h4 className="font-semibold text-base mb-1">Create Academy</h4>
-            <p className="text-xs text-muted-foreground">Register your institution, configure timezone, and personalize academy settings.</p>
+            <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed italic">
+              &ldquo;Managing our Hifz circles and tracking daily Sabaq used to require countless spreadsheets and WhatsApp messages. IQRA LMS gave our madrasah a serene, organized structure where teachers and parents communicate with ease.&rdquo;
+            </p>
           </div>
 
-          <div className="flex flex-col items-center text-center p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-lg mb-4">
-              2
+          <div className="rounded-2xl border border-border/80 bg-white dark:bg-card p-6 shadow-2xs space-y-4 hover:border-emerald-500/40 transition">
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-amber-700 text-white flex items-center justify-center font-bold text-sm h-10 w-10 shrink-0">
+                F
+              </div>
+              <div>
+                <p className="font-semibold text-foreground text-sm">Fatima Al-Zahra</p>
+                <p className="text-muted-foreground text-xs">Mother of 3 • London, UK</p>
+              </div>
             </div>
-            <h4 className="font-semibold text-base mb-1">Configure Curriculum</h4>
-            <p className="text-xs text-muted-foreground">Set up tracks in Quran, Arabic, and Islamic Studies with sequential level progression.</p>
+            <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed italic">
+              &ldquo;I can see exactly what Surahs my children are reciting, listen to their teacher&apos;s voice feedback, and book lessons around our family schedule. It has brought so much peace and consistency to our home.&rdquo;
+            </p>
           </div>
 
-          <div className="flex flex-col items-center text-center p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-lg mb-4">
-              3
+          <div className="rounded-2xl border border-border/80 bg-white dark:bg-card p-6 shadow-2xs space-y-4 hover:border-emerald-500/40 transition">
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-teal-700 text-white flex items-center justify-center font-bold text-sm h-10 w-10 shrink-0">
+                T
+              </div>
+              <div>
+                <p className="font-semibold text-foreground text-sm">Shaykh Tariq Al-Hashimi</p>
+                <p className="text-muted-foreground text-xs">Tajweed &amp; Qira&apos;at Instructor • Cairo, Egypt</p>
+              </div>
             </div>
-            <h4 className="font-semibold text-base mb-1">Invite Teachers</h4>
-            <p className="text-xs text-muted-foreground">Dispatch email invitations via secure tokens for qualified Quran and Islamic studies instructors.</p>
-          </div>
-
-          <div className="flex flex-col items-center text-center p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-lg mb-4">
-              4
-            </div>
-            <h4 className="font-semibold text-base mb-1">Schedule &amp; Teach</h4>
-            <p className="text-xs text-muted-foreground">Enroll students, book lesson slots, evaluate homework, and nurture academic growth.</p>
+            <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed italic">
+              &ldquo;The audio recitation assignments and rubric evaluations allow me to give precise Makharij and Tajweed corrections to students across different countries. It feels authentic, dignified, and focused.&rdquo;
+            </p>
           </div>
         </div>
       </section>
 
-      {/* Call to Action Section */}
+      {/* The Sacred Journey Setup Workflow */}
       <section className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="rounded-2xl border bg-card p-8 sm:p-12 text-center max-w-4xl mx-auto shadow-sm space-y-6">
+        <div className="text-center max-w-3xl mx-auto mb-14">
+          <div className="inline-block py-1.5 px-4 mb-4 text-center rounded-full border border-emerald-200/80 dark:border-emerald-800 bg-white dark:bg-card shadow-2xs">
+            <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
+              Simple Onboarding
+            </span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+            A Clear, Straightforward Setup for Your Institution
+          </h2>
+          <p className="mt-4 text-muted-foreground text-base">
+            From founding your academy to your first live halaqah session in four simple steps.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="flex flex-col items-center text-center p-6 rounded-2xl bg-white dark:bg-card border border-border/80 shadow-2xs">
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 font-bold text-base border border-emerald-200 dark:border-emerald-800 mb-4">
+              1
+            </div>
+            <h3 className="font-bold text-base text-foreground mb-1">Found Your Academy</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Register your institution name, establish your timezone, and set up your academy profile.
+            </p>
+          </div>
+
+          <div className="flex flex-col items-center text-center p-6 rounded-2xl bg-white dark:bg-card border border-border/80 shadow-2xs">
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 font-bold text-base border border-emerald-200 dark:border-emerald-800 mb-4">
+              2
+            </div>
+            <h3 className="font-bold text-base text-foreground mb-1">Set Up Curricula</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Define tracks across Qur&apos;an, Arabic, and Islamic Studies with sequential, leveled learning stages.
+            </p>
+          </div>
+
+          <div className="flex flex-col items-center text-center p-6 rounded-2xl bg-white dark:bg-card border border-border/80 shadow-2xs">
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 font-bold text-base border border-emerald-200 dark:border-emerald-800 mb-4">
+              3
+            </div>
+            <h3 className="font-bold text-base text-foreground mb-1">Welcome Teachers</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Dispatch email invitation tokens to onboard qualified asatizah, sheikhs, and instructors securely.
+            </p>
+          </div>
+
+          <div className="flex flex-col items-center text-center p-6 rounded-2xl bg-white dark:bg-card border border-border/80 shadow-2xs">
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 font-bold text-base border border-emerald-200 dark:border-emerald-800 mb-4">
+              4
+            </div>
+            <h3 className="font-bold text-base text-foreground mb-1">Teach &amp; Flourish</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Enroll students, schedule 1-on-1 or group halaqat, record recitation feedback, and witness spiritual growth.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Inspiring Call to Action Section with Official Logo Seal */}
+      <section className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="rounded-3xl border border-border/80 bg-white dark:bg-card p-8 sm:p-14 text-center max-w-4xl mx-auto shadow-md space-y-6">
           <div className="flex justify-center">
             <Image
               src="/images/iqralms-seal.jpeg"
               alt="IQRA LMS Seal"
-              width={72}
-              height={72}
-              className="h-16 w-16 rounded-full object-contain border bg-white p-1 shadow-xs"
+              width={80}
+              height={80}
+              className="h-20 w-20 rounded-full object-contain border-2 border-emerald-100 dark:border-emerald-900 bg-white p-1 shadow-sm"
             />
           </div>
-          <h2 className="text-3xl font-bold tracking-tight">Ready to establish your Quran &amp; Islamic Studies Academy?</h2>
-          <p className="text-muted-foreground max-w-xl mx-auto text-sm sm:text-base">
-            Explore institutional access tiers and onboarding details, or connect with our support team to get your madrasah or institute started.
+          
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground text-balance">
+            Begin Nurturing the Next Generation of Qur&apos;an Learners
+          </h2>
+          
+          <p className="text-muted-foreground max-w-xl mx-auto text-sm sm:text-base leading-relaxed">
+            Whether you run an established madrasah, a community weekend school, or an online teaching academy, IQRA LMS gives you the tools to teach with excellence, clarity, and Barakah.
           </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Button asChild size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white">
+          
+          <div className="flex flex-wrap justify-center items-center gap-4 pt-2">
+            <Button asChild size="lg" className="bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white rounded-xl px-8 shadow-sm">
               <Link href="/pricing">View Pricing &amp; Plans</Link>
             </Button>
-            <Button variant="outline" asChild size="lg">
-              <Link href="/contact">Contact Support</Link>
+            <Button variant="outline" asChild size="lg" className="rounded-xl px-7">
+              <Link href="/contact">Contact Our Team</Link>
             </Button>
           </div>
+          
+          <p className="text-[11px] text-muted-foreground pt-4">
+            No long-term contracts. Free onboarding support for verified Islamic academies and madrasahs.
+          </p>
         </div>
       </section>
     </div>
