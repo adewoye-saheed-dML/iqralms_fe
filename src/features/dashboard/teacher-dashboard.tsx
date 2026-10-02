@@ -230,7 +230,7 @@ export function TeacherDashboard() {
                         <span className="capitalize px-2 py-0.5 bg-muted rounded text-[10px] font-medium">
                           {booking.status}
                         </span>
-                        {booking.status !== 'cancelled' && (
+                        {booking.status === 'scheduled' && (
                           <Button size="sm" variant="outline" className="text-xs h-7 px-2" asChild>
                             <Link href={`/app/scheduling/${booking.id}`}>
                               <Video className="mr-1 h-3 w-3" /> Join Class

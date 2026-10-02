@@ -49,7 +49,6 @@ import {
 import { schedulingApi, type Booking } from '@/features/scheduling/api/scheduling';
 import { teachersApi, type TeacherConfiguration } from '@/features/teachers/api/teachers';
 import { membershipsApi, type Membership } from '@/features/memberships/api/memberships';
-import { SessionRecordingsView } from '@/features/scheduling/components/session-recordings-view';
 
 export function OwnerAdminDashboard() {
   const { user } = useAuth();
@@ -57,7 +56,7 @@ export function OwnerAdminDashboard() {
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
 
-  const validTabs = ['overview', 'recordings', 'teachers', 'students', 'members'];
+  const validTabs = ['overview', 'teachers', 'students', 'members'];
   const paramTab = searchParams?.get('tab');
   const initialTab = paramTab && validTabs.includes(paramTab) ? paramTab : 'overview';
 
@@ -473,8 +472,10 @@ export function OwnerAdminDashboard() {
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => handleTabChange('recordings')}>
-            <Video className="h-4 w-4 mr-1.5" /> Class Recordings
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/app/scheduling?tab=recordings">
+              <Video className="h-4 w-4 mr-1.5" /> Class Recordings
+            </Link>
           </Button>
           <Button variant="outline" size="sm" asChild>
             <Link href="/app/onboarding">
@@ -505,12 +506,9 @@ export function OwnerAdminDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 sm:w-auto">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 sm:w-auto">
           <TabsTrigger value="overview" onClick={() => handleTabChange('overview')}>
             Overview &amp; Schedule
-          </TabsTrigger>
-          <TabsTrigger value="recordings" onClick={() => handleTabChange('recordings')}>
-            Recordings &amp; Audit
           </TabsTrigger>
           <TabsTrigger value="teachers" onClick={() => handleTabChange('teachers')}>
             Teachers {allTeachers.length > 0 && `(${allTeachers.length})`}
@@ -711,13 +709,15 @@ export function OwnerAdminDashboard() {
                               })}
                           </span>
                         </div>
-                        {booking.status !== 'cancelled' && (
+                        {booking.status === 'scheduled' ? (
                           <Button size="sm" variant="outline" className="text-xs h-7 px-2" asChild>
                             <Link href={`/app/scheduling/${booking.id}`}>
                               <Video className="mr-1 h-3 w-3" /> Class Session
                             </Link>
                           </Button>
-                        )}
+                        ) : booking.status === 'completed' ? (
+                          <span className="text-[11px] text-muted-foreground font-medium">Concluded</span>
+                        ) : null}
                       </CardContent>
                     </Card>
                   );
@@ -858,11 +858,13 @@ export function OwnerAdminDashboard() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleTabChange('recordings')}
+                    asChild
                     className="w-full justify-between"
                   >
-                    <span>Browse Recordings</span>
-                    <ArrowRight className="h-4 w-4" />
+                    <Link href="/app/scheduling?tab=recordings">
+                      <span>Browse Recordings</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
                   </Button>
                 </CardFooter>
               </Card>
@@ -885,10 +887,6 @@ export function OwnerAdminDashboard() {
               </Card>
             </div>
           </div>
-        </TabsContent>
-
-        <TabsContent value="recordings" className="space-y-6">
-          <SessionRecordingsView />
         </TabsContent>
 
         <TabsContent value="teachers" className="space-y-4">

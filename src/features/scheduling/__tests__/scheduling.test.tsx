@@ -3,6 +3,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SchedulingDashboard } from '../components/scheduling-dashboard';
+import { BookingList } from '../components/booking-list';
 import { BookingForm } from '../components/booking-form';
 import { schedulingApi } from '../api/scheduling';
 import { curriculumApi } from '@/features/curriculum/api/curriculum';
@@ -23,6 +24,7 @@ vi.mock('../api/scheduling', () => ({
   schedulingApi: {
     getMyBookings: vi.fn(),
     getTeachingBookings: vi.fn(),
+    getAcademyBookings: vi.fn(),
     cancelBooking: vi.fn(),
     routeBooking: vi.fn(),
     getMyWaitlist: vi.fn(),
@@ -112,6 +114,73 @@ describe('Scheduling Feature', () => {
       await waitFor(() => {
         expect(screen.getByText('Access Denied')).toBeInTheDocument();
         expect(screen.getByText("You don't have permission to view these bookings.")).toBeInTheDocument();
+      });
+    });
+
+    it('renders scalable table view for academy schedule with status filters and quick search', async () => {
+      vi.mocked(schedulingApi.getAcademyBookings).mockResolvedValue([
+        {
+          id: 501,
+          level_details: { name: 'Quran Advanced Tajweed' },
+          teacher_details: { user: { first_name: 'Sheikh Yusuf' } },
+          student_details: { user: { first_name: 'Bilal Khan' } },
+          start_time_utc: '2026-10-05T14:00:00Z',
+          duration_minutes: 45,
+          status: 'scheduled',
+          video_provider: 'Jitsi',
+        },
+        {
+          id: 502,
+          level_details: { name: 'Noorani Qaida' },
+          teacher_details: { user: { first_name: 'Sister Fatima' } },
+          student_details: { user: { first_name: 'Amina Ali' } },
+          start_time_utc: '2026-10-04T09:00:00Z',
+          duration_minutes: 30,
+          status: 'completed',
+          video_provider: 'Jitsi',
+        },
+      ]);
+
+      renderWithProviders(<BookingList type="academy" />);
+
+      await waitFor(() => {
+        // Table headers are present
+        expect(screen.getByText('Session & Level')).toBeInTheDocument();
+        expect(screen.getByText('Date & Time')).toBeInTheDocument();
+        // Sessions rendered in table
+        expect(screen.getByText('Quran Advanced Tajweed')).toBeInTheDocument();
+        expect(screen.getByText('#501')).toBeInTheDocument();
+        expect(screen.getByText(/Teacher: Sheikh Yusuf/i)).toBeInTheDocument();
+        expect(screen.getByText(/Student: Bilal Khan/i)).toBeInTheDocument();
+        expect(screen.getByText('Noorani Qaida')).toBeInTheDocument();
+        // Status filter counts
+        expect(screen.getByText('Scheduled (1)')).toBeInTheDocument();
+        expect(screen.getByText('Completed (1)')).toBeInTheDocument();
+        // Table view toggle button active
+        expect(screen.getByRole('button', { name: /Table/i })).toBeInTheDocument();
+      });
+    });
+
+    it('does not display active Enter Class Session button when class is completed', async () => {
+      vi.mocked(schedulingApi.getMyBookings).mockResolvedValue([
+        {
+          id: 701,
+          level_details: { name: 'Completed Tajweed Class' },
+          teacher_details: { user: { first_name: 'Ustadh Ali' } },
+          start_time_utc: '2026-10-01T10:00:00Z',
+          status: 'completed',
+        },
+      ]);
+      vi.mocked(schedulingApi.getMyWaitlist).mockResolvedValue([]);
+
+      renderWithProviders(<BookingList type="mine" />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Completed Tajweed Class')).toBeInTheDocument();
+        // Enter Class Session button must NOT be present
+        expect(screen.queryByText(/Enter Class Session/i)).not.toBeInTheDocument();
+        // Instead, concluded state is shown
+        expect(screen.getByText(/Class Concluded/i)).toBeInTheDocument();
       });
     });
   });

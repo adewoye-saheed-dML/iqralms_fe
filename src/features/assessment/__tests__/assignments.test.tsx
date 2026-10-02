@@ -238,4 +238,26 @@ describe('Assignments and Homework Submissions', () => {
       expect(screen.getByText('New Assignment')).toBeInTheDocument();
     });
   });
+
+  it('ensures owner/admin never sees "Submit Homework" button in assignments list', async () => {
+    vi.mocked(useAcademy).mockReturnValue({
+      activeAcademy: { id: 1, name: 'Darul Quran Academy' },
+      activeRole: 'owner',
+    } as any);
+
+    // Even if user profile has role: student from initial self-registration
+    vi.mocked(useAuth).mockReturnValue({
+      user: { id: 1, role: 'student', first_name: 'Owner', last_name: 'User', email: 'owner@quran.com' },
+    } as any);
+
+    renderWithProviders(<AssignmentsListView />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Surah Al-Mulk Recitation Practice')).toBeInTheDocument();
+      expect(screen.getByText('Create Assignment')).toBeInTheDocument();
+      // Owner should NOT see Submit Homework
+      expect(screen.queryByText('Submit Homework')).not.toBeInTheDocument();
+      expect(screen.queryByText('View Submission')).not.toBeInTheDocument();
+    });
+  });
 });

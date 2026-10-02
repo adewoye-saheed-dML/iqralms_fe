@@ -41,6 +41,8 @@ import {
 import { CreateAssignmentModal } from './create-assignment-modal';
 import { AssignmentSubmissionModal } from './assignment-submission-modal';
 
+import { resolveRoleExperience } from '@/lib/navigation/config';
+
 interface AssignmentsListViewProps {
   onSelectAssignmentForGrading?: (assignmentId: number) => void;
 }
@@ -51,14 +53,20 @@ export function AssignmentsListView({ onSelectAssignmentForGrading }: Assignment
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
+  const roleExp = resolveRoleExperience({ activeRole, userRole: user?.role });
+  const isOwnerAdmin =
+    roleExp === 'owner_admin' || activeRole === 'owner' || activeRole === 'admin';
   const isTeacher =
+    isOwnerAdmin ||
+    roleExp === 'teacher' ||
+    roleExp === 'lead_teacher' ||
     activeRole === 'teacher' ||
     user?.role === 'lead' ||
-    user?.role === 'sub' ||
-    activeRole === 'owner' ||
-    activeRole === 'admin';
+    user?.role === 'sub';
 
-  const isStudent = user?.role === 'student';
+  const isStudent =
+    !isTeacher &&
+    (roleExp === 'student' || activeRole === 'student' || user?.role === 'student');
 
   const [typeFilter, setTypeFilter] = React.useState<string>('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false);
@@ -181,7 +189,7 @@ export function AssignmentsListView({ onSelectAssignmentForGrading }: Assignment
                   <div className="flex items-center gap-2">
                     {isTeacher && (
                       <>
-                        {onSelectAssignmentForGrading && (
+                        {onSelectAssignmentForGrading ? (
                           <Button
                             variant="outline"
                             size="sm"
@@ -191,6 +199,11 @@ export function AssignmentsListView({ onSelectAssignmentForGrading }: Assignment
                             <Users className="h-3.5 w-3.5" />
                             Submissions ({assignment.submissions_count})
                           </Button>
+                        ) : (
+                          <Badge variant="outline" className="flex items-center gap-1 text-xs">
+                            <Users className="h-3 w-3" />
+                            Submissions ({assignment.submissions_count})
+                          </Badge>
                         )}
                         <Button
                           variant="ghost"

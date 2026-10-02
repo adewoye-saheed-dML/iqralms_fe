@@ -110,6 +110,7 @@ export function ClassSession({ bookingId }: ClassSessionProps) {
       setCompletionSuccess(true);
       setCompletionError(null);
       setIsTimerRunning(false);
+      setEmbedVideo(false);
       setCompletedDuration(updatedBooking.duration_minutes || Number(customDurationInput));
       queryClient.invalidateQueries({
         queryKey: ['scheduling', 'bookings', activeAcademy?.id],
@@ -271,13 +272,20 @@ export function ClassSession({ bookingId }: ClassSessionProps) {
                 <span>Teaching Time: {formatTimer(sessionSeconds)}</span>
               </div>
 
-              <Button
-                variant={embedVideo ? 'secondary' : 'default'}
-                onClick={handleToggleVideo}
-              >
-                <Video className="mr-2 h-4 w-4" />
-                {embedVideo ? 'Hide In-App Video' : 'Join Video Here'}
-              </Button>
+              {completionSuccess ? (
+                <Badge className="bg-emerald-600 text-white text-xs px-3 py-1.5 font-medium flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Class Concluded
+                </Badge>
+              ) : (
+                <Button
+                  variant={embedVideo ? 'secondary' : 'default'}
+                  onClick={handleToggleVideo}
+                >
+                  <Video className="mr-2 h-4 w-4" />
+                  {embedVideo ? 'Hide In-App Video' : 'Join Video Here'}
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>

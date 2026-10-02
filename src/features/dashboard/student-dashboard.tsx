@@ -17,6 +17,9 @@ import {
   CheckCircle2,
   Hourglass,
   Plus,
+  Bell,
+  Mic,
+  Award,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -66,7 +69,7 @@ export function StudentDashboard() {
 
   const upcomingBookings = React.useMemo(() => {
     return sortedBookings.filter(
-      (b) => b.status !== 'cancelled' && new Date(b.start_time_utc).getTime() >= now.getTime() - 3600000
+      (b) => b.status === 'scheduled' && new Date(b.start_time_utc).getTime() >= now.getTime() - 3600000
     );
   }, [sortedBookings, now]);
 
@@ -80,8 +83,8 @@ export function StudentDashboard() {
     return myWaitlist.filter((w) => w.status === 'open');
   }, [myWaitlist]);
 
-  // Next scheduled class: favor the first upcoming booking, or fallback to first booking
-  const nextClass = upcomingBookings[0] || (bookings.length > 0 ? bookings[0] : null);
+  // Next scheduled class: favor the first upcoming booking, or fallback to any active scheduled booking
+  const nextClass = upcomingBookings[0] || sortedBookings.find((b) => b.status === 'scheduled') || null;
 
   const myTeachers = React.useMemo(() => {
     const map = new Map<number, { id: number; name: string; username: string }>();
@@ -137,6 +140,129 @@ export function StudentDashboard() {
             </Button>
           </CardFooter>
         </Card>
+      </div>
+    );
+  }
+
+  // Verified minor student: a simplified, joyful, picture-first home screen
+  // designed for young learners (even a 4-year-old child) and minors.
+  // One primary next action, large tap targets, clear colorful iconography,
+  // and essential learning features (Class, Books, Homework/Recite, Schedule, Stars).
+  if (user?.is_minor && user?.is_fully_active) {
+    const tiles = [
+      {
+        href: '/app/curriculum?tab=materials',
+        label: 'My books',
+        description: 'Read Quran',
+        icon: BookOpen,
+        color: 'text-emerald-600 dark:text-emerald-400',
+        bg: 'bg-emerald-500/10 dark:bg-emerald-950/40 border-emerald-500/20 hover:border-emerald-500/50',
+      },
+      {
+        href: '/app/assessments',
+        label: 'My homework',
+        description: 'Practice & recite',
+        icon: Mic,
+        color: 'text-blue-600 dark:text-blue-400',
+        bg: 'bg-blue-500/10 dark:bg-blue-950/40 border-blue-500/20 hover:border-blue-500/50',
+      },
+      {
+        href: '/app/scheduling',
+        label: 'My schedule',
+        description: 'Class times',
+        icon: Calendar,
+        color: 'text-amber-600 dark:text-amber-400',
+        bg: 'bg-amber-500/10 dark:bg-amber-950/40 border-amber-500/20 hover:border-amber-500/50',
+      },
+      {
+        href: '/app/assessments?tab=my-session-assessments',
+        label: 'My stars',
+        description: 'Grades & badges',
+        icon: Award,
+        color: 'text-purple-600 dark:text-purple-400',
+        bg: 'bg-purple-500/10 dark:bg-purple-950/40 border-purple-500/20 hover:border-purple-500/50',
+      },
+    ];
+
+    return (
+      <div className="mx-auto max-w-sm space-y-5">
+        <div className="flex items-center gap-3">
+          <div className="bg-primary/10 text-primary flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-lg font-bold border border-primary/20">
+            {(user?.first_name || user?.username || '?').charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <p className="text-lg font-bold text-foreground">
+              Assalamu Alaikum, {user?.first_name || user?.username}! 🌟
+            </p>
+            <p className="text-muted-foreground text-xs">Ready to learn Quran today? 📖</p>
+          </div>
+        </div>
+
+        <div className="bg-primary/10 border-primary/20 rounded-2xl border p-5 shadow-xs">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-primary text-xs font-semibold uppercase tracking-wider flex items-center gap-1">
+              <Sparkles className="h-3.5 w-3.5" /> Next Class
+            </span>
+            {nextClass && (
+              <Badge variant="outline" className="text-[11px] bg-background">
+                {nextClass.cohort ? 'Group Class' : '1-on-1'}
+              </Badge>
+            )}
+          </div>
+          <p className="text-foreground mb-4 text-lg font-bold">
+            {nextClass
+              ? `${
+                  nextClass.start_time_local ||
+                  new Date(nextClass.start_time_utc).toLocaleString(undefined, {
+                    weekday: 'long',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                }`
+              : 'No class scheduled right now ⭐'}
+          </p>
+          {nextClass ? (
+            <Button asChild className="h-16 w-full text-lg font-bold rounded-2xl shadow-sm hover:scale-[1.01] transition-transform">
+              <Link href={`/app/scheduling/${nextClass.id}`}>
+                <Video className="mr-2 h-6 w-6" /> Join Class 🎥
+              </Link>
+            </Button>
+          ) : (
+            <Button asChild className="h-14 w-full text-base font-semibold rounded-2xl">
+              <Link href="/app/scheduling/book">
+                <Plus className="mr-2 h-5 w-5" /> Book a Lesson
+              </Link>
+            </Button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-3.5">
+          {tiles.map((tile) => (
+            <Link
+              key={tile.href}
+              href={tile.href}
+              className={`group flex aspect-square flex-col items-center justify-center gap-2 rounded-2xl border p-3.5 text-center transition-all hover:scale-[1.02] active:scale-95 shadow-2xs ${tile.bg}`}
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-background/80 shadow-2xs group-hover:scale-110 transition-transform">
+                <tile.icon className={`h-7 w-7 ${tile.color}`} />
+              </div>
+              <div>
+                <span className="block text-sm font-bold text-foreground">{tile.label}</span>
+                <span className="text-[11px] text-muted-foreground">{tile.description}</span>
+              </div>
+            </Link>
+          ))}
+        </div>
+
+        <div className="pt-1 text-center">
+          <Link
+            href="/app/profile"
+            className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 transition-colors"
+          >
+            <User className="h-3.5 w-3.5" />
+            <span>Parent &amp; Account Settings</span>
+          </Link>
+        </div>
       </div>
     );
   }

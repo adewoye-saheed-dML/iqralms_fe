@@ -13,22 +13,38 @@ import { ParentWardAssessmentView } from './parent-ward-assessment-view';
 import { OwnerAssessmentOversight } from './owner-assessment-oversight';
 import { useAuth } from '@/lib/auth/auth-provider';
 import { can } from '@/lib/permissions/capabilities';
+import { resolveRoleExperience } from '@/lib/navigation/config';
 import { BookOpen, CheckSquare, ClipboardCheck, FileCheck, Layers, ListChecks, Users } from 'lucide-react';
 
 export function AssessmentDashboard() {
   const { activeRole } = useAcademy();
   const { user } = useAuth();
 
-  const isParent = user?.role === 'parent';
-  const isStudent = user?.role === 'student';
-  const isTeacher =
-    activeRole === 'teacher' ||
-    user?.role === 'lead' ||
-    user?.role === 'sub';
+  const roleExp = resolveRoleExperience({ activeRole, userRole: user?.role });
   const isLeadOrAdmin =
+    roleExp === 'owner_admin' ||
     activeRole === 'owner' ||
     activeRole === 'admin' ||
     can('review_assessments', { activeRole, userRole: user?.role });
+
+  const isTeacher =
+    !isLeadOrAdmin &&
+    (roleExp === 'teacher' ||
+      roleExp === 'lead_teacher' ||
+      activeRole === 'teacher' ||
+      user?.role === 'lead' ||
+      user?.role === 'sub');
+
+  const isParent =
+    !isLeadOrAdmin &&
+    !isTeacher &&
+    (roleExp === 'parent' || activeRole === 'parent' || user?.role === 'parent');
+
+  const isStudent =
+    !isLeadOrAdmin &&
+    !isTeacher &&
+    !isParent &&
+    (roleExp === 'student' || activeRole === 'student' || user?.role === 'student');
 
   const [selectedAssignmentIdForGrading, setSelectedAssignmentIdForGrading] =
     React.useState<number | undefined>(undefined);

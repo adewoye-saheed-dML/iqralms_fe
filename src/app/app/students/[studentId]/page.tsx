@@ -30,7 +30,7 @@ export default async function StudentDetailPage({ params, searchParams }: Studen
     <div className="space-y-6">
       <PageHeader
         title="Student Details"
-        description="Manage student enrollment status."
+        description="Comprehensive learner profile, registered subjects, and enrollment status."
         backHref={backHref}
         backLabel="Back to Students"
       />

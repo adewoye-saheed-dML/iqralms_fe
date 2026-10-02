@@ -290,5 +290,42 @@ describe('Student Management', () => {
         ).toBeInTheDocument();
       });
     });
+
+    it('renders full student profile details including full name, subject registered, level, and demographics', async () => {
+      vi.mocked(studentsApi.getStudent).mockResolvedValue({
+        id: 15,
+        user_id: 300,
+        username: 'zayd_ali',
+        email: 'zayd@example.com',
+        first_name: 'Zayd',
+        last_name: 'Ali',
+        date_of_birth: '2016-05-15',
+        is_minor: true,
+        enrollment_status: 'active',
+        track_id: 2,
+        level_id: 4,
+        created_at: '2026-03-01T10:00:00Z',
+        updated_at: '2026-03-05T12:00:00Z',
+      });
+
+      renderWithProviders(<StudentDetail enrollmentId={15} />);
+
+      await waitFor(() => {
+        // Full Name (appears in header and personal details)
+        expect(screen.getAllByText('Zayd Ali').length).toBeGreaterThanOrEqual(1);
+        // Username (appears in header metadata and personal details card)
+        expect(screen.getAllByText(/zayd_ali/).length).toBeGreaterThanOrEqual(1);
+        // Email
+        expect(screen.getAllByText('zayd@example.com').length).toBeGreaterThanOrEqual(1);
+        // Demographic
+        expect(screen.getByText('Minor (Under 18)')).toBeInTheDocument();
+        // Date of birth
+        expect(screen.getByText('2016-05-15')).toBeInTheDocument();
+        // Subject Registered card title
+        expect(screen.getByText('Registered Subject & Track')).toBeInTheDocument();
+        // Academic Performance section
+        expect(screen.getByText('Academic Performance & Submissions')).toBeInTheDocument();
+      });
+    });
   });
 });

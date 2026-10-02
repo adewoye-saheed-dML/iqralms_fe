@@ -9,6 +9,7 @@ import { AppSidebar } from '@/components/layout/app-sidebar';
 import { AppTopbar } from '@/components/layout/app-topbar';
 import { useAuth } from '@/lib/auth/auth-provider';
 import { useAcademy } from '@/lib/academy/academy-provider';
+import { useAcademyBranding } from '@/lib/academy/academy-branding';
 import { LoadingState } from '@/components/ui/loading';
 import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -23,6 +24,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     isLoading: isAcademyLoading,
     error: academyError,
   } = useAcademy();
+
+  // Dynamically syncs document title to active academy name (e.g. `ikacad | Iqra LMS`) and theme color
+  useAcademyBranding(activeAcademy?.id, activeAcademy?.name);
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const router = useRouter();
   const pathname = usePathname();

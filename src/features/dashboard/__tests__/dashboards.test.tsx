@@ -348,6 +348,55 @@ describe('Role-Based Dashboards and SSoT Compliance', () => {
         expect(bookClassLink).toHaveAttribute('href', '/app/scheduling/book');
       });
     });
+
+    it('renders child-friendly, simplified visual home screen for verified minor students', async () => {
+      vi.spyOn(AcademyProvider, 'useAcademy').mockReturnValue({
+        activeAcademy: { id: 1, name: 'Furqan Academy' },
+        activeRole: 'student',
+      } as any);
+      vi.spyOn(AuthProvider, 'useAuth').mockReturnValue({
+        user: {
+          id: 11,
+          username: 'kid_maryam',
+          role: 'student',
+          first_name: 'Maryam',
+          is_minor: true,
+          is_fully_active: true,
+        },
+      } as any);
+
+      const futureTime = new Date(Date.now() + 86400000).toISOString();
+      vi.mocked(schedulingApi.getMyBookings).mockResolvedValue([
+        {
+          id: 77,
+          start_time_utc: futureTime,
+          status: 'scheduled',
+          cohort: false,
+        } as any,
+      ]);
+      vi.mocked(assessmentApi.getStudentAssessments).mockResolvedValue([]);
+
+      renderWithProviders(<StudentDashboard />);
+
+      // Child-friendly greeting
+      expect(screen.getByText(/Assalamu Alaikum, Maryam! 🌟/)).toBeInTheDocument();
+      expect(screen.getByText(/Ready to learn Quran today\? 📖/)).toBeInTheDocument();
+
+      // Big Next Class button once loaded
+      await waitFor(() => {
+        const joinBtn = screen.getByRole('link', { name: /join class/i });
+        expect(joinBtn).toHaveAttribute('href', '/app/scheduling/77');
+      });
+
+      // Four core kid-friendly tiles
+      expect(screen.getByText('My books')).toBeInTheDocument();
+      expect(screen.getByText('My homework')).toBeInTheDocument();
+      expect(screen.getByText('My schedule')).toBeInTheDocument();
+      expect(screen.getByText('My stars')).toBeInTheDocument();
+
+      // Parent link
+      expect(screen.getByText(/Parent & Account Settings/)).toBeInTheDocument();
+    });
   });
 
   describe('ParentDashboard', () => {

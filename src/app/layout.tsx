@@ -5,8 +5,16 @@ import { AuthProvider } from '@/lib/auth/auth-provider';
 import { AcademyProvider } from '@/lib/academy/academy-provider';
 
 export const metadata: Metadata = {
-  title: 'Quran Academy',
-  description: 'Quran Academy Management System',
+  title: {
+    template: '%s | Iqra LMS',
+    default: 'Iqra LMS - Quran Academy Platform',
+  },
+  description: 'Premier learning management system engineered for Quran academies, Arabic institutes, and virtual Islamic classrooms.',
+  icons: {
+    icon: '/images/iqralms-icon-transparent.png',
+    shortcut: '/images/iqralms-icon-transparent.png',
+    apple: '/images/iqralms-icon-transparent.png',
+  },
 };
 
 export default function RootLayout({

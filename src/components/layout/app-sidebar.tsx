@@ -7,12 +7,14 @@ import { cn } from '@/lib/utils';
 import { getNavigationForRole, resolveRoleExperience } from '@/lib/navigation/config';
 import { useAuth } from '@/lib/auth/auth-provider';
 import { useAcademy } from '@/lib/academy/academy-provider';
+import { useAcademyBranding } from '@/lib/academy/academy-branding';
 import { can } from '@/lib/permissions/capabilities';
 
 export function AppSidebar({ className }: { className?: string }) {
   const pathname = usePathname();
   const { user } = useAuth();
-  const { activeRole } = useAcademy();
+  const { activeAcademy, activeRole } = useAcademy();
+  const { branding } = useAcademyBranding(activeAcademy?.id, activeAcademy?.name);
 
   if (!user) return null;
 
@@ -36,9 +38,41 @@ export function AppSidebar({ className }: { className?: string }) {
 
   return (
     <div className={cn('bg-card flex h-full w-64 flex-col border-r', className)}>
-      <div className="flex h-14 items-center border-b px-4 lg:h-[60px]">
-        <Link href="/app/dashboard" className="text-primary flex items-center gap-2 font-semibold">
-          <span>Quran Academy</span>
+      <div
+        className={cn(
+          'flex items-center border-b px-3 lg:px-4 transition-all',
+          branding?.logoUrl ? 'h-20 lg:h-24 py-2' : 'h-16 lg:h-[64px]'
+        )}
+      >
+        <Link
+          href="/app/dashboard"
+          className="flex items-center justify-center w-full h-full min-w-0 group"
+          title={activeAcademy?.name || 'Academy'}
+        >
+          {branding?.logoUrl ? (
+            /* Custom Academy Icon only - boldly filling the space for maximum clarity & visual presence */
+            <div className="flex items-center justify-center w-full h-full">
+              <img
+                src={branding.logoUrl}
+                alt={activeAcademy?.name || 'Academy Icon'}
+                className="h-full w-full max-h-16 lg:max-h-20 max-w-[224px] object-contain group-hover:scale-[1.03] transition-transform duration-200"
+              />
+            </div>
+          ) : (
+            <div className="flex items-center gap-2.5 min-w-0 w-full">
+              <div className="h-8 w-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                {activeAcademy?.name ? activeAcademy.name.charAt(0).toUpperCase() : 'I'}
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="truncate text-sm font-bold text-foreground tracking-tight group-hover:text-primary transition-colors">
+                  {activeAcademy?.name || 'Iqra LMS'}
+                </span>
+                <span className="text-[10px] text-muted-foreground font-normal truncate">
+                  {activeAcademy?.slug ? `@${activeAcademy.slug}` : 'Iqra LMS Platform'}
+                </span>
+              </div>
+            </div>
+          )}
         </Link>
       </div>
       <div className="flex-1 overflow-auto py-2">
