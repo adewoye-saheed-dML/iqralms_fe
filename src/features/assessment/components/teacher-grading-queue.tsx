@@ -90,18 +90,13 @@ export function TeacherGradingQueue({ initialAssignmentId }: TeacherGradingQueue
 
   return (
     <div className="space-y-4">
-      {/* Privacy boundary banner for teachers */}
+      {/* Scope banner for teachers */}
       {accessControl.isTeacher && (
-        <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground bg-primary/5 border border-primary/20 px-3 py-2 rounded-lg">
-          <div className="flex items-center gap-2">
-            <Shield className="h-4 w-4 text-primary shrink-0" />
-            <span>
-              <strong>Confidentiality boundary active:</strong> You only see assessments for students attached to you in subjects you teach.
-            </span>
-          </div>
-          <Badge variant="outline" className="bg-background text-[11px]">
-            Protected
-          </Badge>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground bg-primary/5 border border-primary/20 px-3 py-2 rounded-lg">
+          <Shield className="h-4 w-4 text-primary shrink-0" />
+          <span>
+            <strong>Active scope:</strong> Showing assessments for students attached to you in subjects you teach.
+          </span>
         </div>
       )}
 

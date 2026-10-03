@@ -293,13 +293,9 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
                       student.enrollment_status
                     )}
                   </Badge>
-                  {student.is_minor ? (
+                  {isOwnerAdmin && student.is_minor && (
                     <Badge variant="outline" className="border-amber-300 text-amber-700 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800">
                       Minor (Under 18)
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="text-muted-foreground">
-                      Adult Learner
                     </Badge>
                   )}
                 </div>
@@ -437,32 +433,19 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
                 <span className="font-semibold text-sm text-foreground">@{student.username}</span>
               </div>
 
-              <div className="border-t pt-2 col-span-2">
-                <span className="text-muted-foreground block text-[11px]">Email Address</span>
-                {isOwnerAdmin ? (
-                  <span className="font-medium text-foreground">{student.email || 'None provided'}</span>
-                ) : (
-                  <span className="font-medium text-muted-foreground italic flex items-center gap-1.5">
-                    <Shield className="h-3.5 w-3.5 text-primary" />
-                    Protected by academy privacy policy
-                  </span>
-                )}
-              </div>
+              {isOwnerAdmin && student.email && (
+                <div className="border-t pt-2 col-span-2">
+                  <span className="text-muted-foreground block text-[11px]">Email Address</span>
+                  <span className="font-medium text-foreground">{student.email}</span>
+                </div>
+              )}
 
-              <div className="border-t pt-2">
-                <span className="text-muted-foreground block text-[11px]">Date of Birth</span>
-                {isOwnerAdmin ? (
-                  <span className="font-medium text-foreground">{student.date_of_birth || 'Not recorded'}</span>
-                ) : (
-                  <span className="font-medium text-muted-foreground italic">Protected</span>
-                )}
-              </div>
-              <div className="border-t pt-2">
-                <span className="text-muted-foreground block text-[11px]">Demographic</span>
-                <span className="font-medium text-foreground">
-                  {student.is_minor ? 'Minor (Parent link required)' : 'Adult Learner'}
-                </span>
-              </div>
+              {isOwnerAdmin && student.date_of_birth && (
+                <div className="border-t pt-2">
+                  <span className="text-muted-foreground block text-[11px]">Date of Birth</span>
+                  <span className="font-medium text-foreground">{student.date_of_birth}</span>
+                </div>
+              )}
 
               <div className="border-t pt-2">
                 <span className="text-muted-foreground block text-[11px]">Enrolled On</span>

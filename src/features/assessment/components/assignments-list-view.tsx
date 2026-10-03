@@ -147,16 +147,11 @@ export function AssignmentsListView({ onSelectAssignmentForGrading }: Assignment
 
       {/* Teacher Confidentiality Banner */}
       {!isOwnerAdmin && isTeacher && (
-        <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground bg-primary/5 border border-primary/20 px-3 py-2 rounded-lg">
-          <div className="flex items-center gap-2">
-            <Shield className="h-4 w-4 text-primary shrink-0" />
-            <span>
-              <strong>Confidentiality boundary active:</strong> Showing assignments solely for your offered subjects and attached students.
-            </span>
-          </div>
-          <Badge variant="outline" className="bg-background text-[11px]">
-            Protected
-          </Badge>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground bg-primary/5 border border-primary/20 px-3 py-2 rounded-lg">
+          <Shield className="h-4 w-4 text-primary shrink-0" />
+          <span>
+            <strong>Active scope:</strong> Showing assignments solely for your offered subjects and attached students.
+          </span>
         </div>
       )}
 

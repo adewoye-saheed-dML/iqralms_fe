@@ -397,13 +397,12 @@ describe('Student Management', () => {
         expect(screen.getAllByText('Zayd Ali').length).toBeGreaterThanOrEqual(1);
       });
 
-      // Email must NOT be disclosed to teacher
+      // Email and DOB must NOT be disclosed to teacher and no placeholder tease text rendered
       expect(screen.queryByText('zayd@example.com')).not.toBeInTheDocument();
-      expect(screen.getByText('Protected by academy privacy policy')).toBeInTheDocument();
-
-      // Date of birth must NOT be disclosed to teacher
+      expect(screen.queryByText('Protected by academy privacy policy')).not.toBeInTheDocument();
       expect(screen.queryByText('2016-05-15')).not.toBeInTheDocument();
-      expect(screen.getByText('Protected')).toBeInTheDocument();
+      expect(screen.queryByText('Protected')).not.toBeInTheDocument();
+      expect(screen.queryByText('Adult Learner')).not.toBeInTheDocument();
 
       // Subject allocation management button must not be visible to teachers
       expect(screen.queryByText('Subject Allocation')).not.toBeInTheDocument();
