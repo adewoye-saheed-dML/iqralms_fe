@@ -11,10 +11,11 @@ import { AssignmentsListView } from './assignments-list-view';
 import { TeacherGradingQueue } from './teacher-grading-queue';
 import { ParentWardAssessmentView } from './parent-ward-assessment-view';
 import { OwnerAssessmentOversight } from './owner-assessment-oversight';
+import { StudentPersonalLearningSpace } from './student-personal-learning-space';
 import { useAuth } from '@/lib/auth/auth-provider';
 import { can } from '@/lib/permissions/capabilities';
 import { resolveRoleExperience } from '@/lib/navigation/config';
-import { BookOpen, CheckSquare, ClipboardCheck, FileCheck, Layers, ListChecks, Users } from 'lucide-react';
+import { BookOpen, CheckSquare, ClipboardCheck, FileCheck, GraduationCap, Layers, ListChecks, Users } from 'lucide-react';
 
 export function AssessmentDashboard() {
   const { activeRole } = useAcademy();
@@ -52,7 +53,7 @@ export function AssessmentDashboard() {
     isParent
       ? 'ward-progress'
       : isStudent
-      ? 'my-homework'
+      ? 'my-learning-space'
       : isLeadOrAdmin
       ? 'academy-oversight'
       : 'assignments'
@@ -64,7 +65,7 @@ export function AssessmentDashboard() {
       isParent
         ? 'ward-progress'
         : isStudent
-        ? 'my-homework'
+        ? 'my-learning-space'
         : isLeadOrAdmin
         ? 'academy-oversight'
         : 'assignments'
@@ -81,15 +82,15 @@ export function AssessmentDashboard() {
     : isTeacher
     ? 'Assessments & Grading'
     : isStudent
-    ? 'My Homework & Assessments'
+    ? 'Personal Learning Space & Assessments'
     : "Children's Evaluations & Homework";
 
   const pageDescription = isLeadOrAdmin
     ? 'Monitor homework assignments, grading queues, and recitation evaluations across the academy.'
     : isTeacher
-    ? 'Assign homework, evaluate student recitations, and grade submissions.'
+    ? 'Assign homework, evaluate student recitations, and grade submissions for your attached students.'
     : isStudent
-    ? 'Submit homework recordings, track revisions, and review instructor feedback.'
+    ? 'Your confidential personal learning space: all recitation evaluations, continuous homework feedback, and session records joined in one place.'
     : "Review your children's homework submissions, recitation grades, and teacher remarks.";
 
   return (
@@ -145,15 +146,21 @@ export function AssessmentDashboard() {
 
           {/* Student Specific Tabs */}
           {isStudent && (
+            <TabsTrigger value="my-learning-space" className="flex items-center gap-1.5">
+              <GraduationCap className="h-4 w-4" />
+              Personal Learning Space
+            </TabsTrigger>
+          )}
+          {isStudent && (
             <TabsTrigger value="my-homework" className="flex items-center gap-1.5">
               <BookOpen className="h-4 w-4" />
-              Assignments & Homework
+              Assignments &amp; Tasks
             </TabsTrigger>
           )}
           {isStudent && (
             <TabsTrigger value="my-session-assessments" className="flex items-center gap-1.5">
               <FileCheck className="h-4 w-4" />
-              Session Assessments
+              Session Evaluations
             </TabsTrigger>
           )}
 
@@ -215,6 +222,9 @@ export function AssessmentDashboard() {
         {/* Student Content */}
         {isStudent && (
           <>
+            <TabsContent value="my-learning-space" className="pt-4">
+              <StudentPersonalLearningSpace />
+            </TabsContent>
             <TabsContent value="my-homework" className="pt-4">
               <AssignmentsListView />
             </TabsContent>

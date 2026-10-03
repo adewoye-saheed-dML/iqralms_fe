@@ -115,6 +115,12 @@ Status: Accepted
 
 Reason: Rather than hardcoding generic "Quran Academy" branding, the browser document title dynamically binds to the active tenant academy name (e.g. `ikacad | Iqra LMS`, `dia | Iqra LMS`), while public marketing and unauthenticated pages display the platform branding `Iqra LMS - Quran Academy Platform` with the official Iqra LMS brand logo. In addition, institutions are provided white-label customization capabilities: academy owners and administrators can upload a custom academy icon/logo (rendered across sidebar crests, top navigation, and favicon for all academy personas: students, parents, teachers, and admins) and configure their academy display color (updating CSS variable `--primary` across buttons, navigation highlights, badges, and learning widgets).
 
+## D-013 — Cross-Role Academy Logo & Theme Color Synchronization
+
+Status: Accepted
+
+Reason: Previously, academy customization was stored exclusively in the browser's local storage upon saving by an academy owner or admin. As a result, teachers, students, and parents logging in from their own devices or distinct sessions did not receive the institution's uploaded company logo or custom primary color, falling back to the generic monogram and default Islamic green. Resolved by providing a dedicated Next.js server route handler (`/api/academies/[id]/branding`) with filesystem and memory caching, paired with concurrent client synchronization, BroadcastChannel cross-tab events, and CSS variable updates (`--primary`, `--color-primary`, `--ring`). Furthermore, integrated the unified `AcademyDashboardHero` component across Owner/Admin, Teacher, Adult Student, Minor Student, and Parent dashboards, proudly showcasing the official institution logo, active status, and custom brand color palette for all academy personas.
+
 
 
 

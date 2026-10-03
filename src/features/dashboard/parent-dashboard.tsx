@@ -26,6 +26,7 @@ import { assessmentApi, type FamilyAssessment } from '@/features/assessment/api/
 import { studentsApi } from '@/features/students/api/students';
 import { familyApi, type LinkedStudent } from '@/features/family/api/family';
 import { ApiError } from '@/lib/api/errors';
+import { AcademyDashboardHero } from '@/features/dashboard/components/academy-dashboard-hero';
 
 export function ParentDashboard() {
   const { user, refreshAuth } = useAuth();
@@ -143,9 +144,10 @@ export function ParentDashboard() {
 
   return (
     <div className="space-y-8">
-      <PageHeader
-        title="Parent Portal"
-        description={`Welcome, ${user?.first_name || user?.username}. Monitoring your family's Quran learning at ${activeAcademy?.name || 'the academy'}.`}
+      <AcademyDashboardHero
+        roleLabel="Parent Portal"
+        welcomeName={user?.first_name || user?.username}
+        subtitle={`Welcome, ${user?.first_name || user?.username}. Monitoring your family's Quran learning at ${activeAcademy?.name || 'the academy'}.`}
       />
 
       {/* Linked Children Card */}

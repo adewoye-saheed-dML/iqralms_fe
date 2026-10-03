@@ -9,6 +9,8 @@ import { ClassroomMaterials } from '@/features/scheduling/components/classroom-m
 import * as AcademyProvider from '@/lib/academy/academy-provider';
 import { materialsApi, type LearningMaterial } from '../api/materials';
 import { curriculumApi } from '../api/curriculum';
+import { studentsApi } from '@/features/students/api/students';
+import { schedulingApi } from '@/features/scheduling/api/scheduling';
 
 vi.mock('../api/materials', () => ({
   materialsApi: {
@@ -23,6 +25,20 @@ vi.mock('../api/curriculum', () => ({
   curriculumApi: {
     getTracks: vi.fn(),
     getLevels: vi.fn(),
+    getMyTeachingTracks: vi.fn(),
+    getMyPlacements: vi.fn(),
+  },
+}));
+
+vi.mock('@/features/students/api/students', () => ({
+  studentsApi: {
+    getMyStudents: vi.fn(),
+  },
+}));
+
+vi.mock('@/features/scheduling/api/scheduling', () => ({
+  schedulingApi: {
+    getMyBookings: vi.fn(),
   },
 }));
 
@@ -100,6 +116,48 @@ describe('Learning Materials Feature', () => {
       created_at: '2026-09-23T10:00:00Z',
       updated_at: '2026-09-23T10:00:00Z',
     },
+    {
+      id: 104,
+      organization: 1,
+      track: 2,
+      track_name: 'Hifz & Memorization',
+      level: 20,
+      level_name: 'Level 2 - Juz Amma',
+      level_order: 2,
+      title: 'Juz Amma Memorization Guide',
+      description: 'Systematic schedule for memorizing the 30th juz',
+      material_type: 'book',
+      file: 'juz_amma.pdf',
+      file_url: '/api/curriculum/organizations/1/materials/104/file/',
+      external_url: '',
+      content_text: '',
+      is_active: true,
+      uploaded_by: 5,
+      uploaded_by_name: 'Sheikh Ahmad',
+      created_at: '2026-09-24T10:00:00Z',
+      updated_at: '2026-09-24T10:00:00Z',
+    },
+    {
+      id: 105,
+      organization: 1,
+      track: 1,
+      track_name: 'Tajweed & Recitation',
+      level: 15,
+      level_name: 'Level 5 - Advanced Ahkam',
+      level_order: 5,
+      title: 'Advanced Tajweed Rules Workbook',
+      description: 'In-depth study of Noon Sakinah and Tanween exceptions',
+      material_type: 'worksheet',
+      file: 'advanced_tajweed.pdf',
+      file_url: '/api/curriculum/organizations/1/materials/105/file/',
+      external_url: '',
+      content_text: '',
+      is_active: true,
+      uploaded_by: 5,
+      uploaded_by_name: 'Sheikh Ahmad',
+      created_at: '2026-09-25T10:00:00Z',
+      updated_at: '2026-09-25T10:00:00Z',
+    },
   ];
 
   beforeEach(() => {
@@ -111,10 +169,17 @@ describe('Learning Materials Feature', () => {
 
     vi.mocked(curriculumApi.getTracks).mockResolvedValue([
       { id: 1, name: 'Tajweed & Recitation', slug: 'tajweed' } as any,
+      { id: 2, name: 'Hifz & Memorization', slug: 'hifz' } as any,
     ]);
     vi.mocked(curriculumApi.getLevels).mockResolvedValue([
       { id: 10, track: 1, name: 'Level 1 - Qaida', order: 1 } as any,
+      { id: 15, track: 1, name: 'Level 5 - Advanced Ahkam', order: 5 } as any,
+      { id: 20, track: 2, name: 'Level 2 - Juz Amma', order: 2 } as any,
     ]);
+    vi.mocked(curriculumApi.getMyTeachingTracks).mockResolvedValue([]);
+    vi.mocked(curriculumApi.getMyPlacements).mockResolvedValue([]);
+    vi.mocked(studentsApi.getMyStudents).mockResolvedValue([]);
+    vi.mocked(schedulingApi.getMyBookings).mockResolvedValue([]);
     vi.mocked(materialsApi.getMaterials).mockResolvedValue(mockMaterials);
   });
 
@@ -179,6 +244,10 @@ describe('Learning Materials Feature', () => {
       activeRole: 'teacher',
     } as any);
 
+    vi.mocked(curriculumApi.getMyTeachingTracks).mockResolvedValue([
+      { id: 1, teacher: 5, track: 1, active: true } as any,
+    ]);
+
     renderWithProviders(<LearningMaterialsManager />);
 
     await waitFor(() => {
@@ -186,5 +255,130 @@ describe('Learning Materials Feature', () => {
     });
 
     expect(screen.queryByText('Upload New Material')).not.toBeInTheDocument();
+  });
+
+  it('displays books and materials scoped strictly to student attached track and level', async () => {
+    vi.spyOn(AcademyProvider, 'useAcademy').mockReturnValue({
+      activeAcademy: mockAcademy,
+      activeRole: 'student',
+    } as any);
+
+    // Student has booked session in Track 1, Level 10
+    vi.mocked(schedulingApi.getMyBookings).mockResolvedValue([
+      {
+        id: 50,
+        level: { id: 10, track: 1, name: 'Level 1 - Qaida', order: 1 },
+        start_time_utc: '2026-10-10T10:00:00Z',
+        status: 'scheduled',
+      } as any,
+    ]);
+
+    renderWithProviders(<LearningMaterialsManager />);
+
+    await waitFor(() => {
+      // Books for their enrolled level 10 appear
+      expect(screen.getByText('Noorani Qaida Beginners Handbook')).toBeInTheDocument();
+      // Track-wide resources for their track appear
+      expect(screen.getByText('Makharij Visual Articulation Chart')).toBeInTheDocument();
+      // General academy-wide resources appear
+      expect(screen.getByText('Surah Al-Fatihah Pronunciation Notes')).toBeInTheDocument();
+    });
+
+    // Books for other tracks do NOT appear
+    expect(screen.queryByText('Juz Amma Memorization Guide')).not.toBeInTheDocument();
+    // Books for other levels in the same track do NOT appear
+    expect(screen.queryByText('Advanced Tajweed Rules Workbook')).not.toBeInTheDocument();
+
+    // Banner indicates assigned curriculum
+    expect(screen.getByText(/Assigned Curriculum:/i)).toBeInTheDocument();
+  });
+
+  it('displays notice and withholds track-specific books when student has no track/level attachment', async () => {
+    vi.spyOn(AcademyProvider, 'useAcademy').mockReturnValue({
+      activeAcademy: mockAcademy,
+      activeRole: 'student',
+    } as any);
+
+    vi.mocked(schedulingApi.getMyBookings).mockResolvedValue([]);
+    vi.mocked(curriculumApi.getMyPlacements).mockResolvedValue([]);
+
+    renderWithProviders(<LearningMaterialsManager />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/You are not currently enrolled in any curriculum track or level/i)
+      ).toBeInTheDocument();
+      // General academy-wide resources remain accessible
+      expect(screen.getByText('Surah Al-Fatihah Pronunciation Notes')).toBeInTheDocument();
+    });
+
+    // Track-specific books are not disclosed
+    expect(screen.queryByText('Noorani Qaida Beginners Handbook')).not.toBeInTheDocument();
+    expect(screen.queryByText('Juz Amma Memorization Guide')).not.toBeInTheDocument();
+  });
+
+  it('scopes books and materials for teacher to their authorized teaching tracks', async () => {
+    vi.spyOn(AcademyProvider, 'useAcademy').mockReturnValue({
+      activeAcademy: mockAcademy,
+      activeRole: 'teacher',
+    } as any);
+
+    // Teacher is authorized only for Track 1 (Tajweed)
+    vi.mocked(curriculumApi.getMyTeachingTracks).mockResolvedValue([
+      { id: 1, teacher: 5, track: 1, active: true } as any,
+    ]);
+
+    renderWithProviders(<LearningMaterialsManager />);
+
+    await waitFor(() => {
+      // Books in Track 1 are visible to teacher
+      expect(screen.getByText('Noorani Qaida Beginners Handbook')).toBeInTheDocument();
+      expect(screen.getByText('Makharij Visual Articulation Chart')).toBeInTheDocument();
+      expect(screen.getByText('Advanced Tajweed Rules Workbook')).toBeInTheDocument();
+      // Academy-wide is visible
+      expect(screen.getByText('Surah Al-Fatihah Pronunciation Notes')).toBeInTheDocument();
+    });
+
+    // Books in unassigned Track 2 (Hifz) are NOT visible
+    expect(screen.queryByText('Juz Amma Memorization Guide')).not.toBeInTheDocument();
+    // Banner indicates authorized subject scope
+    expect(screen.getByText(/Authorized Subject Scope:/i)).toBeInTheDocument();
+  });
+
+  it('scopes books and materials for parent to the track and level of their linked children', async () => {
+    vi.spyOn(AcademyProvider, 'useAcademy').mockReturnValue({
+      activeAcademy: mockAcademy,
+      activeRole: 'parent',
+    } as any);
+
+    // Parent has child Bilal enrolled in Track 2, Level 20
+    vi.mocked(studentsApi.getMyStudents).mockResolvedValue([
+      {
+        id: 99,
+        user_id: 200,
+        first_name: 'Bilal',
+        last_name: 'Ahmad',
+        username: 'bilal',
+        track_id: 2,
+        level_id: 20,
+      } as any,
+    ]);
+
+    renderWithProviders(<LearningMaterialsManager />);
+
+    await waitFor(() => {
+      // Child's enrolled track 2 and level 20 book is visible
+      expect(screen.getByText('Juz Amma Memorization Guide')).toBeInTheDocument();
+      // Academy-wide resource is visible
+      expect(screen.getByText('Surah Al-Fatihah Pronunciation Notes')).toBeInTheDocument();
+    });
+
+    // Other tracks not enrolled by child are NOT visible
+    expect(screen.queryByText('Noorani Qaida Beginners Handbook')).not.toBeInTheDocument();
+    expect(screen.queryByText('Advanced Tajweed Rules Workbook')).not.toBeInTheDocument();
+
+    // Child switcher header displays child's name and track
+    expect(screen.getByText(/Viewing Books for Child:/i)).toBeInTheDocument();
+    expect(screen.getByText(/Bilal Ahmad/i)).toBeInTheDocument();
   });
 });

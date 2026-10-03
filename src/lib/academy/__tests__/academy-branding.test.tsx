@@ -8,6 +8,7 @@ import {
   getAcademyBranding,
   saveAcademyBranding,
   resetAcademyBranding,
+  clearBrandingMemoryCache,
   DEFAULT_PRIMARY_COLOR,
   type AcademyBranding,
 } from '../academy-branding';
@@ -160,6 +161,8 @@ describe('Academy Branding & Dynamic Tab Wording', () => {
 
   describe('AppSidebar Custom Icon Display', () => {
     beforeEach(() => {
+      localStorage.clear();
+      clearBrandingMemoryCache();
       vi.mocked(AuthProvider.useAuth).mockReturnValue({
         user: { id: 1, username: 'owner_user', role: 'owner' },
         isAuthenticated: true,

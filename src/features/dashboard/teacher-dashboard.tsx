@@ -26,6 +26,7 @@ import { schedulingApi, type Booking, type AvailabilityBlock } from '@/features/
 import { assessmentApi, type LeadAssessment, type TeacherAssessment } from '@/features/assessment/api/assessment';
 import { payoutsApi, type MyTeacherPayout } from '@/features/payouts/api/payouts';
 import { can } from '@/lib/permissions/capabilities';
+import { AcademyDashboardHero } from '@/features/dashboard/components/academy-dashboard-hero';
 
 export function TeacherDashboard() {
   const { user } = useAuth();
@@ -90,30 +91,28 @@ export function TeacherDashboard() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <PageHeader
-          title="Teacher Dashboard"
-          description={`Welcome back, ${user?.first_name || user?.username}. Here is your teaching schedule and student overview for ${activeAcademy?.name || 'the academy'}.`}
-        />
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" asChild className="border-primary/30 hover:bg-primary/5">
-            <Link href="/app/scheduling?tab=availability">
-              <CalendarCheck className="h-4 w-4 mr-1.5 text-primary" />
-              <span>My Availability</span>
-              {myAvailability.length > 0 && (
-                <Badge variant="secondary" className="ml-1.5 px-1.5 py-0 text-[10px] bg-primary/10 text-primary">
-                  {(totalWeeklyMinutes / 60).toFixed(0)}h/wk
-                </Badge>
-              )}
-            </Link>
-          </Button>
-          <Button size="sm" asChild>
-            <Link href="/app/scheduling">
-              <Calendar className="h-4 w-4 mr-1.5" /> Today&apos;s Schedule
-            </Link>
-          </Button>
-        </div>
-      </div>
+      <AcademyDashboardHero
+        roleLabel="Teacher Dashboard"
+        welcomeName={user?.first_name || user?.username}
+        subtitle={`Welcome back, ${user?.first_name || user?.username}. Here is your teaching schedule and student overview for ${activeAcademy?.name || 'the academy'}.`}
+      >
+        <Button variant="outline" size="sm" asChild className="border-primary/30 hover:bg-primary/5">
+          <Link href="/app/scheduling?tab=availability">
+            <CalendarCheck className="h-4 w-4 mr-1.5 text-primary" />
+            <span>My Availability</span>
+            {myAvailability.length > 0 && (
+              <Badge variant="secondary" className="ml-1.5 px-1.5 py-0 text-[10px] bg-primary/10 text-primary">
+                {(totalWeeklyMinutes / 60).toFixed(0)}h/wk
+              </Badge>
+            )}
+          </Link>
+        </Button>
+        <Button size="sm" asChild>
+          <Link href="/app/scheduling">
+            <Calendar className="h-4 w-4 mr-1.5" /> Today&apos;s Schedule
+          </Link>
+        </Button>
+      </AcademyDashboardHero>
 
       {/* Teacher Declared Working Hours & Availability Section */}
       <Card className="border-primary/30 bg-gradient-to-r from-primary/5 via-background to-background">

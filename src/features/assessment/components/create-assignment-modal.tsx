@@ -26,7 +26,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { AlertCircle, BookOpen, FileText, Mic, Paperclip, Upload } from 'lucide-react';
+import { AlertCircle, BookOpen, FileText, Mic, Paperclip, Shield, Upload } from 'lucide-react';
+import { useTeacherAccessControl } from '../lib/access-control';
 
 interface CreateAssignmentModalProps {
   open: boolean;
@@ -37,6 +38,7 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
   const { activeAcademy } = useAcademy();
   const academyId = activeAcademy?.id;
   const queryClient = useQueryClient();
+  const accessControl = useTeacherAccessControl();
 
   const [title, setTitle] = React.useState('');
   const [description, setDescription] = React.useState('');
@@ -66,6 +68,25 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
     queryFn: () => (academyId ? studentsApi.getMyStudents(academyId) : []),
     enabled: !!academyId && open,
   });
+
+  // Filter allowed tracks: teachers can only assign tracks they teach
+  const availableTracks = React.useMemo(() => {
+    if (accessControl.isOwnerAdmin) return tracks;
+    if (accessControl.teachingTrackIds.size > 0) {
+      return tracks.filter((t) => accessControl.teachingTrackIds.has(t.id));
+    }
+    return tracks;
+  }, [tracks, accessControl]);
+
+  // Filter allowed students: only attached students taking the selected track
+  const availableStudents = React.useMemo(() => {
+    let list = accessControl.isOwnerAdmin ? students : (accessControl.attachedStudents.length > 0 ? accessControl.attachedStudents : students);
+    if (trackId !== 'all') {
+      const selectedTrackNum = parseInt(trackId, 10);
+      return list.filter((s) => !s.track_id || s.track_id === selectedTrackNum);
+    }
+    return list;
+  }, [students, accessControl, trackId]);
 
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -162,6 +183,23 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
+              <Label>Subject / Track (Confidential Scope)</Label>
+              <Select value={trackId} onValueChange={setTrackId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select subject track" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">General / All Offered Subjects</SelectItem>
+                  {availableTracks.map((tr) => (
+                    <SelectItem key={tr.id} value={String(tr.id)}>
+                      {tr.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
               <Label>Submission Format *</Label>
               <Select
                 value={submissionType}
@@ -199,16 +237,16 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label>Target Student (Optional)</Label>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Target Student (Attached to your classes)</Label>
               <Select value={assignedStudentId} onValueChange={setAssignedStudentId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="All Students" />
+                  <SelectValue placeholder="All Attached Students" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Enrolled Students</SelectItem>
-                  {students.map((st) => {
-                    const studentName = `${st.first_name || ''} ${st.last_name || ''}`.trim() || st.email || `Student #${st.user_id}`;
+                  <SelectItem value="all">All Attached Students in this Track</SelectItem>
+                  {availableStudents.map((st) => {
+                    const studentName = `${st.first_name || ''} ${st.last_name || ''}`.trim() || st.username || `Student #${st.user_id}`;
                     return (
                       <SelectItem key={st.id} value={String(st.user_id)}>
                         {studentName}

@@ -32,10 +32,12 @@ import {
   FileText,
   Mic,
   Search,
+  Shield,
   User,
   Volume2,
 } from 'lucide-react';
 import { GradeSubmissionModal } from './grade-submission-modal';
+import { useTeacherAccessControl } from '../lib/access-control';
 
 interface TeacherGradingQueueProps {
   initialAssignmentId?: number;
@@ -44,10 +46,22 @@ interface TeacherGradingQueueProps {
 export function TeacherGradingQueue({ initialAssignmentId }: TeacherGradingQueueProps) {
   const { activeAcademy } = useAcademy();
   const academyId = activeAcademy?.id;
+  const accessControl = useTeacherAccessControl();
 
   const [statusFilter, setStatusFilter] = React.useState<string>('all');
   const [selectedSubmissionForGrading, setSelectedSubmissionForGrading] =
     React.useState<AssignmentSubmission | null>(null);
+
+  // Fetch Assignments to map tracks and creators
+  const { data: assignments = [] } = useQuery({
+    queryKey: assessmentKeys.assignments(academyId),
+    queryFn: () => (academyId ? assessmentApi.getAssignments(academyId) : []),
+    enabled: !!academyId,
+  });
+
+  const assignmentMap = React.useMemo(() => {
+    return new Map(assignments.map((a) => [a.id, a]));
+  }, [assignments]);
 
   // Fetch Submissions
   const { data: submissions = [], isLoading } = useQuery({
@@ -65,8 +79,32 @@ export function TeacherGradingQueue({ initialAssignmentId }: TeacherGradingQueue
     enabled: !!academyId,
   });
 
+  // Enforce privacy boundary: filter out students not attached or subjects not offered
+  const visibleSubmissions = React.useMemo(() => {
+    if (accessControl.isOwnerAdmin) return submissions;
+    return submissions.filter((sub) => {
+      const assignment = assignmentMap.get(sub.assignment);
+      return accessControl.canTeacherAccessSubmission(sub, assignment);
+    });
+  }, [submissions, accessControl, assignmentMap]);
+
   return (
     <div className="space-y-4">
+      {/* Privacy boundary banner for teachers */}
+      {accessControl.isTeacher && (
+        <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground bg-primary/5 border border-primary/20 px-3 py-2 rounded-lg">
+          <div className="flex items-center gap-2">
+            <Shield className="h-4 w-4 text-primary shrink-0" />
+            <span>
+              <strong>Confidentiality boundary active:</strong> You only see assessments for students attached to you in subjects you teach.
+            </span>
+          </div>
+          <Badge variant="outline" className="bg-background text-[11px]">
+            Protected
+          </Badge>
+        </div>
+      )}
+
       {/* Filter bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2">
@@ -85,19 +123,25 @@ export function TeacherGradingQueue({ initialAssignmentId }: TeacherGradingQueue
       </div>
 
       {/* Submissions List */}
-      {isLoading ? (
+      {isLoading || accessControl.isLoading ? (
         <div className="p-8 text-center text-muted-foreground">Loading submissions...</div>
-      ) : submissions.length === 0 ? (
-        <Card className="p-8 text-center text-muted-foreground space-y-2">
-          <Clock className="h-10 w-10 mx-auto opacity-40" />
-          <p className="font-medium">No submissions in queue.</p>
-          <p className="text-xs">
-            Student recitation audio and written homework submissions will appear here for grading.
+      ) : visibleSubmissions.length === 0 ? (
+        <Card className="p-8 text-center text-muted-foreground space-y-2 border-dashed">
+          <Shield className="h-10 w-10 mx-auto opacity-50 text-primary" />
+          <p className="font-medium text-foreground">
+            {submissions.length > 0
+              ? 'No submissions for your attached students or teaching subjects'
+              : 'No submissions in queue'}
+          </p>
+          <p className="text-xs max-w-md mx-auto">
+            {submissions.length > 0
+              ? 'Assessments for students not attached to your classes or for subjects you do not teach are kept strictly confidential to their personal learning space.'
+              : 'Student recitation audio and written homework submissions will appear here for grading.'}
           </p>
         </Card>
       ) : (
         <div className="grid grid-cols-1 gap-3">
-          {submissions.map((sub) => {
+          {visibleSubmissions.map((sub) => {
             const isGraded = sub.status === 'graded';
             const isSubmitted = sub.status === 'submitted';
             const needsRevision = sub.status === 'resubmission_requested';

@@ -42,7 +42,9 @@ import {
   CheckCircle2,
   Sparkles,
   AlertCircle,
+  Users,
 } from 'lucide-react';
+import { useMaterialsScope } from '../lib/use-materials-scope';
 
 const MATERIAL_TYPES: { value: MaterialType; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { value: 'pdf', label: 'PDF Document', icon: FileText },
@@ -56,17 +58,39 @@ const MATERIAL_TYPES: { value: MaterialType; label: string; icon: React.Componen
 
 interface LearningMaterialsManagerProps {
   initialTrackId?: number;
+  initialLevelId?: number;
   hideHeader?: boolean;
 }
 
-export function LearningMaterialsManager({ initialTrackId, hideHeader = false }: LearningMaterialsManagerProps = {}) {
+export function LearningMaterialsManager({
+  initialTrackId,
+  initialLevelId,
+  hideHeader = false,
+}: LearningMaterialsManagerProps = {}) {
   const { activeAcademy, activeRole } = useAcademy();
   const queryClient = useQueryClient();
+  const scope = useMaterialsScope({ initialTrackId, initialLevelId });
 
   const [searchQuery, setSearchQuery] = React.useState('');
-  const [selectedTrackId, setSelectedTrackId] = React.useState<string>(initialTrackId ? String(initialTrackId) : 'all');
-  const [selectedLevelId, setSelectedLevelId] = React.useState<string>('all');
+  const [selectedTrackId, setSelectedTrackId] = React.useState<string>(
+    initialTrackId ? String(initialTrackId) : scope.defaultTrackId
+  );
+  const [selectedLevelId, setSelectedLevelId] = React.useState<string>(
+    initialLevelId ? String(initialLevelId) : scope.defaultLevelId
+  );
   const [selectedType, setSelectedType] = React.useState<string>('all');
+
+  React.useEffect(() => {
+    if (scope.defaultTrackId && scope.defaultTrackId !== 'all') {
+      setSelectedTrackId(scope.defaultTrackId);
+    }
+  }, [scope.defaultTrackId]);
+
+  React.useEffect(() => {
+    if (scope.defaultLevelId && scope.defaultLevelId !== 'all') {
+      setSelectedLevelId(scope.defaultLevelId);
+    }
+  }, [scope.defaultLevelId]);
 
   const [isUploadModalOpen, setIsUploadModalOpen] = React.useState(false);
   const [editingMaterial, setEditingMaterial] = React.useState<LearningMaterial | null>(null);
@@ -219,6 +243,10 @@ export function LearningMaterialsManager({ initialTrackId, hideHeader = false }:
   // Filtered materials
   const filteredMaterials = React.useMemo(() => {
     return materials.filter((item) => {
+      // 1. Enforce track & level attachment boundaries based on user role
+      if (!scope.canAccessMaterial(item)) return false;
+
+      // 2. Search query filter
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchesTitle = item.title.toLowerCase().includes(q);
@@ -228,22 +256,25 @@ export function LearningMaterialsManager({ initialTrackId, hideHeader = false }:
         if (!matchesTitle && !matchesDesc && !matchesTrack && !matchesLevel) return false;
       }
 
+      // 3. User-selected Track filter
       if (selectedTrackId !== 'all') {
         if (selectedTrackId === 'general' && item.track !== null) return false;
         if (selectedTrackId !== 'general' && item.track !== Number(selectedTrackId)) return false;
       }
 
+      // 4. User-selected Level filter
       if (selectedLevelId !== 'all') {
-        if (item.level !== Number(selectedLevelId)) return false;
+        if (item.level !== null && item.level !== Number(selectedLevelId)) return false;
       }
 
+      // 5. File type filter
       if (selectedType !== 'all') {
         if (item.material_type !== selectedType) return false;
       }
 
       return true;
     });
-  }, [materials, searchQuery, selectedTrackId, selectedLevelId, selectedType]);
+  }, [materials, searchQuery, selectedTrackId, selectedLevelId, selectedType, scope]);
 
   const getTypeIcon = (type: MaterialType) => {
     switch (type) {
@@ -295,6 +326,77 @@ export function LearningMaterialsManager({ initialTrackId, hideHeader = false }:
         </div>
       )}
 
+      {/* Role Scoping Notice & Parent Child Selector */}
+      {scope.isStudent && (
+        scope.hasActiveAttachment && scope.activeAttachmentLabel ? (
+          <div className="flex items-center gap-2.5 p-3 bg-primary/5 rounded-lg border border-primary/20 text-xs text-primary">
+            <BookOpen className="h-4 w-4 shrink-0" />
+            <span>
+              Assigned Curriculum: <strong>{scope.activeAttachmentLabel}</strong>. Showing textbooks and learning materials for your enrolled track &amp; level.
+            </span>
+          </div>
+        ) : (
+          <Alert className="bg-amber-50 border-amber-200 text-amber-900 dark:bg-amber-950/30 dark:border-amber-900/60 dark:text-amber-200 text-xs">
+            <AlertCircle className="h-4 w-4 text-amber-600" />
+            <AlertDescription>
+              You are not currently enrolled in any curriculum track or level. Once your academy conducts your placement or assigns you to a class, your specific books and study resources will appear here.
+            </AlertDescription>
+          </Alert>
+        )
+      )}
+
+      {scope.isParent && scope.parentChildren.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 p-3 bg-muted/40 rounded-lg border text-xs">
+          <span className="font-semibold text-muted-foreground flex items-center gap-1.5">
+            <Users className="h-3.5 w-3.5 text-primary" />
+            Viewing Books for Child:
+          </span>
+          {scope.parentChildren.length > 1 && (
+            <Button
+              variant={scope.selectedChildId === 'all' ? 'default' : 'outline'}
+              size="sm"
+              className="h-7 text-xs px-2.5"
+              onClick={() => {
+                scope.setSelectedChildId('all');
+                setSelectedTrackId('all');
+                setSelectedLevelId('all');
+              }}
+            >
+              All Children
+            </Button>
+          )}
+          {scope.parentChildren.map((child) => (
+            <Button
+              key={child.id}
+              variant={scope.selectedChildId === child.id ? 'default' : 'outline'}
+              size="sm"
+              className="h-7 text-xs px-2.5"
+              onClick={() => {
+                scope.setSelectedChildId(child.id);
+                setSelectedTrackId(child.trackId ? String(child.trackId) : 'all');
+                setSelectedLevelId(child.levelId ? String(child.levelId) : 'all');
+              }}
+            >
+              {child.name}
+              {child.trackName && (
+                <span className="ml-1 opacity-75">
+                  • {child.trackName} {child.levelName ? `(${child.levelName})` : ''}
+                </span>
+              )}
+            </Button>
+          ))}
+        </div>
+      )}
+
+      {scope.isTeacher && scope.activeAttachmentLabel && (
+        <div className="flex items-center gap-2.5 p-3 bg-primary/5 rounded-lg border border-primary/20 text-xs text-primary">
+          <BookOpen className="h-4 w-4 shrink-0" />
+          <span>
+            Authorized Subject Scope: <strong>{scope.activeAttachmentLabel}</strong>. Showing materials matching your teaching assignments.
+          </span>
+        </div>
+      )}
+
       {/* Filter and Search Bar */}
       <Card className="shadow-2xs">
         <CardContent className="p-4 space-y-3">
@@ -310,16 +412,50 @@ export function LearningMaterialsManager({ initialTrackId, hideHeader = false }:
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <Select value={selectedTrackId} onValueChange={setSelectedTrackId}>
+              <Select
+                value={selectedTrackId}
+                onValueChange={(val) => {
+                  setSelectedTrackId(val);
+                  setSelectedLevelId('all');
+                }}
+              >
                 <SelectTrigger className="w-[180px] text-xs h-9">
                   <SelectValue placeholder="All Subjects/Tracks" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Tracks & Subjects</SelectItem>
+                  <SelectItem value="all">
+                    {scope.isStudent
+                      ? 'My Enrolled Tracks'
+                      : scope.isTeacher
+                      ? 'My Teaching Tracks'
+                      : scope.isParent
+                      ? "Children's Tracks"
+                      : 'All Tracks & Subjects'}
+                  </SelectItem>
                   <SelectItem value="general">Academy-Wide (No Track)</SelectItem>
-                  {tracks.map((t) => (
+                  {scope.availableTracks.map((t) => (
                     <SelectItem key={t.id} value={String(t.id)}>
                       {t.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={selectedLevelId} onValueChange={setSelectedLevelId}>
+                <SelectTrigger className="w-[170px] text-xs h-9">
+                  <SelectValue placeholder="All Levels" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    {scope.isStudent
+                      ? 'My Enrolled Level'
+                      : scope.isParent && scope.selectedChildId !== 'all'
+                      ? "Child's Level"
+                      : 'All Levels'}
+                  </SelectItem>
+                  {scope.getAvailableLevelsForTrack(selectedTrackId).map((l) => (
+                    <SelectItem key={l.id} value={String(l.id)}>
+                      {l.order ? `${l.order}. ` : ''}{l.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

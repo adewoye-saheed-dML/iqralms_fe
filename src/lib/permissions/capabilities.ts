@@ -12,7 +12,11 @@ export type Capability =
   | 'manage_students'
   | 'manage_curriculum'
   | 'manage_scheduling'
-  | 'manage_finance'
+  | 'manage_subscription'
+  | 'manage_payment_setup'
+  | 'view_organization_payments'
+  | 'make_payment'
+  | 'view_own_payments'
   | 'view_audit'
   | 'view_own_payouts'
   | 'view_academy_payouts'
@@ -80,7 +84,9 @@ export function can(capability: Capability, context: PermissionContext): boolean
     case 'manage_invitations':
     case 'manage_students':
     case 'manage_curriculum':
-    case 'manage_finance':
+    case 'manage_subscription':
+    case 'manage_payment_setup':
+    case 'view_organization_payments':
     case 'view_audit':
     case 'manage_notifications':
     case 'manage_imports':
@@ -114,12 +120,14 @@ export function can(capability: Capability, context: PermissionContext): boolean
 
     case 'view_own_progress':
     case 'view_own_assessments':
+    case 'view_own_payments':
     case 'manage_own_waitlist':
       return userRole === 'student' || userRole === 'parent' || activeRole === 'student' || activeRole === 'parent';
 
     // SSoT placement-review table: Student is "Submit only" — Parent can see the
     // outcome (via the /placements/children/ endpoint) but does not submit.
     case 'submit_placement':
+    case 'make_payment':
       return userRole === 'student' || activeRole === 'student';
 
     case 'view_own_schedule':

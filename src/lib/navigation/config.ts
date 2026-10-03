@@ -12,10 +12,9 @@ import {
   FileUp,
   Shield,
   User,
-  Clock,
-  CalendarCheck,
   Mail,
   Video,
+  CreditCard,
 } from 'lucide-react';
 import type { Capability } from '@/lib/permissions/capabilities';
 import {
@@ -110,6 +109,18 @@ export const navigationConfig: NavItem[] = [
     requiredCapability: 'view_own_payouts',
   },
   {
+    label: 'Billing',
+    href: '/app/billing',
+    icon: CreditCard,
+    requiredCapability: 'manage_subscription',
+    allowedOrgRoles: ['owner', 'admin'],
+  },
+  {
+    label: 'Payments',
+    href: '/app/payments',
+    icon: CreditCard,
+  },
+  {
     label: 'Notifications',
     href: '/app/notifications',
     icon: Bell,
@@ -164,6 +175,7 @@ export function getNavigationForRole(experience: RoleExperience): NavItem[] {
         { label: 'Assessments', href: '/app/assessments', icon: CheckSquare },
         { label: 'Pricing', href: '/app/pricing', icon: Wallet, requiredCapability: 'manage_pricing' },
         { label: 'Payouts', href: '/app/payouts', icon: Banknote, requiredCapability: 'manage_payouts' },
+        { label: 'Billing', href: '/app/billing', icon: CreditCard, requiredCapability: 'manage_subscription' },
         { label: 'Notifications', href: '/app/notifications', icon: Bell },
         { label: 'Audit', href: '/app/audit', icon: Shield, requiredCapability: 'view_audit' },
         { label: 'Settings', href: '/app/settings', icon: Settings },
@@ -201,6 +213,7 @@ export function getNavigationForRole(experience: RoleExperience): NavItem[] {
         { label: 'Books & Materials', href: '/app/curriculum?tab=materials', icon: BookOpen },
         { label: 'Schedule', href: '/app/scheduling', icon: Calendar },
         { label: 'Assessments', href: '/app/assessments', icon: CheckSquare },
+        { label: 'Payments', href: '/app/payments', icon: CreditCard },
         { label: 'Notifications', href: '/app/notifications', icon: Bell },
         { label: 'Profile', href: '/app/profile', icon: User },
       ];
@@ -211,6 +224,7 @@ export function getNavigationForRole(experience: RoleExperience): NavItem[] {
         { label: 'My Schedule', href: '/app/scheduling', icon: Calendar },
         { label: 'Books & Materials', href: '/app/curriculum?tab=materials', icon: BookOpen },
         { label: 'Assessments', href: '/app/assessments', icon: CheckSquare },
+        { label: 'Payments', href: '/app/payments', icon: CreditCard },
         { label: 'Notifications', href: '/app/notifications', icon: Bell },
         { label: 'Profile', href: '/app/profile', icon: User },
       ];
@@ -275,6 +289,8 @@ export function canAccessRoute(
   if (experience === 'lead_teacher') {
     // Strictly forbidden for lead teacher unless owner/admin
     if (
+      pathname.startsWith('/app/billing') ||
+      pathname.startsWith('/app/payments') ||
       pathname.startsWith('/app/audit') ||
       (pathname.startsWith('/app/academy') && pathname !== '/app/academy/create') ||
       pathname.startsWith('/app/imports') ||
@@ -289,7 +305,6 @@ export function canAccessRoute(
       pathname.startsWith('/app/assessments') ||
       pathname.startsWith('/app/pricing') ||
       pathname.startsWith('/app/payouts') ||
-      pathname.startsWith('/app/finance') ||
       pathname.startsWith('/app/curriculum')
     );
   }
@@ -298,7 +313,8 @@ export function canAccessRoute(
   if (experience === 'teacher') {
     // Strictly forbidden for ordinary teachers
     if (
-      pathname.startsWith('/app/finance') ||
+      pathname.startsWith('/app/billing') ||
+      pathname.startsWith('/app/payments') ||
       pathname.startsWith('/app/pricing') ||
       pathname.startsWith('/app/audit') ||
       (pathname.startsWith('/app/academy') && pathname !== '/app/academy/create') ||
@@ -322,9 +338,9 @@ export function canAccessRoute(
 
   // Parent route access
   if (experience === 'parent') {
-    // Strictly forbidden for parents (parents cannot enroll students or manage settings/finance)
+    // Strictly forbidden for parents (parents cannot enroll students or manage settings/billing)
     if (
-      pathname.startsWith('/app/finance') ||
+      pathname.startsWith('/app/billing') ||
       pathname.startsWith('/app/payouts') ||
       pathname.startsWith('/app/pricing') ||
       (pathname.startsWith('/app/academy') && pathname !== '/app/academy/create') ||
@@ -338,6 +354,7 @@ export function canAccessRoute(
       return false;
     }
     return (
+      pathname.startsWith('/app/payments') ||
       pathname.startsWith('/app/students') ||
       pathname.startsWith('/app/scheduling') ||
       pathname.startsWith('/app/assessments') ||
@@ -349,7 +366,8 @@ export function canAccessRoute(
   if (experience === 'student') {
     // Strictly forbidden for students
     if (
-      pathname.startsWith('/app/finance') ||
+      pathname.startsWith('/app/billing') ||
+      (context.isMinor && pathname.startsWith('/app/payments')) ||
       pathname.startsWith('/app/payouts') ||
       (pathname.startsWith('/app/academy') && pathname !== '/app/academy/create') ||
       pathname.startsWith('/app/teachers') ||
@@ -363,6 +381,7 @@ export function canAccessRoute(
       return false;
     }
     return (
+      pathname.startsWith('/app/payments') ||
       pathname.startsWith('/app/scheduling') ||
       pathname.startsWith('/app/assessments') ||
       pathname.startsWith('/app/pricing') ||

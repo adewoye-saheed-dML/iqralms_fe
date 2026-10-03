@@ -30,6 +30,10 @@ export function AppSidebar({ className }: { className?: string }) {
     if (isRestrictedMinor && !restrictedPaths.has(item.href)) {
       return false;
     }
+    // Minor students unconditionally have no payment affordance
+    if (user.is_minor && item.href.startsWith('/app/payments')) {
+      return false;
+    }
     if (item.requiredCapability) {
       return can(item.requiredCapability, { userRole: user.role, activeRole });
     }

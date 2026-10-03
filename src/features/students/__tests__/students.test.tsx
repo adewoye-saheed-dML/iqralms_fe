@@ -30,6 +30,7 @@ vi.mock('next/link', () => ({
 vi.mock('../api/students', () => ({
   studentsApi: {
     getStudents: vi.fn(),
+    getMyStudents: vi.fn(),
     getStudent: vi.fn(),
     addStudent: vi.fn(),
     updateStudentStatus: vi.fn(),
@@ -48,6 +49,7 @@ describe('Student Management', () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
+    vi.mocked(studentsApi.getMyStudents).mockResolvedValue([]);
     vi.spyOn(AcademyProvider, 'useAcademy').mockReturnValue({
       activeAcademy: mockAcademy,
       activeRole: 'admin',
@@ -80,6 +82,42 @@ describe('Student Management', () => {
         expect(screen.getByText('teststudent')).toBeInTheDocument();
       });
       expect(screen.getByText('active')).toBeInTheDocument();
+    });
+
+    it('conceals student email from teachers and displays username handle instead', async () => {
+      vi.spyOn(AcademyProvider, 'useAcademy').mockReturnValue({
+        activeAcademy: mockAcademy,
+        activeRole: 'teacher',
+      } as any);
+
+      vi.mocked(studentsApi.getMyStudents).mockResolvedValue([
+        {
+          id: 10,
+          user_id: 100,
+          username: 'zayd_student',
+          email: 'zayd@secretmail.com',
+          first_name: 'Zayd',
+          last_name: 'Student',
+          date_of_birth: '2010-01-01',
+          is_minor: true,
+          enrollment_status: 'active',
+          track_id: null,
+          level_id: null,
+          created_at: '2026-01-01T00:00:00Z',
+          updated_at: '2026-01-01T00:00:00Z',
+        },
+      ]);
+
+      renderWithProviders(<StudentDirectory />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Zayd Student')).toBeInTheDocument();
+      });
+
+      // Email must not appear in the document for teachers
+      expect(screen.queryByText('zayd@secretmail.com')).not.toBeInTheDocument();
+      // Username handle is shown instead
+      expect(screen.getByText('@zayd_student')).toBeInTheDocument();
     });
 
     it('list handles empty academy', async () => {
@@ -326,6 +364,46 @@ describe('Student Management', () => {
         // Academic Performance section
         expect(screen.getByText('Academic Performance & Submissions')).toBeInTheDocument();
       });
+    });
+
+    it('protects student email and date of birth when viewed by a teacher', async () => {
+      vi.spyOn(AcademyProvider, 'useAcademy').mockReturnValue({
+        activeAcademy: mockAcademy,
+        activeRole: 'teacher',
+      } as any);
+
+      vi.mocked(studentsApi.getStudent).mockResolvedValue({
+        id: 15,
+        user_id: 300,
+        username: 'zayd_ali',
+        email: 'zayd@example.com',
+        first_name: 'Zayd',
+        last_name: 'Ali',
+        date_of_birth: '2016-05-15',
+        is_minor: true,
+        enrollment_status: 'active',
+        track_id: 2,
+        level_id: 4,
+        created_at: '2026-03-01T10:00:00Z',
+        updated_at: '2026-03-05T12:00:00Z',
+      });
+
+      renderWithProviders(<StudentDetail enrollmentId={15} />);
+
+      await waitFor(() => {
+        expect(screen.getAllByText('Zayd Ali').length).toBeGreaterThanOrEqual(1);
+      });
+
+      // Email must NOT be disclosed to teacher
+      expect(screen.queryByText('zayd@example.com')).not.toBeInTheDocument();
+      expect(screen.getByText('Protected by academy privacy policy')).toBeInTheDocument();
+
+      // Date of birth must NOT be disclosed to teacher
+      expect(screen.queryByText('2016-05-15')).not.toBeInTheDocument();
+      expect(screen.getByText('Protected')).toBeInTheDocument();
+
+      // Subject allocation management button must not be visible to teachers
+      expect(screen.queryByText('Subject Allocation')).not.toBeInTheDocument();
     });
   });
 });

@@ -130,4 +130,18 @@ export const curriculumApi = {
     if (!data) throw new Error('Failed to update teacher track assignment');
     return data;
   },
+
+  getMyPlacements: async (organizationId: number): Promise<PlacementResult[]> => {
+    const { data } = await apiClient.GET('/api/curriculum/organizations/{organization_pk}/placements/mine/', {
+      params: { path: { organization_pk: organizationId } },
+    });
+    return (data ?? []) as PlacementResult[];
+  },
+
+  getChildrenPlacements: async (organizationId: number): Promise<PlacementResult[]> => {
+    const { data } = await apiClient.GET('/api/curriculum/organizations/{organization_pk}/placements/children/', {
+      params: { path: { organization_pk: organizationId } },
+    });
+    return (data ?? []) as PlacementResult[];
+  },
 };

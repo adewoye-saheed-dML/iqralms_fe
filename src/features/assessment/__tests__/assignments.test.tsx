@@ -9,7 +9,7 @@ import { ParentWardAssessmentView } from '../components/parent-ward-assessment-v
 import { OwnerAssessmentOversight } from '../components/owner-assessment-oversight';
 import { assessmentApi, StudentAssignment, AssignmentSubmission } from '../api/assessment';
 import { useAcademy } from '@/lib/academy/academy-provider';
-import { useAuth } from '@/lib/auth/auth-provider';
+import { useAuth, useOptionalAuth } from '@/lib/auth/auth-provider';
 import { familyApi } from '@/features/family/api/family';
 import { curriculumApi } from '@/features/curriculum/api/curriculum';
 import { studentsApi } from '@/features/students/api/students';
@@ -20,6 +20,7 @@ vi.mock('@/lib/academy/academy-provider', () => ({
 
 vi.mock('@/lib/auth/auth-provider', () => ({
   useAuth: vi.fn(),
+  useOptionalAuth: vi.fn(),
 }));
 
 vi.mock('../api/assessment', async (importOriginal) => {
@@ -50,6 +51,7 @@ vi.mock('@/features/family/api/family', () => ({
 vi.mock('@/features/curriculum/api/curriculum', () => ({
   curriculumApi: {
     getTracks: vi.fn(),
+    getMyTeachingTracks: vi.fn(),
   },
 }));
 
@@ -122,14 +124,24 @@ describe('Assignments and Homework Submissions', () => {
       activeRole: 'teacher',
     } as any);
 
+    const teacherUser = { id: 2, role: 'lead', full_name: 'Ustadh Ahmad', email: 'teacher@quran.com' };
     vi.mocked(useAuth).mockReturnValue({
-      user: { id: 2, role: 'lead', full_name: 'Ustadh Ahmad', email: 'teacher@quran.com' },
+      user: teacherUser,
+    } as any);
+
+    vi.mocked(useOptionalAuth).mockReturnValue({
+      user: teacherUser,
     } as any);
 
     vi.mocked(assessmentApi.getAssignments).mockResolvedValue([mockAssignment]);
     vi.mocked(assessmentApi.getSubmissions).mockResolvedValue([mockSubmission]);
-    vi.mocked(curriculumApi.getTracks).mockResolvedValue([]);
-    vi.mocked(studentsApi.getMyStudents).mockResolvedValue([]);
+    vi.mocked(curriculumApi.getTracks).mockResolvedValue([{ id: 1, name: 'Quran Memorization', slug: 'quran-memorization' } as any]);
+    vi.mocked(curriculumApi.getMyTeachingTracks).mockResolvedValue([
+      { id: 1, membership: 1, user: 2, username: 'ahmad', organization: 1, track: 1, track_slug: 'quran-memorization', active: true, created_at: '', updated_at: '' } as any,
+    ]);
+    vi.mocked(studentsApi.getMyStudents).mockResolvedValue([
+      { id: 101, user_id: 5, username: 'zayd', first_name: 'Zayd', last_name: 'Ali', email: 'zayd@example.com', track_id: 1, date_of_birth: '2010-01-01', is_minor: true, enrollment_status: 'active', created_at: '', updated_at: '' } as any,
+    ]);
   });
 
   it('renders assignments list with Quran reference info and teacher controls', async () => {

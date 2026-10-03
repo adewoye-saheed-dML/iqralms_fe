@@ -46,6 +46,8 @@ import { ErrorState } from '@/components/ui/error-state';
 import { Label } from '@/components/ui/label';
 import { can } from '@/lib/permissions/capabilities';
 
+import { useTeacherAccessControl } from '@/features/assessment/lib/access-control';
+
 interface StudentDetailProps {
   enrollmentId: number;
 }
@@ -53,6 +55,7 @@ interface StudentDetailProps {
 export function StudentDetail({ enrollmentId }: StudentDetailProps) {
   const queryClient = useQueryClient();
   const { activeAcademy, activeRole } = useAcademy();
+  const accessControl = useTeacherAccessControl();
   const [status, setStatus] = React.useState<'active' | 'inactive' | ''>('');
   const [successMessage, setSuccessMessage] = React.useState('');
 
@@ -67,6 +70,14 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
     queryFn: () => studentsApi.getStudent(activeAcademy!.id, enrollmentId),
     enabled: !!activeAcademy,
   });
+
+  const canAccessStudentAssessments =
+    accessControl.isOwnerAdmin ||
+    accessControl.canTeacherAccessStudent({
+      user_id: student?.user_id,
+      id: student?.id,
+      track_id: student?.track_id,
+    });
 
   // 2. Fetch Academy Curriculum Tracks (to resolve track name / subject)
   const { data: tracks = [] } = useQuery<TrackBrief[]>({
@@ -121,7 +132,7 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
         return null;
       }
     },
-    enabled: !!activeAcademy?.id && !!student?.user_id,
+    enabled: !!activeAcademy?.id && !!student?.user_id && canAccessStudentAssessments,
   });
 
   const currentStatus = status || student?.enrollment_status || '';
@@ -201,6 +212,8 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
 
   const hasChanges = status && status !== student.enrollment_status;
   const canManage = can('manage_students', { activeRole });
+  const isOwnerAdmin =
+    accessControl.isOwnerAdmin || canManage || activeRole === 'owner' || activeRole === 'admin';
 
   let errorMessage = '';
   if (updateMutation.isError) {
@@ -253,7 +266,7 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
                 </div>
                 <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                   <span className="font-mono">@{student.username}</span>
-                  {student.email && (
+                  {isOwnerAdmin && student.email && (
                     <span className="flex items-center gap-1">
                       <Mail className="h-3 w-3" />
                       {student.email}
@@ -265,14 +278,16 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" asChild>
-                <Link href="/app/curriculum?tab=allocations">
-                  <GraduationCap className="h-4 w-4 mr-1.5" />
-                  Subject Allocation
-                </Link>
-              </Button>
-            </div>
+            {canManage && (
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" asChild>
+                  <Link href="/app/curriculum?tab=allocations">
+                    <GraduationCap className="h-4 w-4 mr-1.5" />
+                    Subject Allocation
+                  </Link>
+                </Button>
+              </div>
+            )}
           </div>
         </CardHeader>
       </Card>
@@ -381,12 +396,23 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
 
               <div className="border-t pt-2 col-span-2">
                 <span className="text-muted-foreground block text-[11px]">Email Address</span>
-                <span className="font-medium text-foreground">{student.email || 'None provided'}</span>
+                {isOwnerAdmin ? (
+                  <span className="font-medium text-foreground">{student.email || 'None provided'}</span>
+                ) : (
+                  <span className="font-medium text-muted-foreground italic flex items-center gap-1.5">
+                    <Shield className="h-3.5 w-3.5 text-primary" />
+                    Protected by academy privacy policy
+                  </span>
+                )}
               </div>
 
               <div className="border-t pt-2">
                 <span className="text-muted-foreground block text-[11px]">Date of Birth</span>
-                <span className="font-medium text-foreground">{student.date_of_birth || 'Not recorded'}</span>
+                {isOwnerAdmin ? (
+                  <span className="font-medium text-foreground">{student.date_of_birth || 'Not recorded'}</span>
+                ) : (
+                  <span className="font-medium text-muted-foreground italic">Protected</span>
+                )}
               </div>
               <div className="border-t pt-2">
                 <span className="text-muted-foreground block text-[11px]">Demographic</span>
@@ -421,52 +447,71 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
       </div>
 
       {/* Academic Performance & Homework Stats Card */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Award className="h-5 w-5 text-primary" />
-              <CardTitle className="text-base">Academic Performance &amp; Submissions</CardTitle>
+      {canAccessStudentAssessments ? (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Award className="h-5 w-5 text-primary" />
+                <CardTitle className="text-base">Academic Performance &amp; Submissions</CardTitle>
+              </div>
+              <Button variant="outline" size="sm" asChild className="text-xs h-7">
+                <Link href="/app/assessments">
+                  Assessment Oversight
+                </Link>
+              </Button>
             </div>
-            <Button variant="outline" size="sm" asChild className="text-xs h-7">
-              <Link href="/app/assessments">
-                Assessment Oversight
-              </Link>
-            </Button>
-          </div>
-          <CardDescription className="text-xs">
-            Summary of homework, recitation audio recordings, and rubric scoring for this student.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="rounded-lg border p-3 bg-card text-center">
-              <span className="text-[11px] text-muted-foreground block font-medium">Assigned Tasks</span>
-              <span className="text-2xl font-bold text-foreground mt-0.5 block">
-                {progress?.total_assigned ?? 0}
-              </span>
+            <CardDescription className="text-xs">
+              Summary of homework, recitation audio recordings, and rubric scoring for this student.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="rounded-lg border p-3 bg-card text-center">
+                <span className="text-[11px] text-muted-foreground block font-medium">Assigned Tasks</span>
+                <span className="text-2xl font-bold text-foreground mt-0.5 block">
+                  {progress?.total_assigned ?? 0}
+                </span>
+              </div>
+              <div className="rounded-lg border p-3 bg-card text-center">
+                <span className="text-[11px] text-muted-foreground block font-medium">Submissions</span>
+                <span className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-0.5 block">
+                  {progress?.total_submitted ?? 0}
+                </span>
+              </div>
+              <div className="rounded-lg border p-3 bg-card text-center">
+                <span className="text-[11px] text-muted-foreground block font-medium">Graded</span>
+                <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">
+                  {progress?.total_graded ?? 0}
+                </span>
+              </div>
+              <div className="rounded-lg border p-3 bg-card text-center">
+                <span className="text-[11px] text-muted-foreground block font-medium">Average Score</span>
+                <span className="text-2xl font-bold text-primary mt-0.5 block">
+                  {progress?.average_score_pct ? `${progress.average_score_pct}%` : 'N/A'}
+                </span>
+              </div>
             </div>
-            <div className="rounded-lg border p-3 bg-card text-center">
-              <span className="text-[11px] text-muted-foreground block font-medium">Submissions</span>
-              <span className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-0.5 block">
-                {progress?.total_submitted ?? 0}
-              </span>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="border-amber-200/60 bg-amber-50/20 dark:bg-amber-950/10">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300">
+              <Shield className="h-5 w-5" />
+              <CardTitle className="text-base">Assessments &amp; Performance Protected</CardTitle>
             </div>
-            <div className="rounded-lg border p-3 bg-card text-center">
-              <span className="text-[11px] text-muted-foreground block font-medium">Graded</span>
-              <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">
-                {progress?.total_graded ?? 0}
-              </span>
-            </div>
-            <div className="rounded-lg border p-3 bg-card text-center">
-              <span className="text-[11px] text-muted-foreground block font-medium">Average Score</span>
-              <span className="text-2xl font-bold text-primary mt-0.5 block">
-                {progress?.average_score_pct ? `${progress.average_score_pct}%` : 'N/A'}
-              </span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            <CardDescription className="text-xs text-amber-700/80 dark:text-amber-400">
+              Student Personal Learning Space Boundary
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Assessment evaluations, recitation audio recordings, and homework grades are recorded directly to the student&apos;s personal learning space and are only disclosed to their attached instructor offering this subject. You are not attached to this student for this curriculum subject.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Enrollment Status Management Card */}
       <Card>

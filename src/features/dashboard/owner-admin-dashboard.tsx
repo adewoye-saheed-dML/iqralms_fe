@@ -10,7 +10,6 @@ import {
   BookOpen,
   Calendar,
   CheckSquare,
-  Wallet,
   Shield,
   ArrowRight,
   UserPlus,
@@ -49,6 +48,7 @@ import {
 import { schedulingApi, type Booking } from '@/features/scheduling/api/scheduling';
 import { teachersApi, type TeacherConfiguration } from '@/features/teachers/api/teachers';
 import { membershipsApi, type Membership } from '@/features/memberships/api/memberships';
+import { AcademyDashboardHero } from '@/features/dashboard/components/academy-dashboard-hero';
 
 export function OwnerAdminDashboard() {
   const { user } = useAuth();
@@ -439,71 +439,42 @@ export function OwnerAdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <PageHeader
-            title="Academy Administration"
-            description={`Welcome back, ${user?.first_name || user?.username}. Managing ${activeAcademy?.name || 'Academy'}.`}
-            className="pb-2"
-          />
-          {activeAcademy && (
-            <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
-              <span className="font-semibold text-foreground">{activeAcademy.name}</span>
-              <Badge variant="outline" className="font-mono text-[11px]">
-                slug: {activeAcademy.slug}
-              </Badge>
-              <Badge variant="outline" className="text-[11px] flex items-center gap-1">
-                <Clock className="h-3 w-3 text-muted-foreground" />
-                {activeAcademy.timezone}
-              </Badge>
-              <Badge variant="outline" className="font-mono text-[11px]">
-                ID: #{activeAcademy.id}
-              </Badge>
-              <Badge
-                variant={activeAcademy.is_active ? 'default' : 'secondary'}
-                className="text-[11px]"
-              >
-                {activeAcademy.is_active ? 'Operating' : 'Inactive'}
-              </Badge>
-              <Badge variant="secondary" className="text-[11px] uppercase tracking-wider font-semibold">
-                {activeRole || 'Owner'}
-              </Badge>
-            </div>
-          )}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/app/scheduling?tab=recordings">
-              <Video className="h-4 w-4 mr-1.5" /> Class Recordings
-            </Link>
-          </Button>
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/app/onboarding">
-              <Settings className="h-4 w-4 mr-1.5" /> Setup Progress
-            </Link>
-          </Button>
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/app/invitations?role=student">
-              <UserPlus className="h-4 w-4 mr-1.5" /> Invite Student
-            </Link>
-          </Button>
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/app/teachers">
-              <UserPlus className="h-4 w-4 mr-1.5" /> Invite Teacher
-            </Link>
-          </Button>
-          <Button size="sm" asChild>
-            <Link href="/app/invitations">
-              <Mail className="h-4 w-4 mr-1.5" /> Invitations
-              {totalPendingInvitations > 0 && (
-                <span className="ml-1.5 rounded-full bg-primary-foreground/20 px-1.5 py-0.2 text-[10px] font-bold">
-                  {totalPendingInvitations}
-                </span>
-              )}
-            </Link>
-          </Button>
-        </div>
-      </div>
+      <AcademyDashboardHero
+        roleLabel="Academy Administration"
+        welcomeName={user?.first_name || user?.username}
+        subtitle={`Welcome back, ${user?.first_name || user?.username}. Managing ${activeAcademy?.name || 'Academy'}.`}
+      >
+        <Button variant="outline" size="sm" asChild>
+          <Link href="/app/scheduling?tab=recordings">
+            <Video className="h-4 w-4 mr-1.5" /> Class Recordings
+          </Link>
+        </Button>
+        <Button variant="outline" size="sm" asChild>
+          <Link href="/app/onboarding">
+            <Settings className="h-4 w-4 mr-1.5" /> Setup Progress
+          </Link>
+        </Button>
+        <Button variant="outline" size="sm" asChild>
+          <Link href="/app/invitations?role=student">
+            <UserPlus className="h-4 w-4 mr-1.5" /> Invite Student
+          </Link>
+        </Button>
+        <Button variant="outline" size="sm" asChild>
+          <Link href="/app/teachers">
+            <UserPlus className="h-4 w-4 mr-1.5" /> Invite Teacher
+          </Link>
+        </Button>
+        <Button size="sm" asChild>
+          <Link href="/app/invitations">
+            <Mail className="h-4 w-4 mr-1.5" /> Invitations
+            {totalPendingInvitations > 0 && (
+              <span className="ml-1.5 rounded-full bg-primary-foreground/20 px-1.5 py-0.2 text-[10px] font-bold">
+                {totalPendingInvitations}
+              </span>
+            )}
+          </Link>
+        </Button>
+      </AcademyDashboardHero>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 sm:w-auto">
@@ -827,22 +798,6 @@ export function OwnerAdminDashboard() {
                 </CardFooter>
               </Card>
 
-              <Card className="flex flex-col justify-between">
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <Wallet className="h-5 w-5 text-primary" />
-                    <CardTitle className="text-base">Academy Finance &amp; Payouts</CardTitle>
-                  </div>
-                  <CardDescription className="text-xs mt-2">
-                    Manage student pricing agreements, generate monthly teacher payout runs, and audit statements.
-                  </CardDescription>
-                </CardHeader>
-                <CardFooter className="pt-0">
-                  <Button variant="ghost" size="sm" asChild className="w-full justify-between">
-                    <Link href="/app/finance">Academy Finance <ArrowRight className="h-4 w-4" /></Link>
-                  </Button>
-                </CardFooter>
-              </Card>
 
               <Card className="flex flex-col justify-between">
                 <CardHeader>

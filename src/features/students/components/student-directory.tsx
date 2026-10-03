@@ -115,7 +115,7 @@ export function StudentDirectory() {
         enrollmentId: s.id,
         username: s.username,
         displayName,
-        email: s.email,
+        email: isOwnerAdmin || isParent ? s.email : undefined,
         status: s.enrollment_status || 'active',
         hasEnrollment: true,
       });
@@ -273,10 +273,12 @@ export function StudentDirectory() {
                 >
                   <td className="p-4">
                     <div className="font-medium">{student.displayName}</div>
-                      {student.email && (
-                        <div className="text-muted-foreground text-xs">{student.email}</div>
-                      )}
-                    </td>
+                    {student.email ? (
+                      <div className="text-muted-foreground text-xs">{student.email}</div>
+                    ) : (
+                      <div className="text-muted-foreground text-xs font-mono">@{student.username}</div>
+                    )}
+                  </td>
                     <td className="p-4">
                       <Badge variant={student.status === 'active' ? 'default' : 'secondary'}>
                         {student.hasEnrollment ? (student.status || 'active') : 'Pending Enrollment'}

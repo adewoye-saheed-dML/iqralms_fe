@@ -28,6 +28,8 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/lib/auth/auth-provider';
 import { useAcademy } from '@/lib/academy/academy-provider';
+import { useAcademyBranding } from '@/lib/academy/academy-branding';
+import { AcademyDashboardHero } from '@/features/dashboard/components/academy-dashboard-hero';
 import { schedulingKeys, assessmentKeys } from '@/lib/api/query-keys';
 import { schedulingApi, type Booking, type WaitlistEntry } from '@/features/scheduling/api/scheduling';
 import { assessmentApi, type FamilyAssessment } from '@/features/assessment/api/assessment';
@@ -35,6 +37,7 @@ import { assessmentApi, type FamilyAssessment } from '@/features/assessment/api/
 export function StudentDashboard() {
   const { user } = useAuth();
   const { activeAcademy } = useAcademy();
+  const { branding } = useAcademyBranding(activeAcademy?.id, activeAcademy?.name);
 
   // Load student's bookings
   const { data: bookings = [] } = useQuery<Booking[]>({
@@ -55,6 +58,13 @@ export function StudentDashboard() {
     queryKey: assessmentKeys.list(activeAcademy?.id, 'student-mine'),
     queryFn: () => assessmentApi.getStudentAssessments(activeAcademy!.id),
     enabled: !!activeAcademy?.id,
+  });
+
+  // Load student's personal learning space progress and homework stats
+  const { data: progress } = useQuery({
+    queryKey: assessmentKeys.wardProgress(activeAcademy?.id, user?.id),
+    queryFn: () => (activeAcademy?.id && user?.id ? assessmentApi.getWardProgress(activeAcademy.id, user.id) : null),
+    enabled: !!activeAcademy?.id && !!user?.id,
   });
 
   const [activeBookingTab, setActiveBookingTab] = React.useState<'upcoming' | 'pending' | 'past'>('upcoming');
@@ -186,15 +196,23 @@ export function StudentDashboard() {
 
     return (
       <div className="mx-auto max-w-sm space-y-5">
-        <div className="flex items-center gap-3">
-          <div className="bg-primary/10 text-primary flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-lg font-bold border border-primary/20">
-            {(user?.first_name || user?.username || '?').charAt(0).toUpperCase()}
-          </div>
+        <div className="flex items-center gap-3 p-3 rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-background border border-primary/20 shadow-2xs">
+          {branding?.logoUrl ? (
+            <img
+              src={branding.logoUrl}
+              alt={`${activeAcademy?.name || 'Academy'} Logo`}
+              className="h-12 w-12 rounded-xl object-contain border bg-card p-1 shadow-2xs shrink-0"
+            />
+          ) : (
+            <div className="bg-primary/10 text-primary flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-lg font-bold border border-primary/20">
+              {(user?.first_name || user?.username || '?').charAt(0).toUpperCase()}
+            </div>
+          )}
           <div>
-            <p className="text-lg font-bold text-foreground">
+            <p className="text-base font-bold text-foreground">
               Assalamu Alaikum, {user?.first_name || user?.username}! 🌟
             </p>
-            <p className="text-muted-foreground text-xs">Ready to learn Quran today? 📖</p>
+            <p className="text-muted-foreground text-xs">{activeAcademy?.name || 'Academy'} • Ready to learn Quran today? 📖</p>
           </div>
         </div>
 
@@ -269,9 +287,10 @@ export function StudentDashboard() {
 
   return (
     <div className="space-y-8">
-      <PageHeader
-        title="Student Learning Portal"
-        description={`Assalamu Alaikum, ${user?.first_name || user?.username}! Continue your Quranic journey at ${activeAcademy?.name || 'the academy'}.`}
+      <AcademyDashboardHero
+        roleLabel="Student Learning Portal"
+        welcomeName={user?.first_name || user?.username}
+        subtitle={`Assalamu Alaikum, ${user?.first_name || user?.username}! Continue your Quranic journey at ${activeAcademy?.name || 'the academy'}.`}
       />
 
       {/* Next Class Hero */}
@@ -613,36 +632,97 @@ export function StudentDashboard() {
           </CardFooter>
         </Card>
 
-        {/* Recent Assessments */}
+        {/* Personal Learning Space Assessments & Results */}
         <Card className="flex flex-col justify-between">
           <CardHeader>
-            <div className="flex items-center gap-2">
-              <CheckSquare className="h-5 w-5 text-primary" />
-              <CardTitle className="text-base">Assessments & Results</CardTitle>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CheckSquare className="h-5 w-5 text-primary" />
+                <CardTitle className="text-base">Personal Learning Space Assessments</CardTitle>
+              </div>
+              {progress?.average_score_pct !== undefined && progress?.average_score_pct !== null && (
+                <Badge className="bg-emerald-600 text-white text-xs">
+                  Avg: {progress.average_score_pct}%
+                </Badge>
+              )}
             </div>
             <CardDescription className="text-xs">
-              Recitation evaluations, homework feedback, and rubric grades recorded by your teachers.
+              Recitation evaluations, homework feedback, and rubric grades recorded to your personal learning space.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {assessments.length === 0 ? (
+            {/* Quick Metrics Bar */}
+            {progress && (
+              <div className="grid grid-cols-3 gap-2 bg-muted/30 p-2.5 rounded-lg text-center text-xs">
+                <div>
+                  <span className="text-muted-foreground block text-[10px]">Tasks</span>
+                  <span className="font-bold text-sm text-foreground">{progress.total_assigned ?? 0}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground block text-[10px]">Submitted</span>
+                  <span className="font-bold text-sm text-blue-600 dark:text-blue-400">{progress.total_submitted ?? 0}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground block text-[10px]">Graded</span>
+                  <span className="font-bold text-sm text-emerald-600 dark:text-emerald-400">{progress.total_graded ?? 0}</span>
+                </div>
+              </div>
+            )}
+
+            {assessments.length === 0 && (!progress?.recent_submissions || progress.recent_submissions.length === 0) ? (
               <div className="rounded-lg border border-dashed p-6 text-center text-xs text-muted-foreground">
-                No assessments recorded yet. Once your teacher tests your recitation, results will appear here.
+                No assessments recorded yet. Once your teacher tests your recitation or grades homework, results will appear in your personal learning space.
               </div>
             ) : (
               <div className="space-y-2">
-                {assessments.slice(0, 3).map((assessment) => (
+                {/* Recent Homework Submissions */}
+                {(progress?.recent_submissions || []).slice(0, 2).map((sub) => (
                   <div
-                    key={assessment.id}
-                    className="flex items-center justify-between rounded-lg border p-3 text-xs"
+                    key={`sub-${sub.id}`}
+                    className="flex items-center justify-between rounded-lg border p-2.5 text-xs bg-card"
                   >
                     <div>
                       <span className="font-semibold text-foreground">
-                        {assessment.booking?.level?.name || 'Recitation Assessment'}
+                        {sub.assignment_title}
                       </span>
                       <p className="text-muted-foreground text-[11px] mt-0.5">
-                        Session: {new Date(assessment.booking?.start_time_utc).toLocaleDateString()}
+                        Homework • {new Date(sub.submitted_at).toLocaleDateString()}
                       </p>
+                    </div>
+                    <div>
+                      {sub.score !== null && sub.score !== undefined ? (
+                        <Badge className="bg-emerald-600 text-white font-medium text-[11px]">
+                          {sub.score} / {sub.max_score}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-blue-600 text-[11px]">
+                          Submitted
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Recent Session Evaluations */}
+                {assessments.slice(0, 2).map((assessment) => (
+                  <div
+                    key={`sess-${assessment.id}`}
+                    className="flex items-center justify-between rounded-lg border p-2.5 text-xs bg-card"
+                  >
+                    <div>
+                      <span className="font-semibold text-foreground">
+                        {assessment.booking?.level?.name || 'Class Recitation Evaluation'}
+                      </span>
+                      <p className="text-muted-foreground text-[11px] mt-0.5">
+                        Class Session • {new Date(assessment.booking?.start_time_utc).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div>
+                      {assessment.overall_average && (
+                        <Badge className="bg-emerald-600 text-white font-medium text-[11px]">
+                          {assessment.overall_average} / 10
+                        </Badge>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -651,7 +731,10 @@ export function StudentDashboard() {
           </CardContent>
           <CardFooter className="pt-0 border-t">
             <Button variant="ghost" size="sm" asChild className="w-full justify-between mt-3">
-              <Link href="/app/assessments">View All Assessments <ArrowRight className="h-4 w-4" /></Link>
+              <Link href="/app/assessments?tab=my-learning-space">
+                <span>Open Personal Learning Space</span>
+                <ArrowRight className="h-4 w-4" />
+              </Link>
             </Button>
           </CardFooter>
         </Card>

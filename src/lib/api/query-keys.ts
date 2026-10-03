@@ -39,6 +39,10 @@ export const curriculumKeys = {
     [...curriculumKeys.all(academyId), 'teachers', 'mine'] as const,
   teacherTracks: (academyId: AcademyId) =>
     [...curriculumKeys.all(academyId), 'teachers', 'all'] as const,
+  materials: (academyId: AcademyId, params?: Record<string, unknown>) =>
+    [...curriculumKeys.all(academyId), 'materials', params] as const,
+  placementsMine: (academyId: AcademyId) =>
+    [...curriculumKeys.all(academyId), 'placements', 'mine'] as const,
 };
 
 export const schedulingKeys = {
@@ -107,3 +111,18 @@ export const auditKeys = {
   detail: (academyId: AcademyId, id: number | string) =>
     [...auditKeys.all(academyId), 'detail', id] as const,
 };
+
+export const billingKeys = {
+  all: (academyId: AcademyId) => [...academyKeys.tenant(academyId), 'billing'] as const,
+  subscription: (academyId: AcademyId) => [...billingKeys.all(academyId), 'subscription'] as const,
+  organizationPayments: (academyId: AcademyId) =>
+    [...billingKeys.all(academyId), 'organization-payments'] as const,
+};
+
+export const paymentsKeys = {
+  all: (academyId: AcademyId) => [...academyKeys.tenant(academyId), 'payments'] as const,
+  mine: (academyId: AcademyId) => [...paymentsKeys.all(academyId), 'mine'] as const,
+  children: (academyId: AcademyId, studentId?: number) =>
+    [...paymentsKeys.all(academyId), 'children', studentId] as const,
+};
+

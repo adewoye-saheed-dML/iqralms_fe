@@ -42,7 +42,7 @@ describe('Teacher Workflows', () => {
     } as any);
     vi.mocked(Capabilities.can).mockImplementation((cap) => {
       if (cap === 'manage_teachers') return true;
-      if (cap === 'manage_finance') return true;
+      if (cap === 'manage_payouts') return true;
       return false;
     });
   });

@@ -65,10 +65,11 @@ describe('Navigation Policy per Role', () => {
     expect(labels).toContain('Curriculum');
     expect(labels).toContain('Pricing');
     expect(labels).toContain('Payouts');
+    expect(labels).toContain('Billing');
     expect(labels).toContain('Audit');
   });
 
-  it('parent navigation excludes Finance, Payouts, Teachers, and Academy administration', () => {
+  it('parent navigation includes Payments and excludes Payouts, Teachers, and Academy administration', () => {
     const nav = getNavigationForRole('parent');
     const labels = nav.map((item) => item.label);
     expect(labels).toContain('Dashboard');
@@ -76,8 +77,9 @@ describe('Navigation Policy per Role', () => {
     expect(labels).toContain('Schedule');
     expect(labels).not.toContain('Progress');
     expect(labels).toContain('Assessments');
+    expect(labels).toContain('Payments');
 
-    expect(labels).not.toContain('Finance');
+    expect(labels).not.toContain('Billing');
     expect(labels).not.toContain('Payouts');
     expect(labels).not.toContain('My Earnings');
     expect(labels).not.toContain('Academy');
@@ -85,15 +87,16 @@ describe('Navigation Policy per Role', () => {
     expect(labels).not.toContain('Audit');
   });
 
-  it('student navigation excludes Finance, Payouts, Teachers, and Academy administration', () => {
+  it('student navigation includes Payments and excludes Payouts, Teachers, and Academy administration', () => {
     const nav = getNavigationForRole('student');
     const labels = nav.map((item) => item.label);
     expect(labels).toContain('Dashboard');
     expect(labels).toContain('My Schedule');
     expect(labels).not.toContain('Progress & Learning');
     expect(labels).toContain('Assessments');
+    expect(labels).toContain('Payments');
 
-    expect(labels).not.toContain('Finance');
+    expect(labels).not.toContain('Billing');
     expect(labels).not.toContain('Payouts');
     expect(labels).not.toContain('My Earnings');
     expect(labels).not.toContain('Academy');
@@ -101,14 +104,15 @@ describe('Navigation Policy per Role', () => {
     expect(labels).not.toContain('Audit');
   });
 
-  it('teacher navigation has My Earnings but not Academy Finance or Academy Administration', () => {
+  it('teacher navigation has My Earnings but not Billing or Academy Administration', () => {
     const nav = getNavigationForRole('teacher');
     const labels = nav.map((item) => item.label);
     expect(labels).toContain('Dashboard');
     expect(labels).toContain('My Classes');
     expect(labels).toContain('My Earnings');
 
-    expect(labels).not.toContain('Finance');
+    expect(labels).not.toContain('Billing');
+    expect(labels).not.toContain('Payments');
     expect(labels).not.toContain('Academy');
     expect(labels).not.toContain('Audit');
   });
@@ -120,48 +124,61 @@ describe('Direct Route Access Guards (canAccessRoute)', () => {
     expect(canAccessRoute('/app/dashboard', context)).toBe(true);
     expect(canAccessRoute('/app/academy', context)).toBe(true);
     expect(canAccessRoute('/app/teachers', context)).toBe(true);
-    expect(canAccessRoute('/app/finance', context)).toBe(true);
+    expect(canAccessRoute('/app/billing', context)).toBe(true);
     expect(canAccessRoute('/app/audit', context)).toBe(true);
   });
 
-  it('blocks teacher from accessing academy administration and academy finance', () => {
+  it('blocks teacher from accessing academy administration, billing, and payments', () => {
     const context = { activeRole: 'teacher' as const, userRole: null };
     expect(canAccessRoute('/app/dashboard', context)).toBe(true);
     expect(canAccessRoute('/app/scheduling', context)).toBe(true);
     expect(canAccessRoute('/app/payouts', context)).toBe(true);
 
-    expect(canAccessRoute('/app/finance', context)).toBe(false);
+    expect(canAccessRoute('/app/billing', context)).toBe(false);
+    expect(canAccessRoute('/app/payments', context)).toBe(false);
     expect(canAccessRoute('/app/audit', context)).toBe(false);
     expect(canAccessRoute('/app/academy', context)).toBe(false);
   });
 
-  it('blocks parent from accessing finance, payouts, teachers, and academy routes', () => {
+  it('blocks parent from accessing billing, payouts, teachers, and academy routes but allows payments', () => {
     const context = { activeRole: null, userRole: 'parent' as const };
     expect(canAccessRoute('/app/dashboard', context)).toBe(true);
     expect(canAccessRoute('/app/students', context)).toBe(true);
     expect(canAccessRoute('/app/progress', context)).toBe(false);
+    expect(canAccessRoute('/app/payments', context)).toBe(true);
 
-    expect(canAccessRoute('/app/finance', context)).toBe(false);
+    expect(canAccessRoute('/app/billing', context)).toBe(false);
     expect(canAccessRoute('/app/payouts', context)).toBe(false);
     expect(canAccessRoute('/app/academy', context)).toBe(false);
     expect(canAccessRoute('/app/teachers', context)).toBe(false);
     expect(canAccessRoute('/app/audit', context)).toBe(false);
   });
 
-  it('blocks student from accessing finance, payouts, academy, teachers, and audit routes', () => {
+  it('allows adult student to access payments, but blocks minor student', () => {
+    const adultContext = { activeRole: null, userRole: 'student' as const, isMinor: false };
+    expect(canAccessRoute('/app/dashboard', adultContext)).toBe(true);
+    expect(canAccessRoute('/app/scheduling', adultContext)).toBe(true);
+    expect(canAccessRoute('/app/payments', adultContext)).toBe(true);
+    expect(canAccessRoute('/app/billing', adultContext)).toBe(false);
+
+    const minorContext = { activeRole: null, userRole: 'student' as const, isMinor: true };
+    expect(canAccessRoute('/app/payments', minorContext)).toBe(false);
+  });
+
+  it('blocks student from accessing billing, payouts, academy, teachers, and audit routes', () => {
     const context = { activeRole: null, userRole: 'student' as const };
     expect(canAccessRoute('/app/dashboard', context)).toBe(true);
     expect(canAccessRoute('/app/scheduling', context)).toBe(true);
     expect(canAccessRoute('/app/progress', context)).toBe(false);
 
-    expect(canAccessRoute('/app/finance', context)).toBe(false);
+    expect(canAccessRoute('/app/billing', context)).toBe(false);
     expect(canAccessRoute('/app/payouts', context)).toBe(false);
     expect(canAccessRoute('/app/academy', context)).toBe(false);
     expect(canAccessRoute('/app/teachers', context)).toBe(false);
     expect(canAccessRoute('/app/audit', context)).toBe(false);
   });
 
-  it('allows lead teacher access to teaching, curriculum, pricing, and payouts, but blocks academy/audit', () => {
+  it('allows lead teacher access to teaching, curriculum, pricing, and payouts, but blocks billing/payments/academy/audit', () => {
     const context = { activeRole: 'teacher' as const, userRole: 'lead' as const };
     expect(canAccessRoute('/app/dashboard', context)).toBe(true);
     expect(canAccessRoute('/app/scheduling', context)).toBe(true);
@@ -169,6 +186,8 @@ describe('Direct Route Access Guards (canAccessRoute)', () => {
     expect(canAccessRoute('/app/pricing', context)).toBe(true);
     expect(canAccessRoute('/app/payouts', context)).toBe(true);
 
+    expect(canAccessRoute('/app/billing', context)).toBe(false);
+    expect(canAccessRoute('/app/payments', context)).toBe(false);
     expect(canAccessRoute('/app/academy', context)).toBe(false);
     expect(canAccessRoute('/app/audit', context)).toBe(false);
     expect(canAccessRoute('/app/settings', context)).toBe(false);
@@ -180,7 +199,8 @@ describe('Direct Route Access Guards (canAccessRoute)', () => {
     expect(canAccessRoute('/app/academy', context)).toBe(false);
     expect(canAccessRoute('/app/teachers', context)).toBe(false);
     expect(canAccessRoute('/app/students', context)).toBe(false);
-    expect(canAccessRoute('/app/finance', context)).toBe(false);
+    expect(canAccessRoute('/app/billing', context)).toBe(false);
+    expect(canAccessRoute('/app/payments', context)).toBe(false);
     expect(canAccessRoute('/app/audit', context)).toBe(false);
   });
 });

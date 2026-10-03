@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Search, UserPlus, FileUp } from 'lucide-react';
 import Link from 'next/link';
 import { can } from '@/lib/permissions/capabilities';
+import { formatCurrency } from '@/lib/utils';
 
 export function TeacherDirectory() {
   const { activeAcademy, activeRole } = useAcademy();
@@ -190,7 +191,7 @@ export function TeacherDirectory() {
                   </div>
                   {teacher.hasConfig && teacher.hourly_payout_rate && (
                     <div className="text-xs text-muted-foreground">
-                      ${teacher.hourly_payout_rate}/hr
+                      {formatCurrency(teacher.hourly_payout_rate)}/hr
                     </div>
                   )}
                 </div>

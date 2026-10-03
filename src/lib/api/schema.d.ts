@@ -2360,6 +2360,208 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/billing/status/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get platform subscription status for an academy
+         * @description View subscription status for an academy (Owner/Admin only).
+         */
+        get: operations["billing_status_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/subscribe/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Subscribe organization to IqraLMS platform plan
+         * @description Subscribe an academy to IqraLMS platform plan (Owner only).
+         */
+        post: operations["billing_subscribe_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/webhook/paystack/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Paystack platform subscription webhook endpoint
+         * @description Webhook endpoint for Paystack platform subscription events.
+         *
+         *     Verifies HMAC-SHA512 signature on raw payload.
+         */
+        post: operations["billing_webhook_paystack_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/children/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List payment history for linked children (Parent only)
+         * @description List payment history for linked children (Parent only).
+         */
+        get: operations["payments_children_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/initialize/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Initialize tuition payment for an adult student or by a parent
+         * @description Initialize a tuition payment for an adult student or by a linked parent.
+         */
+        post: operations["payments_initialize_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/mine/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List payment history for authenticated adult student
+         * @description List payment history for the authenticated adult student.
+         */
+        get: operations["payments_mine_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/organization/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List payment history for an academy (Owner/Admin or Lead Teacher)
+         * @description List payment history for an academy (Owner/Admin or Lead Teacher).
+         */
+        get: operations["payments_organization_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/subaccount/setup/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Setup academy Paystack subaccount for tuition routing
+         * @description Owner onboard bank details for tuition routing to their academy.
+         */
+        post: operations["payments_subaccount_setup_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/verify/{reference}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Immediate payment verification check
+         * @description Immediate payment check on Paystack following redirect (does not mark paid).
+         */
+        get: operations["payments_verify_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/webhook/paystack/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Paystack tuition webhook endpoint
+         * @description Webhook endpoint for Paystack tuition payments.
+         */
+        post: operations["payments_webhook_paystack_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4483,6 +4685,134 @@ export interface components {
             total_graded: number;
             average_score_pct?: number | null;
             recent_submissions: components["schemas"]["AssignmentSubmission"][];
+        };
+        /** @description Detailed view of a family tuition payment. */
+        FamilyPayment: {
+            readonly id: number;
+            /** @description Student whose tuition is being paid. Must have role 'student'. */
+            readonly student: number;
+            readonly student_username: string;
+            readonly student_name: string;
+            /** @description The academy receiving this tuition directly via Paystack subaccount. */
+            readonly organization: number;
+            readonly organization_name: string;
+            /** @description User who initiated payment (adult student or parent; never a minor). */
+            readonly initiated_by: number;
+            readonly initiated_by_username: string;
+            /** @description The PricingAgreement snapshot this payment satisfies. */
+            readonly pricing_agreement: number;
+            /**
+             * Format: decimal
+             * @description Snapshotted amount in NGN at initialization. Never recomputed.
+             */
+            readonly amount: string;
+            /** @description Tuition currency, matching payouts (NGN). */
+            readonly currency: string;
+            /** @description Server-generated unique reference sent to Paystack. */
+            readonly paystack_reference: string;
+            /**
+             * @description pending -> paid | failed | abandoned.
+             *
+             *     * `pending` - Pending
+             *     * `paid` - Paid
+             *     * `failed` - Failed
+             *     * `abandoned` - Abandoned
+             */
+            readonly status: components["schemas"]["FamilyPaymentStatusEnum"];
+            /** Format: date-time */
+            readonly created_at: string;
+            /**
+             * Format: date-time
+             * @description Timestamp when charge.success finalized this payment.
+             */
+            readonly paid_at: string | null;
+        };
+        /**
+         * @description * `pending` - Pending
+         *     * `paid` - Paid
+         *     * `failed` - Failed
+         *     * `abandoned` - Abandoned
+         * @enum {string}
+         */
+        FamilyPaymentStatusEnum: "pending" | "paid" | "failed" | "abandoned";
+        /** @description Payload to initiate a tuition payment. */
+        PaymentInitialize: {
+            pricing_agreement_id: number;
+            student_id?: number;
+            callback_url?: string;
+        };
+        /** @description Response returned upon successful payment initialization. */
+        PaymentInitializeResponse: {
+            payment_id: number;
+            reference: string;
+            /** Format: decimal */
+            amount: string;
+            currency: string;
+            /** Format: uri */
+            authorization_url?: string;
+            access_code?: string;
+        };
+        /** @description Current subscription status for an academy. */
+        PlatformSubscription: {
+            readonly id: number;
+            readonly organization_id: number;
+            readonly organization_name: string;
+            readonly organization_slug: string;
+            /** @description Paystack Plan code for IqraLMS platform access. */
+            readonly paystack_plan_code: string;
+            /**
+             * @description Current subscription lifecycle status.
+             *
+             *     * `active` - Active
+             *     * `past_due` - Past Due
+             *     * `not_renewing` - Not Renewing
+             *     * `disabled` - Disabled
+             */
+            readonly status: components["schemas"]["PlatformSubscriptionStatusEnum"];
+            /**
+             * Format: date-time
+             * @description End of the current paid billing period.
+             */
+            readonly current_period_end: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        /**
+         * @description * `active` - Active
+         *     * `past_due` - Past Due
+         *     * `not_renewing` - Not Renewing
+         *     * `disabled` - Disabled
+         * @enum {string}
+         */
+        PlatformSubscriptionStatusEnum: "active" | "past_due" | "not_renewing" | "disabled";
+        /** @description Payload to configure an academy's settlement bank details. */
+        SubaccountSetup: {
+            organization_id: number;
+            bank_code: string;
+            account_number: string;
+            /** @default  */
+            business_name: string;
+        };
+        /** @description Response after resolving and creating subaccount. */
+        SubaccountSetupResponse: {
+            account_name: string;
+            subaccount_code: string;
+            bank_code: string;
+            account_number: string;
+        };
+        /** @description Request payload to subscribe an organization. */
+        SubscribeRequest: {
+            organization_id: number;
+            plan_code?: string;
+        };
+        /** @description Generic schema for Paystack webhook events. */
+        PaystackWebhookPayload: {
+            event: string;
+            data: {
+                [key: string]: unknown;
+            };
         };
     };
     responses: never;
@@ -8481,6 +8811,290 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["WaitlistEntry"][];
                 };
+            };
+        };
+    };
+    billing_status_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Organization ID to check subscription status for. */
+                organization_id?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformSubscription"];
+                };
+            };
+            /** @description No subscription found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    billing_subscribe_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubscribeRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SubscribeRequest"];
+                "multipart/form-data": components["schemas"]["SubscribeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformSubscription"];
+                };
+            };
+            /** @description Only organization owner can subscribe. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    billing_webhook_paystack_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaystackWebhookPayload"];
+                "application/x-www-form-urlencoded": components["schemas"]["PaystackWebhookPayload"];
+                "multipart/form-data": components["schemas"]["PaystackWebhookPayload"];
+            };
+        };
+        responses: {
+            /** @description Webhook event processed or acknowledged. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    payments_children_list: {
+        parameters: {
+            query?: {
+                /** @description Optional filter for a specific linked child. */
+                student_id?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FamilyPayment"][];
+                };
+            };
+            /** @description Only parents can view children payments. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    payments_initialize_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentInitialize"];
+                "application/x-www-form-urlencoded": components["schemas"]["PaymentInitialize"];
+                "multipart/form-data": components["schemas"]["PaymentInitialize"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentInitializeResponse"];
+                };
+            };
+            /** @description Minors or unlinked parents are denied. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    payments_mine_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FamilyPayment"][];
+                };
+            };
+            /** @description Minor students are forbidden. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    payments_organization_list: {
+        parameters: {
+            query: {
+                /** @description Organization ID to fetch payments for. */
+                organization_id: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FamilyPayment"][];
+                };
+            };
+            /** @description Unauthorized to view academy payments. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    payments_subaccount_setup_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubaccountSetup"];
+                "application/x-www-form-urlencoded": components["schemas"]["SubaccountSetup"];
+                "multipart/form-data": components["schemas"]["SubaccountSetup"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubaccountSetupResponse"];
+                };
+            };
+            /** @description Only academy owner can configure bank details. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    payments_verify_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reference: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Payment verification details and Paystack transaction status. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized to view this payment. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    payments_webhook_paystack_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaystackWebhookPayload"];
+                "application/x-www-form-urlencoded": components["schemas"]["PaystackWebhookPayload"];
+                "multipart/form-data": components["schemas"]["PaystackWebhookPayload"];
+            };
+        };
+        responses: {
+            /** @description Webhook event processed or acknowledged. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

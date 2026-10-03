@@ -63,7 +63,7 @@ export function TeacherDetail({ membershipId }: TeacherDetailProps) {
   }
 
   const canManage = can('manage_teachers', { activeRole });
-  const canManageFinance = can('manage_finance', { activeRole });
+  const canManagePayouts = can('manage_payouts', { activeRole });
 
   const handleApprove = () => {
     if (confirm('Approve this teacher to teach at the academy?')) {
@@ -185,7 +185,7 @@ export function TeacherDetail({ membershipId }: TeacherDetailProps) {
           </CardContent>
         </Card>
 
-        {canManageFinance && (
+        {canManagePayouts && (
           <Card>
             <CardHeader>
               <CardTitle>Financials</CardTitle>
@@ -195,13 +195,13 @@ export function TeacherDetail({ membershipId }: TeacherDetailProps) {
               <div>
                 <div className="text-muted-foreground text-sm font-medium">Hourly Payout Rate</div>
                 <div className="flex items-center space-x-2 mt-1">
-                  <span className="text-sm font-medium">$</span>
+                  <span className="text-sm font-medium">₦</span>
                   <Input 
                     type="number" 
                     step="0.01"
                     defaultValue={config.hourly_payout_rate || ''} 
-                    className="w-32"
-                    placeholder="e.g. 15.00"
+                    className="w-36"
+                    placeholder="e.g. 5000.00"
                     onBlur={(e) => {
                       const val = e.target.value;
                       if (val !== (config.hourly_payout_rate || '')) {
@@ -210,6 +210,7 @@ export function TeacherDetail({ membershipId }: TeacherDetailProps) {
                     }}
                     disabled={updateMutation.isPending}
                   />
+                  <span className="text-sm text-muted-foreground">NGN / hr</span>
                 </div>
               </div>
             </CardContent>

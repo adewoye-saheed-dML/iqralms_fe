@@ -21,9 +21,12 @@ interface AssessmentListProps {
   studentId?: number;
 }
 
+import { getDisplayName } from '../api/assessment';
+
 type AnyAssessment = (FamilyAssessment | TeacherAssessment) & {
   lead_reviewed?: boolean;
   overall_score?: string;
+  student?: any;
 };
 
 export function AssessmentList({ type, studentId }: AssessmentListProps) {
@@ -71,11 +74,23 @@ export function AssessmentList({ type, studentId }: AssessmentListProps) {
       {assessments.map((assessment) => {
         const isReviewed = assessment.lead_reviewed || ('lead_reviewed_at' in assessment && !!assessment.lead_reviewed_at);
         const score = assessment.overall_score || assessment.overall_average;
+        const studentDisplayName = assessment.student ? getDisplayName(assessment.student) : null;
+        const levelName = assessment.booking?.level?.name;
+
         return (
-          <Card key={assessment.id}>
+          <Card key={assessment.id} className="hover:border-primary/40 transition-colors">
             <CardHeader className="pb-2">
               <div className="flex justify-between items-start">
-                <CardTitle className="text-lg">Assessment #{assessment.id}</CardTitle>
+                <div>
+                  <CardTitle className="text-base">
+                    {studentDisplayName || levelName || `Assessment #${assessment.id}`}
+                  </CardTitle>
+                  {assessment.track && (
+                    <Badge variant="outline" className="text-[11px] mt-1">
+                      {assessment.track}
+                    </Badge>
+                  )}
+                </div>
                 {isReviewed && (
                   <Badge variant="secondary">Reviewed</Badge>
                 )}
@@ -83,12 +98,17 @@ export function AssessmentList({ type, studentId }: AssessmentListProps) {
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               {score && (
-                <div className="text-muted-foreground">
-                  Score: {score}
+                <div className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                  Score: {score} / 10
+                </div>
+              )}
+              {assessment.booking?.start_time_utc && (
+                <div className="text-xs text-muted-foreground">
+                  Session: {new Date(assessment.booking.start_time_utc).toLocaleDateString()}
                 </div>
               )}
               {assessment.teacher_summary && (
-                <p className="italic">&ldquo;{assessment.teacher_summary}&rdquo;</p>
+                <p className="italic text-xs bg-muted/30 p-2 rounded text-muted-foreground">&ldquo;{assessment.teacher_summary}&rdquo;</p>
               )}
             </CardContent>
           </Card>

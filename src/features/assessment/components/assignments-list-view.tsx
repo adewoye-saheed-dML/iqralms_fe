@@ -35,11 +35,13 @@ import {
   Mic,
   Paperclip,
   Plus,
+  Shield,
   Trash2,
   Users,
 } from 'lucide-react';
 import { CreateAssignmentModal } from './create-assignment-modal';
 import { AssignmentSubmissionModal } from './assignment-submission-modal';
+import { useTeacherAccessControl } from '../lib/access-control';
 
 import { resolveRoleExperience } from '@/lib/navigation/config';
 
@@ -52,6 +54,7 @@ export function AssignmentsListView({ onSelectAssignmentForGrading }: Assignment
   const academyId = activeAcademy?.id;
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const accessControl = useTeacherAccessControl();
 
   const roleExp = resolveRoleExperience({ activeRole, userRole: user?.role });
   const isOwnerAdmin =
@@ -86,6 +89,15 @@ export function AssignmentsListView({ onSelectAssignmentForGrading }: Assignment
         : [],
     enabled: !!academyId,
   });
+
+  // Filter assignments: teachers only see their own subjects and attached students
+  const visibleAssignments = React.useMemo(() => {
+    if (isOwnerAdmin) return assignments;
+    if (isTeacher) {
+      return assignments.filter((a) => accessControl.canTeacherAccessAssignment(a));
+    }
+    return assignments;
+  }, [assignments, isOwnerAdmin, isTeacher, accessControl]);
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -133,26 +145,46 @@ export function AssignmentsListView({ onSelectAssignmentForGrading }: Assignment
         )}
       </div>
 
+      {/* Teacher Confidentiality Banner */}
+      {!isOwnerAdmin && isTeacher && (
+        <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground bg-primary/5 border border-primary/20 px-3 py-2 rounded-lg">
+          <div className="flex items-center gap-2">
+            <Shield className="h-4 w-4 text-primary shrink-0" />
+            <span>
+              <strong>Confidentiality boundary active:</strong> Showing assignments solely for your offered subjects and attached students.
+            </span>
+          </div>
+          <Badge variant="outline" className="bg-background text-[11px]">
+            Protected
+          </Badge>
+        </div>
+      )}
+
       {/* Assignments List */}
-      {isLoading ? (
+      {isLoading || accessControl.isLoading ? (
         <div className="p-8 text-center text-muted-foreground">Loading assignments...</div>
-      ) : assignments.length === 0 ? (
-        <Card className="p-8 text-center text-muted-foreground space-y-2">
+      ) : visibleAssignments.length === 0 ? (
+        <Card className="p-8 text-center text-muted-foreground space-y-2 border-dashed">
           <BookOpen className="h-10 w-10 mx-auto opacity-40" />
-          <p className="font-medium">No assignments found.</p>
+          <p className="font-medium text-foreground">
+            {assignments.length > 0
+              ? 'No assignments for your offered subjects or attached students'
+              : 'No assignments found'}
+          </p>
           <p className="text-xs">
             {isTeacher
-              ? 'Click "Create Assignment" to assign recitation practice or homework.'
+              ? 'Click "Create Assignment" to assign recitation practice or homework in your subjects.'
               : 'Assignments will appear here when your teacher publishes them.'}
           </p>
         </Card>
       ) : (
         <div className="grid grid-cols-1 gap-3">
-          {assignments.map((assignment) => {
+          {visibleAssignments.map((assignment) => {
             const mySubmission = assignment.my_submission;
             const isGraded = mySubmission?.status === 'graded';
             const isSubmitted = mySubmission?.status === 'submitted';
             const needsRevision = mySubmission?.status === 'resubmission_requested';
+            const canDelete = isOwnerAdmin || (assignment.created_by?.id != null && assignment.created_by.id === user?.id);
 
             return (
               <Card key={assignment.id} className="p-4 space-y-3 hover:border-primary/50 transition-colors">
@@ -205,14 +237,16 @@ export function AssignmentsListView({ onSelectAssignmentForGrading }: Assignment
                             Submissions ({assignment.submissions_count})
                           </Badge>
                         )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(assignment.id)}
-                          className="text-muted-foreground hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {canDelete && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(assignment.id)}
+                            className="text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </>
                     )}
 
