@@ -405,5 +405,68 @@ describe('Student Management', () => {
       // Subject allocation management button must not be visible to teachers
       expect(screen.queryByText('Subject Allocation')).not.toBeInTheDocument();
     });
+
+    it('loads student details for a teacher via getMyStudents without triggering owner-only errors', async () => {
+      vi.spyOn(AcademyProvider, 'useAcademy').mockReturnValue({
+        activeAcademy: mockAcademy,
+        activeRole: 'teacher',
+      } as any);
+
+      // getMyStudents returns the student assigned to this teacher
+      vi.mocked(studentsApi.getMyStudents).mockResolvedValue([
+        {
+          id: 42,
+          user_id: 420,
+          username: 'assigned_student',
+          email: 'assigned@example.com',
+          first_name: 'Assigned',
+          last_name: 'Learner',
+          date_of_birth: '2012-04-01',
+          is_minor: true,
+          enrollment_status: 'active',
+          track_id: 1,
+          level_id: 2,
+          teacher_id: 10,
+          teacher_name: 'Ustadh Omar',
+          created_at: '2026-02-01T00:00:00Z',
+          updated_at: '2026-02-01T00:00:00Z',
+        },
+      ]);
+
+      renderWithProviders(<StudentDetail enrollmentId={42} />);
+
+      await waitFor(() => {
+        expect(screen.getAllByText('Assigned Learner').length).toBeGreaterThanOrEqual(1);
+      });
+
+      // Verify owner-only endpoint was NOT called
+      expect(studentsApi.getStudent).not.toHaveBeenCalled();
+
+      // Verify no membership or admin error is displayed
+      expect(screen.queryByText(/Only an organization owner or administrator/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Error loading student/i)).not.toBeInTheDocument();
+      expect(screen.getByText('View Assigned Students')).toBeInTheDocument();
+    });
+
+    it('handles student not found for teacher gracefully without membership error', async () => {
+      vi.spyOn(AcademyProvider, 'useAcademy').mockReturnValue({
+        activeAcademy: mockAcademy,
+        activeRole: 'teacher',
+      } as any);
+
+      // Teacher has no students matching enrollment 999
+      vi.mocked(studentsApi.getMyStudents).mockResolvedValue([]);
+      vi.mocked(studentsApi.getStudent).mockRejectedValue(
+        new ApiError(404, 'Student enrollment not found in your assigned students')
+      );
+
+      renderWithProviders(<StudentDetail enrollmentId={999} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Student Not Found')).toBeInTheDocument();
+      });
+
+      expect(screen.queryByText(/Only an organization owner or administrator/i)).not.toBeInTheDocument();
+    });
   });
 });

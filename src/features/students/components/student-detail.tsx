@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAcademy } from '@/lib/academy/academy-provider';
 import { studentKeys, curriculumKeys, assessmentKeys } from '@/lib/api/query-keys';
-import { studentsApi } from '../api/students';
+import { studentsApi, type StudentDetail as StudentDetailModel } from '../api/students';
 import { curriculumApi, type TrackBrief, type Level } from '@/features/curriculum/api/curriculum';
 import { assessmentApi } from '@/features/assessment/api/assessment';
 import { ApiError } from '@/lib/api/errors';
@@ -59,6 +59,10 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
   const [status, setStatus] = React.useState<'active' | 'inactive' | ''>('');
   const [successMessage, setSuccessMessage] = React.useState('');
 
+  const canManage = can('manage_students', { activeRole });
+  const isOwnerAdmin =
+    accessControl.isOwnerAdmin || canManage || activeRole === 'owner' || activeRole === 'admin';
+
   // 1. Fetch Student Enrollment Details
   const {
     data: student,
@@ -67,7 +71,21 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
     error,
   } = useQuery({
     queryKey: studentKeys.detail(activeAcademy?.id, enrollmentId),
-    queryFn: () => studentsApi.getStudent(activeAcademy!.id, enrollmentId),
+    queryFn: async () => {
+      if (!activeAcademy?.id) throw new Error('No academy context');
+      if (isOwnerAdmin) {
+        return studentsApi.getStudent(activeAcademy.id, enrollmentId);
+      }
+      // For teachers, parents, staff:
+      // The individual /students/{id}/ endpoint is restricted to owner/admin.
+      // Retrieve the student record from /students/mine/.
+      const myStudents = await studentsApi.getMyStudents(activeAcademy.id);
+      const match = myStudents.find((s) => s.id === enrollmentId || s.user_id === enrollmentId);
+      if (match) {
+        return match as unknown as StudentDetailModel;
+      }
+      return studentsApi.getStudent(activeAcademy.id, enrollmentId);
+    },
     enabled: !!activeAcademy,
   });
 
@@ -107,13 +125,15 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
     enabled: !!activeAcademy?.id,
   });
 
-  // 4. Fetch Academy Student List (to resolve assigned teacher name)
+  // 4. Fetch Student List (to resolve assigned teacher name)
   const { data: academyStudents = [] } = useQuery({
-    queryKey: studentKeys.all(activeAcademy?.id),
+    queryKey: isOwnerAdmin ? studentKeys.all(activeAcademy?.id) : studentKeys.mine(activeAcademy?.id),
     queryFn: async () => {
       try {
         if (!activeAcademy?.id) return [];
-        return (await studentsApi.getAcademyStudents(activeAcademy.id)) ?? [];
+        return isOwnerAdmin
+          ? (await studentsApi.getAcademyStudents(activeAcademy.id)) ?? []
+          : (await studentsApi.getMyStudents(activeAcademy.id)) ?? [];
       } catch {
         return [];
       }
@@ -211,9 +231,6 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
   if (!student) return null;
 
   const hasChanges = status && status !== student.enrollment_status;
-  const canManage = can('manage_students', { activeRole });
-  const isOwnerAdmin =
-    accessControl.isOwnerAdmin || canManage || activeRole === 'owner' || activeRole === 'admin';
 
   let errorMessage = '';
   if (updateMutation.isError) {
@@ -323,9 +340,11 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
                     <span className="text-sm font-medium text-amber-600 dark:text-amber-400">
                       No subject registered yet
                     </span>
-                    <Button variant="outline" size="sm" asChild className="h-7 text-xs">
-                      <Link href="/app/curriculum?tab=allocations">Assign Track</Link>
-                    </Button>
+                    {canManage && (
+                      <Button variant="outline" size="sm" asChild className="h-7 text-xs">
+                        <Link href="/app/curriculum?tab=allocations">Assign Track</Link>
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
@@ -362,14 +381,16 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
               </div>
             </div>
           </CardContent>
-          <CardFooter className="pt-0 border-t">
-            <Button variant="ghost" size="sm" asChild className="w-full justify-between mt-3 text-xs">
-              <Link href="/app/curriculum?tab=allocations">
-                <span>Manage Track Allocations</span>
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </Button>
-          </CardFooter>
+          {canManage && (
+            <CardFooter className="pt-0 border-t">
+              <Button variant="ghost" size="sm" asChild className="w-full justify-between mt-3 text-xs">
+                <Link href="/app/curriculum?tab=allocations">
+                  <span>Manage Track Allocations</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </Button>
+            </CardFooter>
+          )}
         </Card>
 
         {/* Personal & Demographics Information Card */}
@@ -438,7 +459,7 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
           <CardFooter className="pt-0 border-t">
             <Button variant="ghost" size="sm" asChild className="w-full justify-between mt-3 text-xs">
               <Link href="/app/students">
-                <span>View All Enrolled Students</span>
+                <span>{isOwnerAdmin ? 'View All Enrolled Students' : 'View Assigned Students'}</span>
                 <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </Button>
