@@ -372,7 +372,7 @@ describe('Student Management', () => {
         activeRole: 'teacher',
       } as any);
 
-      vi.mocked(studentsApi.getStudent).mockResolvedValue({
+      const mockZayd = {
         id: 15,
         user_id: 300,
         username: 'zayd_ali',
@@ -386,7 +386,10 @@ describe('Student Management', () => {
         level_id: 4,
         created_at: '2026-03-01T10:00:00Z',
         updated_at: '2026-03-05T12:00:00Z',
-      });
+      };
+
+      vi.mocked(studentsApi.getStudent).mockResolvedValue(mockZayd);
+      vi.mocked(studentsApi.getMyStudents).mockResolvedValue([mockZayd as any]);
 
       renderWithProviders(<StudentDetail enrollmentId={15} />);
 

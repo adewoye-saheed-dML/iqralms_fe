@@ -38,9 +38,12 @@ export const studentsApi = {
     } catch (err: unknown) {
       // If 403 Forbidden (e.g. caller is teacher, parent, or staff not permitted to call /students/{id}/),
       // fallback to role-accessible /students/mine/.
-      if (err instanceof ApiError && err.status === 403) {
+      const status = (err as any)?.status || (err as any)?.statusCode;
+      if (status === 403 || (err instanceof ApiError && err.status === 403)) {
         const myStudents = await studentsApi.getMyStudents(organizationId);
-        const match = myStudents.find((s) => s.id === enrollmentId || s.user_id === enrollmentId);
+        const match = myStudents.find(
+          (s) => Number(s.id) === Number(enrollmentId) || Number(s.user_id) === Number(enrollmentId)
+        );
         if (match) {
           return match as unknown as StudentDetail;
         }

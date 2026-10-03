@@ -67,7 +67,7 @@ export function resolveRoleExperience(context: RoleResolutionContext): RoleExper
 
   // Fallback to global account role when no active membership role is present
   if (userRole === 'lead') {
-    return 'owner_admin'; // or lead_teacher fallback
+    return 'lead_teacher';
   }
   if (userRole === 'sub') {
     return 'teacher';

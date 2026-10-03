@@ -59,9 +59,8 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
   const [status, setStatus] = React.useState<'active' | 'inactive' | ''>('');
   const [successMessage, setSuccessMessage] = React.useState('');
 
-  const canManage = can('manage_students', { activeRole });
-  const isOwnerAdmin =
-    accessControl.isOwnerAdmin || canManage || activeRole === 'owner' || activeRole === 'admin';
+  const isOwnerAdmin = activeRole === 'owner' || activeRole === 'admin';
+  const canManage = isOwnerAdmin;
 
   // 1. Fetch Student Enrollment Details
   const {
@@ -78,15 +77,21 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
       }
       // For teachers, parents, staff:
       // The individual /students/{id}/ endpoint is restricted to owner/admin.
-      // Retrieve the student record from /students/mine/.
-      const myStudents = await studentsApi.getMyStudents(activeAcademy.id);
-      const match = myStudents.find((s) => s.id === enrollmentId || s.user_id === enrollmentId);
-      if (match) {
-        return match as unknown as StudentDetailModel;
+      // First attempt to resolve the student record from role-accessible /students/mine/.
+      try {
+        const myStudents = await studentsApi.getMyStudents(activeAcademy.id);
+        const match = myStudents.find(
+          (s) => Number(s.id) === Number(enrollmentId) || Number(s.user_id) === Number(enrollmentId)
+        );
+        if (match) {
+          return match as unknown as StudentDetailModel;
+        }
+      } catch {
+        // Fall back to getStudent
       }
       return studentsApi.getStudent(activeAcademy.id, enrollmentId);
     },
-    enabled: !!activeAcademy,
+    enabled: !!activeAcademy && !!activeRole,
   });
 
   const canAccessStudentAssessments =
@@ -212,11 +217,28 @@ export function StudentDetail({ enrollmentId }: StudentDetailProps) {
   }
 
   if (isError) {
-    if (error instanceof ApiError && error.status === 404) {
+    const is404 =
+      (error instanceof ApiError && error.status === 404) ||
+      (error as any)?.status === 404 ||
+      (error as any)?.statusCode === 404;
+    if (is404) {
       return (
         <ErrorState
           title="Student Not Found"
           message="The requested student enrollment was not found in this academy."
+        />
+      );
+    }
+    const is403 =
+      (error instanceof ApiError && error.status === 403) ||
+      (error as any)?.status === 403 ||
+      (error as any)?.statusCode === 403 ||
+      (error instanceof Error && error.message.toLowerCase().includes('manage memberships'));
+    if (is403) {
+      return (
+        <ErrorState
+          title="Student Access Restricted"
+          message="You do not have permission to view this student profile, or the student is not assigned to your classes."
         />
       );
     }
